@@ -231,6 +231,29 @@ public class MusicianModTests
     });
 
     [Fact]
+    public void FPlaysOnlyAnInstrumentInHandAndNeverOnABedOrAStation() => WithMusician(() =>
+    {
+        // A playtest: lying down on the shrine's pallet as the musician opened the music instead.
+        var sim = Round(MusicianDefs(), (Arin, "Musician"));
+        var me = Players.CharacterOf(sim, Arin);
+        var w = sim.World;
+        var module = new MusicianModule();
+        var open = sim.SpiralFrom(Players.Home(sim), 6).First(c => sim.Map.Passable(c) && sim.Map.Structure[sim.Map.Idx(c)].IsNull);
+        FireDrill.MoveTo(sim, me, open);
+        Assert.Null(module.EarlyActionAt(sim, me, open, open)); // the pipe's in the pack: nothing to play yet
+        var pipe = MusicianModule.InstrumentOf(sim, me);
+        FireDrill.PutInHand(sim, me, pipe);
+        Assert.Equal("Play the tin pipe", module.EarlyActionAt(sim, me, open, open)?.Label);
+        // On the pallet, pipe in hand: F is the pallet's.
+        var pallet = w.Query<Thing>().First(e => w.Get<Thing>(e).Def.Name == "StrawPallet" && w.Get<Thing>(e).Spawned);
+        var bed = w.Get<Thing>(pallet).Cell;
+        FireDrill.MoveTo(sim, me, bed);
+        Assert.Null(module.EarlyActionAt(sim, me, bed, bed));
+        Assert.NotEqual(AvatarActionKind.Custom, AvatarSystem.ActionAt(sim, me, bed).Kind);
+        return 0;
+    });
+
+    [Fact]
     public void TheMusicianComesWanderingInFromTheRoad() => WithMusician(() =>
     {
         var sim = Round(MusicianDefs(), (Arin, "Musician"));
@@ -323,25 +346,22 @@ public class MusicianModTests
             return new WorkInput(from + i * 20, WorkInputKind.Custom, PlaySession.Pack(index <= 7 ? index : index - 7, index > 7, true, note.Accidental > 0));
         })];
 
-    /// <summary>What a musician minds while the hands carry a tune: the beat, the breath, the long notes.</summary>
+    /// <summary>What a musician minds while the hands carry a tune: the beat, the long notes.</summary>
     [Flags]
-    private enum Minding { None = 0, Beat = 1, Breath = 2, Swell = 4, All = Beat | Breath | Swell }
+    private enum Minding { None = 0, Beat = 1, Swell = 4, All = Beat | Swell }
 
-    /// <summary>Play on to <paramref name="upTo"/> (or the tune's end), minding what's asked: F on every beat, a breath at each mark, F held through each long note.</summary>
+    /// <summary>Play on to <paramref name="upTo"/> (or the tune's end), minding what's asked: F on every beat, long notes' too, the swell key held through each long note.</summary>
     private static void KeepTime(PlaySession s, int upTo, Minding minding = Minding.All)
     {
         while (s.StepsDone < upTo)
         {
             List<WorkInput> inputs = [];
             var carried = s.Carrying != null;
-            if (carried && minding.HasFlag(Minding.Beat) && !s.BeatKept && !s.Held && s.StepsDone >= (int)MathF.Ceiling(s.Beat)) // held through a long note: no tap till it ends
+            if (carried && minding.HasFlag(Minding.Beat) && !s.BeatKept && s.StepsDone >= (int)MathF.Ceiling(s.Beat))
                 inputs.Add(new WorkInput(s.StepsDone, WorkInputKind.Press));
-            var breathe = carried && minding.HasFlag(Minding.Breath) && s.InGap && !(s.GapTaken && s.Breath >= 1f);
-            if (breathe != s.Breathing)
-                inputs.Add(new WorkInput(s.StepsDone, WorkInputKind.Custom, PlaySession.PackBreath(breathe)));
             var swell = carried && minding.HasFlag(Minding.Swell) && s.LongAt >= 0 && s.RingingNote != null;
-            if (swell != s.Held)
-                inputs.Add(new WorkInput(s.StepsDone, WorkInputKind.Hold, swell ? 1 : 0));
+            if (swell != s.SwellHeld)
+                inputs.Add(new WorkInput(s.StepsDone, WorkInputKind.Custom, PlaySession.PackSwell(swell)));
             s.Advance(inputs, s.StepsDone + 1);
         }
     }
@@ -411,30 +431,33 @@ public class MusicianModTests
     });
 
     [Fact]
-    public void NoBeatIsMissedWhileABreathIsTakenAtItsMark() => WithMusician(() =>
+    public void ALongNoteIsSwelledWithTheSwellKeyWhileTheBeatIsTappedOnThroughIt() => WithMusician(() =>
     {
-        // A Deck playtest: one hand on the breath, the other can't tap the beat; the beats in a breath's gap are the breath's.
+        // A Deck playtest: minding a breath and the beat at once was a chore. Now F keeps every beat, long notes' too, and
+        // the swell key (Shift, LB) shapes a long note: two hands, two jobs, nothing to breathe.
         var defs = MusicianDefs();
         var tune = defs.ModDef<SongDef>(SongDef.Kind_, "MillersWheel")!;
         var s = new PlaySession { InstrumentName = "Pipe", Book = [tune] };
-        s.Advance([new WorkInput(0, WorkInputKind.Act), .. Opening(tune, from: 1)], 200);
-        Assert.Same(tune, s.Carrying);
-        while (s.Carrying != null)
+        s.Advance([new WorkInput(0, WorkInputKind.Act), .. Opening(tune, from: 1)], 100); // just past the call: its first carried note's a long one
+        KeepTime(s, 200 + 60 * 60);
+        Assert.Equal((1, 0, 0), (s.Finished, s.Slipped, s.BeatsMissed));
+        Assert.Equal(tune.Sequence.Skip(tune.CarriesFrom).Count(n => n.IsLong), s.Flourishes);
+        Assert.Equal(1f, s.Breath); // nothing spent
+        // F held through a long note, as it used to be: no swell, and the beats it holds over go untapped.
+        var held = new PlaySession { InstrumentName = "Pipe", Book = [tune] };
+        held.Advance([new WorkInput(0, WorkInputKind.Act), .. Opening(tune, from: 1)], 200);
+        while (held.Carrying != null)
         {
             List<WorkInput> inputs = [];
-            var breathe = s.InGap && !(s.GapTaken && s.Breath >= 1f);
-            if (!breathe && !s.Breathing && !s.BeatKept && !s.Held && s.StepsDone >= (int)MathF.Ceiling(s.Beat))
-                inputs.Add(new WorkInput(s.StepsDone, WorkInputKind.Press)); // no tap while breathing
-            if (breathe != s.Breathing)
-                inputs.Add(new WorkInput(s.StepsDone, WorkInputKind.Custom, PlaySession.PackBreath(breathe)));
-            var swell = s.LongAt >= 0 && s.RingingNote != null;
-            if (swell != s.Held)
-                inputs.Add(new WorkInput(s.StepsDone, WorkInputKind.Hold, swell ? 1 : 0));
-            s.Advance(inputs, s.StepsDone + 1);
+            var inLong = held.LongAt >= 0 && held.RingingNote != null;
+            if (!inLong && !held.BeatKept && held.StepsDone >= (int)MathF.Ceiling(held.Beat))
+                inputs.Add(new WorkInput(held.StepsDone, WorkInputKind.Press));
+            if (inLong != held.Held)
+                inputs.Add(new WorkInput(held.StepsDone, WorkInputKind.Hold, inLong ? 1 : 0));
+            held.Advance(inputs, held.StepsDone + 1);
         }
-        Assert.Equal((1, 0), (s.Finished, s.Slipped));
-        Assert.Equal(0, s.BeatsMissed);
-        Assert.True(s.Breaths >= 5);
+        Assert.Equal(0, held.Flourishes);
+        Assert.True(held.BeatsMissed > 0);
         return 0;
     });
 
@@ -525,7 +548,7 @@ public class MusicianModTests
         var s = new PlaySession { InstrumentName = "Pipe", Book = [tune] };
         s.Advance([new WorkInput(0, WorkInputKind.Act), .. Opening(tune, from: 1)], 200);
         Assert.Same(tune, s.Carrying);
-        KeepTime(s, 200 + 60 * 60, Minding.Breath | Minding.Swell); // breathing and shaping, but not a beat kept
+        KeepTime(s, 200 + 60 * 60, Minding.Swell); // shaping, but not a beat kept
         Assert.Null(s.Carrying);
         Assert.Equal(1, s.Slipped);
         Assert.Equal(0, s.Finished);
@@ -562,8 +585,6 @@ public class MusicianModTests
         Assert.Equal(tune.Sequence.Count, s.Played); // the call, then every note on from it
         Assert.Equal(3, sections.Count);
         Assert.Equal(("A", 2), tune.SectionAt(2));
-        Assert.Equal(0, s.BreathsMisplaced);
-        Assert.True(s.Breaths >= 10, $"{s.Breaths} breaths");
         Assert.Equal(tune.Sequence.Skip(tune.CarriesFrom).Count(n => n.IsLong), s.Flourishes); // every long note shaped
         return 0;
     });
@@ -581,41 +602,6 @@ public class MusicianModTests
         }
         Assert.DoesNotContain(sim.Defs.ModDefs<SongDef>(SongDef.Kind_), t => t.Name is "DrunkenSailor" or "Greensleeves" or "KeshJig" or "ScarboroughFair");
         Assert.False(sim.Defs.ModDef<InstrumentDef>(InstrumentDef.Kind, "HandDrum")!.Book);
-        return 0;
-    });
-
-    [Fact]
-    public void WithoutABreathTheAirRunsOutAndNotesGoMissing() => WithMusician(() =>
-    {
-        var defs = MusicianDefs();
-        var tune = defs.ModDef<SongDef>(SongDef.Kind_, "HayInTheLoft")!;
-        var s = new PlaySession { InstrumentName = "Pipe", Book = [tune] };
-        s.Advance([new WorkInput(0, WorkInputKind.Act), .. Opening(tune, from: 1)], 200);
-        KeepTime(s, 200 + 30 * 60, Minding.Beat | Minding.Swell);
-        Assert.Equal(0, s.Breaths);
-        Assert.True(s.Dropped > 0, "no air for them");
-        Assert.Equal(1, s.Slipped); // keeping the beat alone won't hold a tune with no air in it
-        return 0;
-    });
-
-    [Fact]
-    public void ABreathSnatchedMidPhraseCostsANote() => WithMusician(() =>
-    {
-        var defs = MusicianDefs();
-        var tune = defs.ModDef<SongDef>(SongDef.Kind_, "HayInTheLoft")!;
-        var s = new PlaySession { InstrumentName = "Pipe", Book = [tune] };
-        s.Advance([new WorkInput(0, WorkInputKind.Act), .. Opening(tune, from: 1)], 200);
-        KeepTime(s, 300); // into the tune, then on to somewhere mid-phrase
-        while (s.InGap)
-            KeepTime(s, s.StepsDone + 1);
-        Assert.False(s.InGap);
-        var (played, mind) = (s.Played, s.Concentration);
-        s.Advance([new WorkInput(s.StepsDone, WorkInputKind.Custom, PlaySession.PackBreath(true))], s.StepsDone + (int)s.StepsPerBeat + 2);
-        Assert.True(s.Breathing);
-        Assert.Equal(played, s.Played); // the note due went for the breath
-        Assert.True(s.BreathsMisplaced >= 1);
-        Assert.True(s.Concentration < mind);
-        Assert.Equal(1f, s.Breath); // but the air's back
         return 0;
     });
 
@@ -644,7 +630,7 @@ public class MusicianModTests
         var tune = defs.ModDef<SongDef>(SongDef.Kind_, "HayInTheLoft")!;
         var s = new PlaySession { InstrumentName = "Pipe", Book = [tune] };
         s.Advance([new WorkInput(0, WorkInputKind.Act), .. Opening(tune, from: 1)], 200);
-        KeepTime(s, 200 + 60 * 60, Minding.Beat | Minding.Breath); // no swelling at all
+        KeepTime(s, 200 + 60 * 60, Minding.Beat); // no swelling at all
         Assert.Equal(0, s.Flourishes);
         var shaped = new PlaySession { InstrumentName = "Pipe", Book = [tune] };
         shaped.Advance([new WorkInput(0, WorkInputKind.Act), .. Opening(tune, from: 1)], 200);
@@ -733,13 +719,13 @@ public class MusicianModTests
         var sim = new PlaySession { InstrumentName = "Pipe", Book = [tune] };
         sim.Advance([new WorkInput(0, WorkInputKind.Act), .. Opening(tune, from: 1)], 200);
         var ahead = (PlaySession)sim.Clone();
-        // The same taps, breaths and swells, some well placed and some not, played to the same end by both.
+        // The same taps and swells, some well placed and some not, played to the same end by both.
         List<WorkInput> inputs = [];
         for (var i = 0; i < 40; i++)
         {
             inputs.Add(new WorkInput(230 + i * 33, WorkInputKind.Press));
             if (i % 5 == 0)
-                inputs.AddRange([new(231 + i * 33, WorkInputKind.Custom, PlaySession.PackBreath(true)), new(250 + i * 33, WorkInputKind.Custom, PlaySession.PackBreath(false))]);
+                inputs.AddRange([new(231 + i * 33, WorkInputKind.Custom, PlaySession.PackSwell(true)), new(250 + i * 33, WorkInputKind.Custom, PlaySession.PackSwell(false))]);
             if (i % 7 == 0)
                 inputs.AddRange([new(232 + i * 33, WorkInputKind.Hold, 1), new(290 + i * 33, WorkInputKind.Hold, 0)]);
         }
@@ -773,7 +759,6 @@ public class MusicianModTests
         Assert.Same(tune, s.Carrying);
         KeepTime(s, 200 + 200 * 60);
         Assert.Equal((1, 0), (s.Finished, s.Slipped));
-        Assert.Equal(0, s.BreathsMisplaced);
         Assert.Equal(tune.Call.Count + tune.Sequence.Skip(tune.CarriesFrom).Count(n => n.Step >= 0), s.Played); // every note but the rests
         return 0;
     });
@@ -803,13 +788,13 @@ public class MusicianModTests
         lute.Advance([new WorkInput(0, WorkInputKind.Custom, PlaySession.Pack(0, false, true)), new(5, WorkInputKind.Custom, PlaySession.Pack(2, false, true))], 10);
         Assert.Equal(2, lute.Played); // both sounding, plucked over each other: nothing held to stop
         Assert.Null(lute.RingingNote);
-        // Lantern Home, the beat alone minded: no breath to take, no long note to swell, and it plays through.
+        // Lantern Home, the beat alone minded: nothing to swell on a lute, and it plays through.
         var tune = defs.ModDef<SongDef>(SongDef.Kind_, "LanternHome")!;
         var s = On(defs, "Lute");
         s.Advance([new WorkInput(0, WorkInputKind.Act), .. Opening(tune, from: 1)], 200);
         Assert.Same(tune, s.Carrying);
-        s.Advance([new WorkInput(200, WorkInputKind.Custom, PlaySession.PackBreath(true))], 260);
-        Assert.False(s.Breathing); // a lute has no air to take
+        s.Advance([new WorkInput(200, WorkInputKind.Custom, PlaySession.PackSwell(true))], 260);
+        Assert.False(s.SwellHeld); // a lute's notes ring of themselves: nothing to swell
         KeepTime(s, 200 + 200 * 60, Minding.Beat);
         Assert.Equal(1, s.Finished);
         Assert.Equal((0, 0, 1f), (s.Slipped, s.Flourishes, s.Breath));
@@ -818,7 +803,7 @@ public class MusicianModTests
     });
 
     [Fact]
-    public void AFiddlesBowRunsOutAsTheBreathDoesAndItsNotesSlide() => WithMusician(() =>
+    public void AFiddlesLongNotesSwellUnderTheBowAndItsNotesSlide() => WithMusician(() =>
     {
         var defs = MusicianDefs();
         var tune = defs.ModDef<SongDef>(SongDef.Kind_, "HayInTheLoft")!;
@@ -827,10 +812,6 @@ public class MusicianModTests
         KeepTime(minded, 200 + 200 * 60);
         Assert.Equal(1, minded.Finished);
         Assert.Equal(tune.Sequence.Skip(tune.CarriesFrom).Count(n => n.IsLong), minded.Flourishes);
-        var unturned = On(defs, "Fiddle");
-        unturned.Advance([new WorkInput(0, WorkInputKind.Act), .. Opening(unturned.Book.First(t => t.Name == "HayInTheLoft"), from: 1)], 200);
-        KeepTime(unturned, 200 + 200 * 60, Minding.Beat | Minding.Swell);
-        Assert.Equal(1, unturned.Slipped); // the bow never turned
 
         // Free, D held slides the note up (all the way in a few steps, not at once), and back as it's let go.
         var s = On(defs, "Fiddle");
@@ -1183,6 +1164,11 @@ public class MusicianModTests
         for (var t = 0; t < AudienceJob.Remembered + 400 && sim.World.Get<Mind>(listener).Job == job; t++)
             Playing(sim, session);
         Assert.Equal(1, Takings.InHat(sim, session.Hat)); // a villager who listened: a silver
+        // The hat and what's in it are the musician's, set down: no job takes them (a playtest's labourers carried the
+        // hat off to the barn).
+        Assert.False(sim.IsAvailable(session.Hat));
+        Assert.All(Takings.Tossed(sim, session.Hat), c => Assert.False(sim.IsAvailable(c)));
+        Assert.DoesNotContain(session.Hat, sim.AvailableItems());
         Assert.Equal((listener, 1), (session.Tips[^1].From, session.Tips[^1].Silver)); // who, for the window: to thank them
         // A bow for it, playing on (an emote's otherwise refused mid-work): shown as the sim settles.
         session.Advance([new WorkInput(session.StepsDone, WorkInputKind.Custom, PlaySession.BowBit)], session.StepsDone + 1);

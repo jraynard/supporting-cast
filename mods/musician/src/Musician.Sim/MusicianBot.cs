@@ -12,7 +12,7 @@ namespace HeroesNotIncluded.Musician;
 /// <summary>
 /// How a bot plays the musician (<see cref="IBotTrade"/>), through the keys a player has and the session it sees.
 /// Of an evening it goes to the inn, takes out the pipe, opens the book and plays its tune's opening, then keeps the
-/// beat, breathes at the marks and shapes the long notes till the tune's done; then it rests a while and plays again.
+/// beat and shapes the long notes till the tune's done; then it rests a while and plays again.
 /// </summary>
 public sealed class MusicianBot(BotPlayer bot) : IBotTrade
 {
@@ -54,7 +54,20 @@ public sealed class MusicianBot(BotPlayer bot) : IBotTrade
             bot.Walk(sim, me, plan.Anchor, now);
             return true;
         }
-        bot.Send(new AvatarWorkCommand(me, true, here)); // F where it stands: the instrument in hand, or the pipe
+        // Off any furniture (F on a bench is the bench's), the pipe taken in hand, then F where it stands.
+        if (!sim.Map.Structure[sim.Map.Idx(here)].IsNull)
+        {
+            if (sim.SpiralFrom(here, 3).FirstOrDefault(c => c != here && sim.Map.InBounds(c) && sim.Map.Passable(c) && sim.Map.Structure[sim.Map.Idx(c)].IsNull
+                && Buildings.At(sim, c) == inn, here) is var clear && clear != here)
+                bot.Send(new AvatarGoToCommand(me, clear));
+            return true;
+        }
+        if (MusicianModule.HeldInstrument(sim, me).IsNull)
+        {
+            bot.Send(new HoldCommand(me, MusicianModule.InstrumentOf(sim, me)));
+            return true;
+        }
+        bot.Send(new AvatarWorkCommand(me, true, here)); // F where it stands: the instrument in hand
         bot.Send(new AvatarWorkCommand(me, false));
         return true;
     }
@@ -111,15 +124,14 @@ public sealed class MusicianBot(BotPlayer bot) : IBotTrade
         bot.Custom.Add(PlaySession.Pack(index <= 7 ? index : index - 7, index > 7, on, note.Accidental > 0));
     }
 
-    /// <summary>The hands carrying the tune: F on each beat, a breath at each mark, F held through each long note.</summary>
+    /// <summary>The hands carrying the tune: F on each beat, the swell key held through each long note.</summary>
     private (bool, bool, int) Carry(PlaySession p)
     {
-        // A slip of temper: a breath forgotten now and then (the air runs low, and the mind with it).
-        var breathe = p.InGap && !(p.GapTaken && p.Breath >= 1f) && !(bot.Slip && p.Breaths % 7 == 3);
-        if (breathe != p.Breathing)
-            bot.Custom.Add(PlaySession.PackBreath(breathe));
-        var swell = p.LongAt >= 0 && p.RingingNote != null;
-        var tap = !p.BeatKept && !p.Held && p.StepsDone >= (int)MathF.Ceiling(p.Beat);
-        return (tap, swell, 0);
+        // A slip of temper: a long note now and then left unshaped (the mind on the beat alone).
+        var swell = p.LongAt >= 0 && p.RingingNote != null && !(bot.Slip && p.Flourishes % 5 == 3);
+        if (swell != p.SwellHeld)
+            bot.Custom.Add(PlaySession.PackSwell(swell));
+        var tap = !p.BeatKept && p.StepsDone >= (int)MathF.Ceiling(p.Beat);
+        return (tap, false, 0);
     }
 }

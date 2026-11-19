@@ -54,6 +54,17 @@ public static class Takings
             return;
         var item = Inventory.TakeFromPerson(sim, musician, hat, 1);
         s.Hat = sim.PlaceItemNear(item, sim.World.Get<Position>(musician).Cell, byHand: true);
+        // Theirs, set down on purpose: no labourer tidies it off to the barn (a playtest's hat went that way).
+        if (sim.World.IsAlive(s.Hat))
+            sim.World.Add(s.Hat, new SetDownBy { Who = musician });
+    }
+
+    /// <summary>Silver tossed by the hat: the musician's, left lying where it fell till they take it up.</summary>
+    private static void Claim(Simulation sim, Entity musician, Entity hat)
+    {
+        foreach (var coins in Tossed(sim, hat))
+            if (!sim.World.Has<SetDownBy>(coins))
+                sim.World.Add(coins, new SetDownBy { Who = musician });
     }
 
     /// <summary>The hat taken up again as the playing stops, and the silver by it into the musician's pack (if it's still where they left it).</summary>
@@ -66,7 +77,11 @@ public static class Takings
             || Sim.Maps.Map.Distance(w.Get<Thing>(hat).Cell, w.Get<Position>(musician).Cell) > HatReach)
             return; // taken, or left behind: theirs to go back for
         foreach (var coins in Tossed(sim, hat))
+        {
+            w.Remove<SetDownBy>(coins);
             Inventory.Stow(sim, musician, sim.TakeFromStack(coins, w.Get<Stack>(coins).Count));
+        }
+        w.Remove<SetDownBy>(hat);
         Inventory.Stow(sim, musician, sim.TakeFromStack(hat, 1));
     }
 
@@ -111,6 +126,7 @@ public static class Takings
         {
             w.Add(listener, new Tipped { Day = sim.Clock.Day });
             Landed(sim, musician, listener, paid);
+            Claim(sim, musician, hat);
         }
         return paid;
     }
@@ -139,7 +155,10 @@ public static class Takings
         var hat = HatOf(sim, musician, w.Get<Position>(listener).Cell);
         var paid = hat.IsNull ? 0 : Coin.PayDown(sim, listener, w.Get<Thing>(hat).Cell, ForTheirTune);
         if (paid > 0)
+        {
             Landed(sim, musician, listener, paid);
+            Claim(sim, musician, hat);
+        }
         return paid;
     }
 

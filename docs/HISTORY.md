@@ -2722,3 +2722,10 @@ From the user's playing on a Deck:
   pulse), and no pulse finer than half the usual gap is tried (`FinestShare`: against one that fine any jumble fits).
   A good hand at four notes a second now reads about 0.9, steady as a heartbeat (it read 0.6); a sloppy one about 0.8;
   a jumble about 0.35, ragged.
+- **No breath to mind** (from play): F taps every beat, long notes' too, and the swell key (Shift, LB) held through a
+  long note shapes it. Air isn't spent and breath marks ask nothing (the note before one still lifts early, as
+  phrasing). The breath input is the swell's now (`PlaySession.SwellBit`, `SwellHeld`), saved where it was.
+- **The hat stays put** (from play: the labourers carried it off to the barn): a thing set down on purpose is
+  `SetDownBy` its owner, and no job takes it (`Simulation.IsAvailable`, `AvailableItems`); the silver tossed by it too.
+- **F plays only an instrument in hand**, and never on furniture: on the shrine's pallet, F lay the musician down
+  only after it opened the music. The bot takes its pipe in hand (`HoldCommand`) and steps off any furniture first.

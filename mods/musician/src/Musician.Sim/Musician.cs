@@ -504,21 +504,24 @@ public sealed class PlaySession : WorkSession
     public float Beat;
     public bool BeatKept;
 
-    /// <summary>Air left, 0..1: it goes as the tune's played and comes back only while a breath's taken.</summary>
+    /// <summary>
+    /// Air left, 0..1. No longer spent (a Deck playtest: minding a breath and the beat at once was a chore); kept, full,
+    /// for saves and the breath marks' phrasing.
+    /// </summary>
     public float Breath = 1f;
 
-    /// <summary>A breath being taken (the breath key held).</summary>
-    public bool Breathing;
+    /// <summary>The swell key held (Shift; LB on a pad): a long note sounding is shaped while it is.</summary>
+    public bool SwellHeld;
 
-    /// <summary>The marked gap to breathe in, from and to (session steps), and whether this one's been taken.</summary>
+    /// <summary>Left from the breath (kept for saves): no gap is opened now.</summary>
     public float GapFrom = -1000, GapTo = -1000;
     public bool GapTaken;
 
     /// <summary>
-    /// Swelling the long note sounding: F, tapped on its beat, held down through it (while it rings; one before a
-    /// breath rings only its first half). How many steps of it have been swelled.
+    /// Swelling the long note sounding: the swell key held through it (while it rings; one before a breath mark rings
+    /// only its first half), F tapping the beat on through it. How many steps of it have been swelled.
     /// </summary>
-    public bool Swelling => Held && LongAt >= 0 && Ringing >= 0;
+    public bool Swelling => SwellHeld && LongAt >= 0 && Ringing >= 0;
     public int Swelled;
 
     /// <summary>The long note sounding, if one is: its index in the tune, and how many steps it lasts.</summary>
@@ -547,14 +550,8 @@ public sealed class PlaySession : WorkSession
     /// <summary>Beats at the start of a carried tune when a miss costs nothing: a bar to find the beat.</summary>
     public const int WarmUpBeats = 4;
 
-    /// <summary>Swelling a long note spends breath this much faster.</summary>
-    public const float SwellCost = 1.6f;
-
     /// <summary>What each thing done or missed gives or costs in concentration.</summary>
-    public const float BeatGain = 0.05f, BeatLoss = 0.07f, StrayLoss = 0.03f, BreathGain = 0.05f, MisplacedLoss = 0.05f, WindedLoss = 0.1f, ShapedGain = 0.06f;
-
-    /// <summary>A full breath lasts this many beats of playing, and comes back whole in this many steps of breathing.</summary>
-    public const float BreathBeats = 14f, RefillSteps = 24f;
+    public const float BeatGain = 0.05f, BeatLoss = 0.07f, StrayLoss = 0.03f, ShapedGain = 0.06f;
 
     /// <summary>A long note held swelled this share of its length is shaped.</summary>
     public const float ShapedShare = 0.7f;
@@ -567,8 +564,8 @@ public sealed class PlaySession : WorkSession
     /// </summary>
     public const int LeadInBreath = 24;
 
-    /// <summary>A <see cref="WorkInputKind.Custom"/> value's flag: a breath taken or let out, not a note.</summary>
-    public const int BreathBit = 1 << 7;
+    /// <summary>A <see cref="WorkInputKind.Custom"/> value's flag: the swell key down or up, not a note (it was the breath's).</summary>
+    public const int SwellBit = 1 << 7;
 
     public override Skill Skill => Skill.Social;
     public override float Xp => 0f;
@@ -577,8 +574,8 @@ public sealed class PlaySession : WorkSession
     public static int Pack(int degree, bool octaveUp, bool on, bool sharp = false, bool chord = false) =>
         (degree & 15) | (octaveUp ? 1 << 4 : 0) | (on ? 1 << 5 : 0) | (sharp ? 1 << 6 : 0) | (chord ? ChordBit : 0);
 
-    /// <summary>A breath taken (the key down) or let out (up), as a <see cref="WorkInputKind.Custom"/> value.</summary>
-    public static int PackBreath(bool taking) => BreathBit | (taking ? 1 : 0);
+    /// <summary>The swell key down or up, as a <see cref="WorkInputKind.Custom"/> value.</summary>
+    public static int PackSwell(bool held) => SwellBit | (held ? 1 : 0);
 
     /// <summary>Steps either side of a beat that still keep it: steadier with practised hands, never half a beat.</summary>
     public float Window => Carrying == null ? 0f : Math.Min(12f * Math.Max(0.75f, Hands.Tolerance), StepsPerBeat * 0.45f);
@@ -639,16 +636,8 @@ public sealed class PlaySession : WorkSession
             Ringing = -1;
         if (Bend != BendTo)
             Bend = BendTo > Bend ? Math.Min(BendTo, Bend + 1f / BendSteps) : Math.Max(BendTo, Bend - 1f / BendSteps);
-        if (Breathing)
-            Breath = Math.Min(1f, Breath + 1f / RefillSteps);
         if (Carrying == null)
             return;
-        if (Breathing && InGap && !GapTaken)
-        {
-            GapTaken = true;
-            Breaths++;
-            Judge(true, BreathGain, "a breath");
-        }
         if (Swelling)
             Swelled++;
         while (Carrying != null && StepsDone >= Due)
@@ -662,27 +651,17 @@ public sealed class PlaySession : WorkSession
             }
             var note = Carrying.Sequence[Next];
             var length = note.Beats * StepsPerBeat;
-            if (note.IsRest)
-                OpenGap(StepsDone, StepsDone + length);
-            else
+            if (!note.IsRest)
                 SoundCarried(note, length);
             Due += length;
             Next++;
         }
         if (Carrying == null)
             return;
-        if (!Breathing && Def.Air != null && Next > Carrying.CarriesFrom) // air goes once the hands are playing, not while they wait to begin
-            Breath = Math.Max(0f, Breath - (Swelling ? SwellCost : 1f) / (BreathBeats * StepsPerBeat));
         if (StepsDone > Beat + Window)
         {
-            if (!BeatKept && InLong)
-            {
-                if (Held)
-                    BeatsKept++; // held through: the long note's own beats, kept by the hold
-            }
-            // A beat in a breath's gap goes to the breath: one hand can't tap the beat while the other takes the air
-            // (a Deck playtest: missed beats at every mark, where the tune says breathe).
-            else if (!BeatKept && BeatsGone >= WarmUpBeats && !(Def.Air != null && Beat >= GapFrom && Beat <= GapTo))
+            // Every beat's kept by a tap, long notes' too (the swell key shapes those, a hand of its own).
+            if (!BeatKept && BeatsGone >= WarmUpBeats)
             {
                 BeatsMissed++;
                 Judge(false, BeatLoss, "a beat missed");
@@ -697,19 +676,7 @@ public sealed class PlaySession : WorkSession
     {
         var index = Math.Clamp(note.Step + Shift, 0, 14);
         var sounded = true;
-        if (Breathing && !InGap)
-        {
-            // A breath snatched mid-phrase: this note goes for it.
-            sounded = false;
-            BreathsMisplaced++;
-            Judge(false, MisplacedLoss, "a breath mid-phrase");
-        }
-        else if (Breath <= 0f)
-        {
-            sounded = false; // no air for it
-            Judge(false, WindedLoss, "out of breath");
-        }
-        else if (Silent(NoteEvent.At(StepsDone, index, note.Accidental)))
+        if (Silent(NoteEvent.At(StepsDone, index, note.Accidental)))
             sounded = false; // its string's snapped: the hands go on, the note doesn't come
         else
         {
@@ -730,20 +697,7 @@ public sealed class PlaySession : WorkSession
         }
         if (note.IsLong && sounded && Def.Sustains) // a long note that never sounded can't be shaped, nor a plucked one
             (LongAt, LongSteps, Swelled) = (Next, length, 0);
-        if (note.BreathAfter && Def.Air != null)
-            OpenGap(StepsDone, StepsDone + length + Window); // the whole note, into the next
     }
-
-    /// <summary>A gap to breathe in, from and to (session steps); one still open runs on (a rest right after a marked note).</summary>
-    private void OpenGap(float from, float to)
-    {
-        if (StepsDone > GapTo)
-            (GapFrom, GapTaken) = (from, false);
-        GapTo = Math.Max(GapTo, to);
-    }
-
-    /// <summary>The beat being judged falls inside the long note sounding (not on its first beat): held, not tapped.</summary>
-    private bool InLong => LongAt >= 0 && Beat > Due - LongSteps + Window;
 
     /// <summary>The steps of the long note sounding that can be swelled: as long as it rings.</summary>
     public float ShapeSteps => LongAt >= 0 && Carrying != null && Carrying.Sequence[LongAt].BreathAfter ? LongSteps * BeforeBreath : LongSteps * Legato;
@@ -804,7 +758,7 @@ public sealed class PlaySession : WorkSession
         {
             BeatKept = true;
             BeatsKept++;
-            Judge(true, Breath > 0f ? BeatGain : 0f, "on the beat"); // with no air, the beat alone won't hold a tune
+            Judge(true, BeatGain, "on the beat");
         }
         else
             Concentration = Math.Max(0.01f, Concentration - StrayLoss); // a stray tap jars, but never loses the tune by itself
@@ -817,9 +771,9 @@ public sealed class PlaySession : WorkSession
             BowAsked = true;
             return;
         }
-        if ((value & BreathBit) != 0)
+        if ((value & SwellBit) != 0)
         {
-            Breathing = (value & 1) != 0 && Def.Air != null;
+            SwellHeld = (value & 1) != 0 && Def.Sustains;
             return;
         }
         var degree = value & 15;
@@ -1009,7 +963,7 @@ public sealed class PlaySession : WorkSession
         w.Float(Beat);
         w.Bool(BeatKept);
         w.Float(Breath);
-        w.Bool(Breathing);
+        w.Bool(SwellHeld);
         w.Float(GapFrom);
         w.Float(GapTo);
         w.Bool(GapTaken);
@@ -1088,7 +1042,7 @@ public sealed class PlaySession : WorkSession
         Beat = r.Float();
         BeatKept = r.Bool();
         Breath = Math.Clamp(r.Float(), 0f, 1f);
-        Breathing = r.Bool();
+        SwellHeld = r.Bool();
         GapFrom = r.Float();
         GapTo = r.Float();
         GapTaken = r.Bool();
@@ -1165,6 +1119,13 @@ public sealed class MusicianModule : ITradeModule
             MusicianLessons.PutOut(sim, player);
     }
 
+    /// <summary>The instrument the character has in hand (what F plays), Entity.Null if their hands hold none.</summary>
+    public static Entity HeldInstrument(Simulation sim, Entity who) =>
+        sim.World.TryGet<Carrying>(who, out var carrying) && sim.World.IsAlive(carrying.Item)
+        && sim.Defs.ModDef<InstrumentDef>(InstrumentDef.Kind, sim.World.Get<Thing>(carrying.Item).Def.Name) != null
+            ? carrying.Item
+            : Entity.Null;
+
     /// <summary>The instrument the character has in hand, or else the first in their pack; Entity.Null if none.</summary>
     public static Entity InstrumentOf(Simulation sim, Entity who)
     {
@@ -1181,9 +1142,12 @@ public sealed class MusicianModule : ITradeModule
     /// <summary>F where you stand: with an instrument, play it; without one, and music in earshot, dance to it (anyone, any trade).</summary>
     public AvatarAction? EarlyActionAt(Simulation sim, Entity avatar, int3 cell, int3 here)
     {
-        if (cell != here || sim.World.Has<WorkSession>(avatar))
+        // Only where you stand with nothing else there to use: on a bed or by a station, F is that (a playtest: lying down
+        // on the shrine's pallet opened the music instead).
+        if (cell != here || sim.World.Has<WorkSession>(avatar) || !sim.Map.InBounds(cell) || !sim.Map.Structure[sim.Map.Idx(cell)].IsNull)
             return null;
-        if (InstrumentOf(sim, avatar) is { IsNull: false } instrument)
+        // An instrument in hand, taken out to play; one in the pack offers nothing.
+        if (HeldInstrument(sim, avatar) is { IsNull: false } instrument)
             return new AvatarAction(AvatarActionKind.Custom, $"Play the {sim.World.Get<Thing>(instrument).Label}", cell, instrument);
         return DanceSession.MusicHeard(sim, avatar) is { IsNull: false } musician
             ? new AvatarAction(AvatarActionKind.Custom, "Dance to the music", cell, musician)

@@ -846,6 +846,7 @@ internal static class ComponentCodecs
             w.String(l.Name);
         }, r => new Hospitality.LeftBy { Owner = r.Entity(), Name = r.String() }),
         Codec("Tucked", (w, t) => w.Entity(t.Item), r => new Hospitality.Tucked { Item = r.Entity() }),
+        Codec("SetDownBy", (w, d) => w.Entity(d.Who), r => new SetDownBy { Who = r.Entity() }),
         Codec("WalkIn", (w, k) => w.Entity(k.Bed), r => new Hospitality.WalkIn { Bed = r.Entity() }),
         Codec("OwedRoom", (w, k) =>
         {

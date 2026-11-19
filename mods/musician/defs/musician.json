@@ -8,26 +8,26 @@
       "description": "Music for the town: the pipe, the lute, the fiddle and the drum, for whoever will listen. Comes only if someone plays it.",
       // A dagger at the belt for the road and a raid (R draws it): instruments are no use against a blade.
       "kit": [ { "def": "Dagger" }, { "def": "Pipe" }, { "def": "Lute" }, { "def": "Fiddle" }, { "def": "HandDrum" }, { "def": "Hat" }, { "def": "Strings", "count": 4 } ],
-      "tutorialIntro": "You're the town's musician: a pipe, a lute, a fiddle and a hand drum in your pack, and no shop. Play where people gather (the inn of an evening, the square, a party setting out) and they'll come to listen, dance, and toss silver in your hat.",
+      "tutorialIntro": "You're the town's musician: a pipe, a lute, a fiddle and a hand drum in your pack, and no shop. Take one in hand and press F to play. Play where people gather (the inn of an evening, the square, a party setting out) and they'll come to listen, dance, and toss silver in your hat.",
       // ~@id~ names any action by its id (a mod's own as "musician:note1"), so the words follow the player's bindings.
       "lessons": [
         { "id": "scale", "title": "Play a scale", "core": true,
           "blurb": "Take out the pipe and play its eight notes, from the low D up to the high one.",
           "steps": [
-            { "id": "start", "text": "Press ~F~ to play the instrument in your hand, or the first in your pack: the tin pipe." },
+            { "id": "start", "text": "Take the tin pipe in hand (~1-4~, or from your pack with ~Tab~), then press ~F~ where you stand to play it." },
             { "id": "scale", "text": "Each note key plays a note of the scale: ~@musician:note1~ is the low D, up to ~@musician:note8~, the D above. Play all eight in order, low to high.",
               "more": "Hold a key and the note sounds till you let go. Hold ~@musician:octave~ with a key for the octave above, ~@musician:sharp~ for a semitone up, and ~AD~ bends the note sounding." } ],
           "notes": [ "This is free play: play anything you like, nobody's judging the notes, only whether it's steady.",
-                     "Take another instrument in hand (~Tab~) and ~F~ plays that one instead: the lute, the fiddle or the drum." ] },
+                     "Take another instrument in hand (~Tab~) and ~F~ plays that one instead: the lute, the fiddle or the drum. With empty hands, or on a bed or at a bench, ~F~ does what it always does." ] },
         { "id": "tune", "title": "Strike up a tune", "core": true,
           "blurb": "Play the first notes of a tune from your book, and your hands carry the rest while you keep time.",
           "steps": [
-            { "id": "start", "text": "Press ~F~ to take out the pipe." },
+            { "id": "start", "text": "Take the pipe in hand (~1-4~ or ~Tab~) and press ~F~ to play it." },
             { "id": "book", "text": "Press ~Space~ to open your book of tunes." },
             { "id": "opening", "text": "~WS~ picks a tune; its first notes are drawn for you. Play them on the note keys, from any note, and your hands take over.",
               "more": "Start after a moment's quiet, and keep the notes' shape: it's matched by the steps between them, so you can start on any key." },
-            { "id": "carry", "text": "Now keep the tune going: press ~F~ on each beat as the ring closes, and hold ~@musician:breathe~ for a breath at each mark. Hold ~F~ through a long note to shape it. Play it to the end.",
-              "more": "Miss beats, take a breath mid-phrase or run out of air, and your mind wanders: notes go missing, and in the end the tune slips away. ~AD~ nudges the pace if it runs away from you." } ],
+            { "id": "carry", "text": "Now keep the tune going: press ~F~ on each beat as the ring closes, long notes too. Hold ~@musician:swell~ through a long note to swell it. Play it to the end.",
+              "more": "Miss beats and your mind wanders: notes go missing, and in the end the tune slips away. A few beats kept bring it back. ~AD~ nudges the pace if it runs away from you." } ],
           "notes": [ "Each instrument's own tune comes first in its book: the pipe's jig, The Miller's Wheel; the lute's air, Lantern Home; the fiddle's reel, Hay in the Loft.",
                      "A lively, steady tune gets people dancing; a slow one, listening; a ragged or out-of-tune one drives them off." ] },
         { "id": "strings", "title": "Tune the lute", "core": true,
@@ -42,7 +42,7 @@
         { "id": "busk", "title": "Busking", "customers": "Trade",
           "blurb": "Play where people are, and your hat earns its keep.",
           "steps": [
-            { "id": "start", "text": "Go where people gather (the inn's common room is best) and press ~F~ to play. Your hat goes down at your feet." },
+            { "id": "start", "text": "Go where people gather (the inn's common room is best), an instrument in hand, and press ~F~ to play. Your hat goes down at your feet." },
             { "id": "tips", "text": "Play well and keep playing: those who listen a good while toss silver in your hat, more if they dance. When someone calls for a tune, play it for them.",
               "more": "~@musician:thank~ bows to whoever just tipped you. When you stop, your hat and what's in it come back up with you." } ],
           "notes": [ "Each listener tips once a day; adventurers tip the most.",
@@ -84,7 +84,8 @@
   // The musician mod's own kind (DefDatabase.ModDefs): how an instrument sounds and what it plays.
   "instruments": [
     // Whatever's in hand is played (F), or the first in the pack. "air": what a carried tune spends and is given back at
-    // its marks (Breath, Bow; none for plucked and struck); "sustains": a note lasts while held, and long notes swell;
+    // its marks (Breath, Bow; none for plucked and struck: no longer spent, kept for what the instrument is); "sustains":
+    // a note lasts while held, and a carried tune's long notes are swelled (the swell key held through them);
     // "bend": semitones A/D bend a note (a drum: W pressing its head).
     { "name": "Pipe", "label": "tin pipe", "voice": "Breath", "air": "Breath", "sustains": true, "bend": 1,
       // One root sample per octave (sounds/sounds.json), each pitched up to the scale's notes.
@@ -103,7 +104,7 @@
       "strings": [ { "name": "D", "semis": 0 }, { "name": "G", "semis": 5 }, { "name": "B", "semis": 9 }, { "name": "E", "semis": 14 }, { "name": "A", "semis": 19 } ],
       "octaves": [ "musician.lute.d4", "musician.lute.d5" ],
       "scale": [ 0, 2, 4, 5, 7, 9, 11, 12 ], "root": "D", "rootOctave": 4 },
-    // Bowed: a note sounds while it's held, slides with A/D; the bow runs out as the breath does, turned at the marks.
+    // Bowed: a note sounds while it's held, slides with A/D, and a carried tune's long notes swell under the bow.
     { "name": "Fiddle", "label": "fiddle", "voice": "Bowed", "air": "Bow", "sustains": true, "bend": 2,
       "strings": [ { "name": "G", "semis": -7 }, { "name": "D", "semis": 0 }, { "name": "A", "semis": 7 }, { "name": "E", "semis": 14 } ],
       "octaves": [ "musician.fiddle.d4", "musician.fiddle.d5" ],
@@ -124,7 +125,8 @@
   // "notes"; a longer one gives "parts" and the "form" they're played in. In the book, play a tune's call (the
   // first "opening" notes, 5 unless it says, of the part named "call", the first unless it says), from any step after a
   // pause, and the musician's hands play the tune: from the top, or from the call on if it's the first part
-  // while you keep the beat, the breath and the long notes (PlaySession): the openings must differ in shape.
+  // while you keep the beat and swell the long notes (PlaySession): the openings must differ in shape. A breath mark
+  // is phrasing now, nothing to mind: the note before it lifts early.
   "songs": [
     // Our own tunes, each written for an instrument ("for": it comes first in that one's book; any tune plays on any
     // instrument but the drum). About 40 to 50 seconds each: long enough to settle into, short enough for a round.

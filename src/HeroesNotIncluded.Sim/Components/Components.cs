@@ -1197,6 +1197,15 @@ public struct Position
     public static float3 CenterOf(int3 c) => new(c.X + 0.5f, c.Y + 0.5f, c.Z);
 }
 
+/// <summary>
+/// Put down here on purpose by someone, and still theirs (a musician's hat at their feet, the silver tossed by it): not
+/// stray stock, so no job hauls it off (<see cref="Simulation.IsAvailable(Entity)"/>). Whoever set it down takes it up.
+/// </summary>
+public struct SetDownBy
+{
+    public Entity Who;
+}
+
 /// <summary>Path following state.</summary>
 public sealed class Mover
 {

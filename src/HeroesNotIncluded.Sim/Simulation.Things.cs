@@ -506,7 +506,8 @@ public sealed partial class Simulation
         && (World.Get<Thing>(item).Spawned || (World.TryGet<Stored>(item, out var s) && !OnSomeone(s.In)))
         && !(World.Has<Tinkering.Key>(item) && Hospitality.InnRooms.IsRoomKey(this, item))
         && !World.Has<Hospitality.LeftBy>(item) // a guest's, for the keeper to see to
-        && !World.Has<Tinkering.TripSet>(item); // a trip-bell set across a road
+        && !World.Has<Tinkering.TripSet>(item) // a trip-bell set across a road
+        && !World.Has<SetDownBy>(item); // set down on purpose, still someone's (a musician's hat)
 
     /// <summary>
     /// <see cref="IsAvailable(Entity)"/> for one taker: also what's kept in the stock of a shop they
@@ -519,7 +520,7 @@ public sealed partial class Simulation
     public IEnumerable<Entity> AvailableItems()
     {
         foreach (var e in World.Query<Stack>())
-            if ((World.Get<Thing>(e).Spawned || (World.TryGet<Stored>(e, out var s) && !OnSomeone(s.In))) && !World.Has<Shops.ForSale>(e))
+            if ((World.Get<Thing>(e).Spawned || (World.TryGet<Stored>(e, out var s) && !OnSomeone(s.In))) && !World.Has<Shops.ForSale>(e) && !World.Has<SetDownBy>(e))
                 yield return e;
     }
 
@@ -527,7 +528,7 @@ public sealed partial class Simulation
     public IEnumerable<Entity> AvailableItems(Entity taker)
     {
         foreach (var e in World.Query<Stack>())
-            if (!World.Has<Shops.ForSale>(e) && (World.Get<Thing>(e).Spawned
+            if (!World.Has<Shops.ForSale>(e) && !World.Has<SetDownBy>(e) && (World.Get<Thing>(e).Spawned
                 || (World.TryGet<Stored>(e, out var s) && (!OnSomeone(s.In) || KeptFor(s.In, taker)))))
                 yield return e;
     }

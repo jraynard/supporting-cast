@@ -19,7 +19,7 @@ public sealed class MusicianGame : IGameMod
     /// <summary>The note keys' controls, the scale's first degree first.</summary>
     private static string[] _notes = [];
 
-    private static string _octave = "", _sharp = "", _breathe = "", _chord = "", _thank = "";
+    private static string _octave = "", _sharp = "", _swell = "", _chord = "", _thank = "";
 
     public void Register(GameRegistry r)
     {
@@ -31,7 +31,7 @@ public sealed class MusicianGame : IGameMod
         // Not Ctrl: Ctrl with a number is the game's speed.
         _sharp = r.Control("sharp", "A semitone up", [Binding.Key(GlfwKey.LeftAlt)], [Binding.Pad(PadButton.RT)], "Music");
         // Live only while the hands carry a tune (the note keys aren't), so it may share a key with the octave.
-        _breathe = r.Control("breathe", "Take a breath or turn the bow (hold), while your hands carry a tune", [Binding.Key(GlfwKey.LeftShift)], [Binding.Pad(PadButton.LB)], "Music: a tune");
+        _swell = r.Control("swell", "Swell a long note (hold), while your hands carry a tune", [Binding.Key(GlfwKey.LeftShift)], [Binding.Pad(PadButton.LB)], "Music: a tune");
         // Only on an instrument of chords (the lute), so it may share a pad button with the semitone.
         _chord = r.Control("chord", "Hold a chord (with a note key); F strums it", [Binding.Key(GlfwKey.Q)], [Binding.Pad(PadButton.RT)], "Music: chords");
         // Not 9: that's the hands-on work's ninth rune.
@@ -50,12 +50,12 @@ public sealed class MusicianGame : IGameMod
     {
         if (view.Pressed(_thank))
             yield return PlaySession.BowBit; // a bow, playing on: to whoever just tipped, or to the crowd
-        if (s.Def.Air != null)
+        if (s.Def.Sustains)
         {
-            if (view.Pressed(_breathe))
-                yield return PlaySession.PackBreath(true);
-            else if (view.Released(_breathe))
-                yield return PlaySession.PackBreath(false);
+            if (view.Pressed(_swell))
+                yield return PlaySession.PackSwell(true);
+            else if (view.Released(_swell))
+                yield return PlaySession.PackSwell(false);
         }
         if (s.Carrying != null)
             yield break; // the hands have the notes
@@ -82,11 +82,6 @@ public sealed class MusicianGame : IGameMod
     private static int KeyCount(PlaySession s) => s.Def.IsDrum ? Math.Min(s.Def.Strokes.Count, _notes.Length) : _notes.Length;
 
     private static string KeysOf(PlaySession s) => $"{WorkView.Glyph(_notes[0])}-{WorkView.Glyph(_notes[KeyCount(s) - 1])}";
-
-    /// <summary>What taking the instrument's air back is called: a breath, or the bow turned.</summary>
-    private static (string Take, string Taking) AirWords(PlaySession s) => s.Def.Air == "Bow"
-        ? ("Turn the bow!", "Turning the bow...")
-        : ("Breathe in!", "Breathing in...");
 
     private static readonly string[] Ordinals = ["first", "second", "third", "fourth", "fifth", "sixth"];
 
@@ -470,9 +465,9 @@ public sealed class MusicianGame : IGameMod
 
     private static void DrawCarried(WorkView view, PlaySession s, SongDef tune)
     {
-        List<(string, string)> hints = [(WorkView.Glyph(Act.Use), s.Def.Sustains ? "tap the beat; hold through a long note" : "tap the beat")];
-        if (s.Def.Air != null)
-            hints.Add((WorkView.Glyph(_breathe), s.Def.Air == "Bow" ? "hold: turn the bow" : "hold: breathe in"));
+        List<(string, string)> hints = [(WorkView.Glyph(Act.Use), "tap the beat")];
+        if (s.Def.Sustains)
+            hints.Add((WorkView.Glyph(_swell), "hold through a long note: swell it"));
         hints.Add((Controls.Pair(Act.WalkLeft, Act.WalkRight), "slower, faster"));
         hints.Add((WorkView.Glyph(Act.WorkAct), "let it go, back to free play"));
         hints.Add((WorkView.Glyph(Act.Back), "put it away"));
@@ -480,14 +475,13 @@ public sealed class MusicianGame : IGameMod
         var (part, time) = tune.SectionAt(s.Section);
         var round = tune.Form.Count > 1 ? $": the {part.ToLowerInvariant()}{(time > 1 ? $", the {Ordinals[Math.Min(time, Ordinals.Length) - 1]} time" : "")}" : "";
         ImGuiText.Colored(Theme.Good, $"Your hands take over: {tune.Label}{round}.");
-        ImGuiText.Colored(Theme.Dim, s.Def.Air == "Bow" ? "They find the notes. You keep the beat and the bow."
-            : s.Def.Air != null ? "They find the notes. You keep the beat and your breath." : "They find the notes. You keep the beat.");
+        ImGuiText.Colored(Theme.Dim, s.Def.Sustains ? "They find the notes. You keep the beat, and swell the long notes." : "They find the notes. You keep the beat.");
         var done = Math.Clamp((s.Next - tune.CarriesFrom) / (float)Math.Max(1, tune.Sequence.Count - tune.CarriesFrom), 0f, 1f);
         ImGui.ProgressBar(done, new float2(Gui.S(LaneWidth), Gui.S(6)), ""u8);
         ImGui.Dummy(new float2(1, Gui.S(4)));
         var top = ImGui.GetCursorScreenPos();
         DrawFoot(s, top, new float2(Gui.S(150), Gui.S(124)));
-        DrawBreath(s, tune, top + new float2(Gui.S(162), 0), new float2(Gui.S(LaneWidth - 162), Gui.S(124)));
+        DrawSwell(s, tune, top + new float2(Gui.S(162), 0), new float2(Gui.S(LaneWidth - 162), Gui.S(124)));
         ImGui.Dummy(new float2(Gui.S(LaneWidth), Gui.S(128)));
         DrawLane(s, tune);
         var mind = s.Concentration;
@@ -555,37 +549,15 @@ public sealed class MusicianGame : IGameMod
     }
 
     /// <summary>
-    /// The breath: a gauge of the air left, and what it's wanted for now: breathe in (a gap's open), breathing,
-    /// swell (a long note's sounding, which spends it faster), or what's coming, and in how many beats.
+    /// The long notes: the one sounding, to swell (the swell key held), its shaping filling as it's held; or, with none
+    /// sounding, the next one coming, and in how many beats.
     /// </summary>
-    private static void DrawBreath(PlaySession s, SongDef tune, float2 min, float2 size)
+    private static void DrawSwell(PlaySession s, SongDef tune, float2 min, float2 size)
     {
         var dl = ImGui.GetWindowDrawList();
         var max = min + size;
-        if (s.Def.Air == null)
-        {
-            // Nothing to spend: only the beat to keep.
-            dl.AddRectFilled(in min, in max, Theme.U8(Theme.Inset), Gui.S(6), ImDrawFlags.None);
-            var at = min + new float2(Gui.S(12), Gui.S(12));
-            dl.AddText(in at, Theme.U8(Theme.Dim), s.Def.Sustains ? "Play on." : "Each note rings of itself:");
-            at.Y += ImGui.GetTextLineHeightWithSpacing();
-            if (!s.Def.Sustains)
-                dl.AddText(in at, Theme.U8(Theme.Dim), "just keep the beat."u8);
-            return;
-        }
-        var (take, taking) = AirWords(s);
-        var open = s.InGap && !s.GapTaken;
-        dl.AddRectFilled(in min, in max, Theme.U8(open ? Theme.Water : Theme.Inset, open ? 0.25f : 1f), Gui.S(6), ImDrawFlags.None);
-        // The gauge.
-        var g0 = min + new float2(Gui.S(12), Gui.S(10));
-        var g1 = new float2(g0.X + Gui.S(22), max.Y - Gui.S(10));
-        dl.AddRectFilled(in g0, in g1, Theme.U8(Theme.Cellar), Gui.S(8), ImDrawFlags.None);
-        var fill = new float2(g0.X, g1.Y - (g1.Y - g0.Y) * Math.Clamp(s.Breath, 0f, 1f));
-        var air = s.Breath < 0.2f ? Theme.Bad : s.Breathing ? Theme.Water : Theme.Parchment;
-        dl.AddRectFilled(in fill, in g1, Theme.U8(air), Gui.S(8), ImDrawFlags.None);
-        dl.AddRect(in g0, in g1, Theme.U8(Theme.OakLight), Gui.S(8), ImDrawFlags.None, Gui.S(1));
-        // What it's wanted for.
-        var x = g1.X + Gui.S(14);
+        dl.AddRectFilled(in min, in max, Theme.U8(Theme.Inset), Gui.S(6), ImDrawFlags.None);
+        var x = min.X + Gui.S(12);
         var y = min.Y + Gui.S(12);
         void Line(string text, float4 colour)
         {
@@ -593,61 +565,45 @@ public sealed class MusicianGame : IGameMod
             dl.AddText(in at, Theme.U8(colour), text);
             y += ImGui.GetTextLineHeightWithSpacing();
         }
-        var breathe = WorkView.Glyph(_breathe);
-        var swell = WorkView.Glyph(Act.Use);
-        if (s.Breathing && !s.InGap)
-            Line("Not here! Mid-phrase.", Theme.Bad);
-        else if (s.Breathing)
-            Line(taking, Theme.Water);
-        else if (open)
+        if (!s.Def.Sustains)
         {
-            Line(take, Theme.Water);
-            Line($"hold {breathe}", Theme.Parchment);
+            Line("Each note rings of itself:", Theme.Dim);
+            Line("just keep the beat.", Theme.Dim);
+            return;
         }
         if (s.LongAt >= 0)
         {
             Line(s.Swelling ? "Swelling it..." : "A long note: swell it!", Theme.Accent);
             if (!s.Swelling)
-                Line($"hold {swell}", Theme.Parchment);
+                Line($"hold {WorkView.Glyph(_swell)}, and keep tapping", Theme.Parchment);
             var shaped = s.Shaping;
             var b0 = new float2(x, y + Gui.S(2));
             var b1 = new float2(max.X - Gui.S(12), y + Gui.S(10));
             var b2 = new float2(b0.X + (b1.X - b0.X) * shaped, b1.Y);
             dl.AddRectFilled(in b0, in b1, Theme.U8(Theme.Cellar), Gui.S(3), ImDrawFlags.None);
             dl.AddRectFilled(in b0, in b2, Theme.U8(shaped >= 1f ? Theme.Good : Theme.Accent), Gui.S(3), ImDrawFlags.None);
-            y += Gui.S(14);
+            return;
         }
-        if (!s.Breathing && !open && s.LongAt < 0)
-        {
-            // Nothing wanted now: what's coming.
-            var (breathIn, longIn) = Coming(s, tune);
-            var low = s.Def.Air == "Bow" ? "Running out of bow!" : "Running out of air!";
-            Line(s.Breath < 0.25f ? low : "Play on.", s.Breath < 0.25f ? Theme.Bad : Theme.Dim);
-            if (breathIn is { } b && b <= 4f)
-                Line($"{(s.Def.Air == "Bow" ? "A bow turn" : "A breath")} in {Math.Max(1, (int)MathF.Ceiling(b))}...", Theme.Water);
-            if (longIn is { } l && l <= 4f)
-                Line($"A long note in {Math.Max(1, (int)MathF.Ceiling(l))}...", Theme.Accent);
-        }
+        Line("Play on.", Theme.Dim);
+        if (NextLong(s, tune) is { } l && l <= 4f)
+            Line($"A long note in {Math.Max(1, (int)MathF.Ceiling(l))}...", Theme.Accent);
     }
 
-    /// <summary>Beats until the next gap to breathe in opens, and the next long note starts (null: none soon).</summary>
-    private static (float? Breath, float? Long) Coming(PlaySession s, SongDef tune)
+    /// <summary>Beats until the next long note starts (null: none in the next few bars).</summary>
+    private static float? NextLong(PlaySession s, SongDef tune)
     {
-        float? breath = null, longNote = null;
         var due = s.Due;
-        for (var i = s.Next; i < tune.Sequence.Count && (breath == null || longNote == null); i++)
+        for (var i = s.Next; i < tune.Sequence.Count; i++)
         {
             var note = tune.Sequence[i];
             var beats = (due - s.StepsDone) / s.StepsPerBeat;
             if (beats > 8f)
                 break;
-            if (breath == null && (note.BreathAfter || note.IsRest))
-                breath = beats;
-            if (longNote == null && note.IsLong)
-                longNote = beats;
+            if (note.IsLong)
+                return beats;
             due += note.Beats * s.StepsPerBeat;
         }
-        return (breath, longNote);
+        return null;
     }
 
     private const float LaneWidth = 380;
@@ -671,8 +627,7 @@ public sealed class MusicianGame : IGameMod
 
     /// <summary>
     /// The coming notes on a lane, sliding toward the line where they sound, a tick on every beat (F as it crosses
-    /// keeps the beat), a breath mark over each gap to breathe in, and a swell drawn on each long note (F held
-    /// through it shapes it). The line flashes as something's kept or missed.
+    /// keeps the beat, long notes' too), and a swell drawn on each long note (the swell key held through it shapes it). The line flashes as something's kept or missed.
     /// </summary>
     private static void DrawLane(PlaySession s, SongDef tune)
     {
@@ -687,13 +642,6 @@ public sealed class MusicianGame : IGameMod
         var bottom = min + new float2(width, h + Gui.S(10));
         dl.AddRectFilled(in min, in bottom, Theme.U8(Theme.Inset), Gui.S(4), ImDrawFlags.None);
         float X(float step) => line + (step - s.StepsDone) / perBeat * beatPx;
-        // The gap open now, lit while it lasts.
-        if (s.InGap)
-        {
-            var g0 = new float2(Math.Max(min.X, X(s.GapFrom)), min.Y);
-            var g1 = new float2(Math.Min(right, X(s.GapTo)), min.Y + h + Gui.S(10));
-            dl.AddRectFilled(in g0, in g1, Theme.U8(Theme.Water, s.GapTaken ? 0.15f : 0.35f), 0f, ImDrawFlags.None);
-        }
         // The beats.
         for (var k = -1; k < 8; k++)
         {
@@ -721,8 +669,6 @@ public sealed class MusicianGame : IGameMod
                 break;
             var end = due + note.Beats * perBeat;
             due = end;
-            if (note.BreathAfter || note.IsRest)
-                BreathMark(dl, note.IsRest ? X(end - note.Beats * perBeat * 0.5f) : X(end), min.Y, right);
             if (note.IsRest)
                 continue;
             DrawNote(dl, note, s.Shift, x0, Math.Min(X(end) - Gui.S(3), right), min.Y, h, 0f, false);
@@ -766,18 +712,6 @@ public sealed class MusicianGame : IGameMod
             var q2 = new float2(q1.X, foot);
             dl.AddTriangleFilled(in p0, in q1, in q2, Theme.U8(swelling ? Theme.Good : Theme.Accent));
         }
-    }
-
-    /// <summary>A breath mark over the lane (a comma, as on a sheet of music): breathe here.</summary>
-    private static void BreathMark(ImDrawListPtr dl, float x, float top, float right)
-    {
-        if (x > right - Gui.S(4))
-            return;
-        var c = new float2(x, top - Gui.S(7));
-        dl.AddCircleFilled(in c, Gui.S(3.5f), Theme.U8(Theme.Water), 12);
-        var t0 = new float2(x + Gui.S(3), top - Gui.S(7));
-        var t1 = new float2(x - Gui.S(1), top - Gui.S(1));
-        dl.AddLine(in t0, in t1, Theme.U8(Theme.Water), Gui.S(2));
     }
 
     /// <summary>The note keys, lit as their notes sound, each named by the note it plays now (the octave and semitone keys held or not).</summary>
