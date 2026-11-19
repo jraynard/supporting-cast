@@ -453,6 +453,8 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
             Players.TakeOnLook(sim, body, seat.Name, seat.Look, seat.Clothes);
             Assign(sim, body, trade);
             PlaceAtWork(sim, body, trade);
+            if (trade?.ArrivesByRoad is { } line)
+                Players.ArriveByRoad(sim, body, line);
         }
 
         var open = sim.Defs.AllTrades.Where(t => !t.Unlimited && !t.PlayerOnly && InTown(sim, t) && !dealt.Exists(d => d.Trade == t)).ToList();
@@ -514,6 +516,8 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
                     Players.TakeOnLook(sim, body, name, look, clothes);
                 Assign(sim, body, want);
                 PlaceAtWork(sim, body, want);
+                if (want.ArrivesByRoad is { } line)
+                    Players.ArriveByRoad(sim, body, line);
                 break;
             }
             body = free.FirstOrDefault(e => Held(e) == want, Entity.Null);

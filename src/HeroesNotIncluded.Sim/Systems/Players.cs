@@ -212,6 +212,30 @@ public static class Players
         return me;
     }
 
+    /// <summary>How far down the road from town someone arriving by it starts, in cells of the walk.</summary>
+    public const int RoadCells = 30;
+
+    /// <summary>
+    /// Someone comes to town by the road (<see cref="Defs.TradeDef.ArrivesByRoad"/>): set a little way down the way a party
+    /// would come in (the first map edge with a road in, no dice rolled), walking into the square, and the town told with
+    /// <paramref name="line"/>. Left where they are if there's no way in.
+    /// </summary>
+    public static void ArriveByRoad(Simulation sim, Entity who, string line)
+    {
+        var w = sim.World;
+        var town = Home(sim);
+        int3? edge = null;
+        for (var side = 0; side < 4 && edge == null; side++)
+            edge = Combat.Raids.EdgeEntry(sim, side, town);
+        if (edge is not { } from || Ai.Navigation.PlanRoute(sim, who, from, town, PathEnd.Touch) is not { Count: > 0 } route)
+            return;
+        var start = route[Math.Max(0, route.Count - RoadCells)];
+        w.Get<Position>(who).Cell = start;
+        w.Get<Position>(who).Pos = Position.CenterOf(start);
+        new Core.AvatarGoToCommand(who, town).Apply(sim);
+        sim.Messages.Add(MessageKind.Good, line.Replace("{name}", w.Get<Creature>(who).Name), start);
+    }
+
     /// <summary>A young villager at <see cref="Home"/>, not yet anyone's.</summary>
     internal static Entity SpawnNewcomer(Simulation sim, string name)
     {

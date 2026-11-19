@@ -2711,3 +2711,6 @@ From the user's playing on a Deck:
 - **The musician carries a dagger** (its kit): something to defend themselves with in a raid, R to draw it.
 - **The tutorial lists the musician** (and every trade with a core chapter, not only those with a workplace); the
   basics skip the shop step, as they skip the workplace, for a trade with neither.
+- **The musician comes wandering in from the road** (`TradeDef.ArrivesByRoad`, a line of its own; `Players.ArriveByRoad`):
+  set 30 cells down the way a party would come in and walking into the square, at the deal and for a late joiner. And
+  it's an easygoing trade on the pickers.

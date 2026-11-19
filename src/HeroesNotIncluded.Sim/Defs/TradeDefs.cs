@@ -32,6 +32,13 @@ public sealed class TradeDef : Def
     public bool PlayerOnly { get; set; }
 
     /// <summary>
+    /// A trade that comes to town by the road, said with this line as it does (<c>{name}</c> for who): its character starts
+    /// a little way down the road a party would come in by and walks into the square (<see cref="Systems.Players.ArriveByRoad"/>).
+    /// Null: they're simply there.
+    /// </summary>
+    public string? ArrivesByRoad { get; set; }
+
+    /// <summary>
     /// How busy the trade keeps its holder, shown where a trade is chosen: some players want a trade
     /// they can take at their own pace, and should be able to find it. Presentation only.
     /// </summary>

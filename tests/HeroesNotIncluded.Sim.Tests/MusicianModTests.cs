@@ -231,6 +231,23 @@ public class MusicianModTests
     });
 
     [Fact]
+    public void TheMusicianComesWanderingInFromTheRoad() => WithMusician(() =>
+    {
+        var sim = Round(MusicianDefs(), (Arin, "Musician"));
+        var me = Players.CharacterOf(sim, Arin);
+        Assert.Equal(TradePace.Easygoing, sim.Defs.Trade("Musician").Pace);
+        var town = Players.Home(sim);
+        float Away() => HeroesNotIncluded.Sim.Maps.Map.Distance(sim.World.Get<Position>(me).Cell, town);
+        var from = Away();
+        Assert.True(from >= 6, $"down the road, {from} cells out");
+        Assert.Contains(sim.Messages.Messages, m => m.Text.Contains("comes wandering in from the road"));
+        for (var t = 0; t < SimClock.TicksPerSecond * 20; t++)
+            sim.Tick();
+        Assert.True(Away() < from - 3, "walking into town");
+        return 0;
+    });
+
+    [Fact]
     public void AMusicianWhosePlayerLeftStopsPlayingAndKeepsTheInstrument() => WithMusician(() =>
     {
         var sim = Round(MusicianDefs(), (Arin, "Musician"));
