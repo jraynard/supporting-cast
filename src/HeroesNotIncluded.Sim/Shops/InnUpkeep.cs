@@ -363,6 +363,9 @@ public sealed class CleanJob(int3 cell) : Job
         var from = w.Get<Position>(pawn).Cell;
         int3? best = null;
         var bestDist = int.MaxValue;
+        var bestIndex = int.MaxValue;
+        // The spots are a dictionary, whose order a load needn't keep: ties go to the lower cell index, so the
+        // spot chosen never hangs on it (a loaded game, or a joiner's, picks the same one).
         foreach (var i in sim.Mess.All.Keys)
         {
             var c = sim.Map.CellOf(i);
@@ -370,8 +373,8 @@ public sealed class CleanJob(int3 cell) : Job
             if (Map.Distance(c, anchor) > InnReach || sim.Reservations.IsTileReservedByOther(c, pawn) || !Mine(sim, trade.Def, inn, c))
                 continue;
             var d = Map.Distance(from, c);
-            if (d < bestDist && Navigation.CanReach(sim, pawn, from, c, PathEnd.Touch))
-                (best, bestDist) = (c, d);
+            if ((d < bestDist || (d == bestDist && i < bestIndex)) && Navigation.CanReach(sim, pawn, from, c, PathEnd.Touch))
+                (best, bestDist, bestIndex) = (c, d, i);
         }
         return best is { } at ? new CleanJob(at) : null;
     }

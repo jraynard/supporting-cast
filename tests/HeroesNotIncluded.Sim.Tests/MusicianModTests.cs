@@ -24,7 +24,7 @@ public class MusicianModTests
     {
         try
         {
-            SimContent.Use([.. TestContent.Standard, ("musician", typeof(MusicianMod).Assembly)]);
+            SimContent.Use(TestContent.Standard); // on by default now: the standard content has it
             return test();
         }
         finally
@@ -74,6 +74,24 @@ public class MusicianModTests
         Assert.False(MusicianModule.InstrumentOf(with, musician).IsNull, "the kit's pipe");
         // A newcomer: every villager the round would have had is still there, doing their trade.
         Assert.Equal(without.Creatures().Count(e => with.World.Has<Trade>(e)) + 1, with.Creatures().Count(e => with.World.Has<Trade>(e)));
+        return 0;
+    });
+
+    [Fact]
+    public void AMusicianWhosePlayerLeftStopsPlayingAndKeepsTheInstrument() => WithMusician(() =>
+    {
+        var sim = Round(MusicianDefs(), (Arin, "Musician"));
+        var me = Players.CharacterOf(sim, Arin);
+        var pipe = MusicianModule.InstrumentOf(sim, me);
+        WorkSystem.Start(sim, me, new PlaySession { Instrument = pipe, InstrumentName = "Pipe" });
+        Players.Leave(sim, Arin);
+        for (var t = 0; t < 60 * 60; t++)
+            sim.Tick();
+        Assert.True(sim.World.IsAlive(me));
+        Assert.False(sim.World.TryGet<WorkSession>(me, out var s) && s is PlaySession, "no AI performs: it has nobody to play it");
+        Assert.Equal(pipe, MusicianModule.InstrumentOf(sim, me));
+        // Nobody stands about for music that stopped.
+        Assert.DoesNotContain(sim.Creatures(), e => sim.World.TryGet<Mind>(e, out var m) && m.Job is AudienceJob);
         return 0;
     });
 

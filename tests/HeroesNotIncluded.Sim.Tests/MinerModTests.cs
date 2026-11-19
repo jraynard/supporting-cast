@@ -25,7 +25,7 @@ public class MinerModTests
     {
         try
         {
-            SimContent.Use([.. TestContent.Standard, ("miner", typeof(MinerMod).Assembly)]);
+            SimContent.Use(TestContent.Standard); // on by default now: the standard content has it
             return test();
         }
         finally
@@ -84,8 +84,90 @@ public class MinerModTests
         var shed = ShopSystem.WorkplaceOf(sim, defs.Trade("Miner"));
         Assert.False(shed.IsNull, "the shed's plot is filled with the mod on");
         // Without the mod the plot's left empty, and the round goes on as it would.
-        var plain = Round(TestWorld.LoadDefs(), (Bea, "Blacksmith"));
+        var plain = Round(DefDatabase.LoadDirectories([.. TestWorld.DefDirectories().Where(d => !d.Contains(Path.Combine("mods", "miner")))]), (Bea, "Blacksmith"));
         Assert.DoesNotContain(plain.World.Query<PresetBuilding>(), e => plain.World.Get<PresetBuilding>(e).Def.Name == "MineShed");
+        return 0;
+    });
+
+    [Fact]
+    public void ALateJoinerCanComeToTownAsTheMinerOnceOnly() => WithMiner(() =>
+    {
+        var sim = Round(MinerDefs(), (Arin, "Blacksmith"));
+        var w = sim.World;
+        var villagers = sim.Creatures().Count();
+        var miner = sim.Defs.Trade("Miner");
+
+        sim.ApplyNow(new TakeTradeCommand(Bea, [miner], [], "Bea", default, null));
+
+        var bea = Players.CharacterOf(sim, Bea);
+        Assert.Equal(miner, w.Get<Trade>(bea).Def);
+        Assert.Equal("Bea", w.Get<Creature>(bea).Name);
+        Assert.Equal(villagers + 1, sim.Creatures().Count()); // a newcomer: no villager was taken over
+        Assert.True(Crafting.ToolSpeed(sim, bea, "Pick") > 0f, "the kit's pick");
+
+        // A third asking for it gets the closest thing going, not a second miner.
+        var cy = new Guid("00000000-0000-0000-0000-00000000000c");
+        sim.ApplyNow(new TakeTradeCommand(cy, [miner], []));
+        Assert.NotEqual(miner, w.Get<Trade>(Players.CharacterOf(sim, cy)).Def);
+        return 0;
+    });
+
+    [Fact]
+    public void TheLessonGoesIntoTheMineHewsAFaceAndFillsTheShedsChest() => WithMiner(() =>
+    {
+        var (sim, me) = Miner();
+        sim.Round.Practice = true;
+        var trade = sim.Defs.Trade("Miner");
+        var lesson = trade.Lessons.Single(l => l.Core);
+        var run = new HeroesNotIncluded.Sim.Scenarios.Lessons.LessonRun(sim, me, trade, lesson);
+        HeroesNotIncluded.Sim.Scenarios.Lessons.LessonStage Stage() => HeroesNotIncluded.Sim.Scenarios.Lessons.Lessons.Stage(sim, me, run);
+
+        var first = Stage();
+        Assert.Equal("mine", first.Step);
+        Assert.Equal(ShopSystem.WorkplaceOf(sim, trade), first.Point);
+
+        HewDrill.Stage(sim, me); // stood in the tunnels at a face, the hewing begun
+        Assert.Equal("hew", Stage().Step);
+        sim.World.Remove<WorkSession>(me);
+        Assert.Equal("face", Stage().Step);
+
+        var stone = sim.CreateItem(sim.Defs.Thing("Stone"), 2);
+        Inventory.Stow(sim, me, stone);
+        var chest = run.Station(sim, "Chest");
+        Assert.Equal(("carry", chest), (Stage().Step, Stage().Point));
+        Assert.True(sim.Store(chest, sim.CreateItem(sim.Defs.Thing("Stone"), 2)).IsNull);
+        Assert.True(Stage().Done);
+        return 0;
+    });
+
+    [Fact]
+    public void ThereIsNoMinerInATownWithoutAMine() => WithMiner(() =>
+    {
+        var sim = VillageRound.NewSimulation(MinerDefs(), 1234, "Reedmere");
+        sim.Presets.PresetMode = true;
+        VillageRound.Setup(sim, "Reedmere");
+        sim.Round.OpenLobby();
+        sim.ApplyNow(new JoinLobbyCommand(Arin, "Arin", default));
+        sim.ApplyNow(new SetTradePreferencesCommand(Arin, [sim.Defs.Trade("Miner")], []));
+        sim.ApplyNow(new StartRoundCommand());
+        Assert.False(RoundSystem.InTown(sim, sim.Defs.Trade("Miner")));
+        Assert.NotEqual("Miner", sim.World.Get<Trade>(Players.CharacterOf(sim, Arin)).Def.Name);
+        sim.ApplyNow(new TakeTradeCommand(Bea, [sim.Defs.Trade("Miner")], []));
+        Assert.NotEqual("Miner", sim.World.Get<Trade>(Players.CharacterOf(sim, Bea)).Def.Name);
+        return 0;
+    });
+
+    [Fact]
+    public void AMinerWhosePlayerLeftKeepsTheTradeAndThePick() => WithMiner(() =>
+    {
+        var (sim, me) = Miner();
+        Players.Leave(sim, Arin);
+        for (var t = 0; t < 60 * 30; t++)
+            sim.Tick();
+        Assert.True(sim.World.IsAlive(me));
+        Assert.Equal("Miner", sim.World.Get<Trade>(me).Def.Name);
+        Assert.True(Crafting.ToolSpeed(sim, me, "Pick") > 0f);
+        Assert.False(RoundSystem.MayGather(sim, me));
         return 0;
     });
 

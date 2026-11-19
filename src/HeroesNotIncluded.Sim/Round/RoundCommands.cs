@@ -58,11 +58,16 @@ public sealed record SetRoundOptionsCommand(bool FriendlyFire, bool Traitors) : 
     public void Apply(Simulation sim) => sim.Round.SetOptions(new RoundOptions(FriendlyFire, Traitors));
 }
 
-/// <summary>A player arriving mid-round takes over an AI villager (not one whose character died: they're a ghost).</summary>
-public sealed record TakeTradeCommand(Guid Player, IReadOnlyList<TradeDef> Wanted, IReadOnlyList<TradeDef> Never)
+/// <summary>
+/// A player arriving mid-round takes over an AI villager (not one whose character died: they're a ghost). The name
+/// and look are theirs only if they come to town as a newcomer, for a trade only players take: a villager taken over
+/// keeps its own face, so the town sees nothing change.
+/// </summary>
+public sealed record TakeTradeCommand(Guid Player, IReadOnlyList<TradeDef> Wanted, IReadOnlyList<TradeDef> Never,
+    string? Name = null, Appearance? Look = null, IReadOnlyList<string>? Clothes = null)
     : ISimCommand, IPlayerCommand
 {
     public Guid? Owner => Player;
 
-    public void Apply(Simulation sim) => sim.Round.TakeTrade(sim, Player, Wanted, Never);
+    public void Apply(Simulation sim) => sim.Round.TakeTrade(sim, Player, Wanted, Never, Name, Look, Clothes);
 }

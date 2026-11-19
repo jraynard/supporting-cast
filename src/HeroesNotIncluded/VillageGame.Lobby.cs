@@ -127,8 +127,11 @@ public sealed partial class VillageGame
         }
         if (session.Players.Count <= 1)
             TextC(Theme.Parchment, "Nobody's here yet. Suspicious.");
-        // The labourer isn't offered (it has no game of its own yet), but it's what's left over.
-        if (session.Players.Count > _sim.Defs.AllTrades.Count(t => !t.Unlimited))
+        // The labourer isn't offered (it has no game of its own yet), but it's what's left over. A trade only players
+        // take seats only someone who wants it, so it counts only once someone does.
+        var seats = session.Players.Select(p => round.SeatOf(p.Id)).OfType<LobbySeat>().ToList();
+        var dealable = _sim.Defs.AllTrades.Count(t => !t.Unlimited && RoundSystem.InTown(_sim, t) && (!t.PlayerOnly || seats.Exists(s => s.Wanted.Contains(t))));
+        if (session.Players.Count > dealable)
             TextC(Theme.Dim, "More players than trades: whoever's left over is the town's labourer (rough for now).");
 
         ImGui.Separator();
@@ -195,13 +198,19 @@ public sealed partial class VillageGame
     {
         foreach (var trade in _sim.Defs.AllTrades)
         {
-            if (trade.Unlimited)
+            if (trade.Unlimited || !RoundSystem.InTown(_sim, trade))
                 continue;
             ImGui.PushID(trade.Index);
             var rank = seat.Wanted.IndexOf(trade);
             var never = seat.Never.Contains(trade);
             ImGui.Text(Capitalized(trade.Label));
-            Gui.ItemTip(PacedDescription(trade));
+            Gui.ItemTip(PacedDescription(trade) + (trade.PlayerOnly ? "\n\n" + OnlyIfPlayed : ""));
+            if (trade.PlayerOnly)
+            {
+                ImGui.SameLine(0, Gui.S(6));
+                TextC(Theme.Dim, "only if played");
+                Gui.ItemTip(OnlyIfPlayed);
+            }
             if (trade.Pace is { } pace)
             {
                 ImGui.SameLine(0, Gui.S(6));
@@ -247,7 +256,7 @@ public sealed partial class VillageGame
         Wrapped("The round is under way. Whose work would you like to take up? You'll get the closest thing going.");
         foreach (var trade in _sim.Defs.AllTrades)
         {
-            if (trade.Unlimited)
+            if (trade.Unlimited || !RoundSystem.InTown(_sim, trade))
                 continue;
             if (ImGui.Button(Capitalized(trade.Label) + (trade.Pace is { } pace ? $" ({TradePaces.Label(pace).ToLowerInvariant()})" : ""), in _autoSize))
                 Take(session, [trade]);
@@ -258,13 +267,17 @@ public sealed partial class VillageGame
         Narsil.Ui.Panel.End();
     }
 
+    /// <summary>What "only if played" means beside a trade only players take.</summary>
+    private const string OnlyIfPlayed = "This trade comes to town only if someone plays it: nobody's dealt it unless they ask for it, and the town does without it otherwise.";
+
     /// <summary>A trade's description with what its pace means first, for a tooltip.</summary>
     private static string PacedDescription(TradeDef trade) =>
         trade.Pace is { } pace ? $"{TradePaces.Label(pace)}: {TradePaces.About(pace)}\n\n{trade.Description}" : trade.Description;
 
     private void Take(CoopSession session, IReadOnlyList<TradeDef> wanted)
     {
-        session.Send(new TakeTradeCommand(session.Me.Id, wanted, []));
+        // Who they arrived as: used only if they come to town as a newcomer (a trade only players take).
+        session.Send(new TakeTradeCommand(session.Me.Id, wanted, [], _arrivedAs?.Name, _arrivedAs?.Look, _arrivedAs?.Clothes));
         _tradeRequested = true;
     }
 }

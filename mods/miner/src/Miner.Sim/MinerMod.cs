@@ -18,6 +18,7 @@ public sealed class MinerMod : ISimMod
     public void Register(SimRegistry registry)
     {
         registry.Trade(new MinerModule());
+        registry.Lesson([.. MinerLessons.All]);
         registry.Bot(bot => new MinerBot(bot));
         // --drill hewing: stood in the mine at a face, pick in hand, the hewing begun.
         registry.Drill("hewing", HewDrill.Stage);

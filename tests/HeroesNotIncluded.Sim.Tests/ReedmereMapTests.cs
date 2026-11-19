@@ -32,7 +32,9 @@ public class ReedmereMapTests
     public void EveryTradeHasItsBuildingAndTheKitchenIsApart()
     {
         var (sim, town) = Town();
-        foreach (var trade in sim.Defs.AllTrades.Where(t => t.HasWorkplace))
+        // The game's trades all have theirs; one only players take may not (there's no mine on the lake), and then
+        // it's neither dealt nor offered there.
+        foreach (var trade in sim.Defs.AllTrades.Where(t => t.HasWorkplace && !t.PlayerOnly))
             Assert.False(ShopSystem.WorkplaceOf(sim, trade).IsNull, $"{trade.Name}: no {trade.Workplace} in Reedmere");
         Assert.Equal("LandingInn", sim.World.Get<PresetBuilding>(town.Tavern).Def.Name);
         Assert.Equal("Cookhouse", sim.World.Get<PresetBuilding>(town.Kitchen).Def.Name);

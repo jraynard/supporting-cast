@@ -14,6 +14,9 @@ namespace HeroesNotIncluded.Sim.Scenarios;
 /// </summary>
 public static class SeasonSweep
 {
+    /// <summary>The makings watched each hour of a season (<see cref="SeasonResult.Stores"/>): what the town crafts, burns and binds with.</summary>
+    public static readonly string[] Stores = ["Charcoal", "Planks", "Wood", "Firewood", "Cloth", "Bandage", "IronOre"];
+
     /// <summary>The game's trades with a game of their own, in the order the bots sit (an AI labourer runs the errands).</summary>
     public static readonly string[] Trades = ["Innkeeper", "Cook", "Blacksmith", "Empath", "Tinker", "Carpenter"];
 
@@ -53,8 +56,21 @@ public static class SeasonSweep
         // The casks, watched from outside (nothing in the sim keeps count): a fall is servings drawn, a rise a keg knocked in.
         var casks = sim.World.Query<Thing>().Where(e => sim.World.Get<Thing>(e).Def.Building?.Cask != null).ToList();
         var left = casks.Select(c => Work.PourSession.ServingsLeft(sim, c)).ToArray();
+        // The town's makings, watched from outside like the casks: each hour, how much there is.
+        var stores = Stores.Select(n => sim.Defs.AllThings.FirstOrDefault(d => d.Name == n)).OfType<ThingDef>().ToList();
+        foreach (var d in stores)
+            result.Stores[d.Name] = new StoreWatch();
         while (sim.Round.Phase != RoundPhase.Over && sim.Clock.Tick < limit)
         {
+            if (sim.Clock.Tick % SimClock.TicksPerHour == 0 && stores.Count > 0)
+            {
+                var counts = new Dictionary<ThingDef, int>();
+                foreach (var e in sim.World.Query<Stack>())
+                    if (sim.World.TryGet<Thing>(e, out var t) && stores.Contains(t.Def))
+                        counts[t.Def] = counts.GetValueOrDefault(t.Def) + sim.World.Get<Stack>(e).Count;
+                foreach (var d in stores)
+                    result.Stores[d.Name].Sample(counts.GetValueOrDefault(d));
+            }
             sim.Tick();
             foreach (var bot in bots)
                 bot.Tick();
@@ -124,6 +140,24 @@ public sealed class SeasonResult
     /// <summary>What each trade's bot played and said, by the trade it sat for.</summary>
     public Dictionary<string, BotStats> Bots = [];
 
+    /// <summary>The town's makings hour by hour, all of each there is (stored, lying about or carried), by def name.</summary>
+    public Dictionary<string, StoreWatch> Stores = [];
+
     public int Met => Sim.Director.Met;
     public int Unmet => Sim.Director.Unmet;
+}
+
+/// <summary>One of the town's makings over a season: its low, its last count, and the hours it ran out.</summary>
+public sealed class StoreWatch
+{
+    public int Low = int.MaxValue, Last, HoursOut, Hours;
+
+    public void Sample(int count)
+    {
+        Low = Math.Min(Low, count);
+        Last = count;
+        Hours++;
+        if (count == 0)
+            HoursOut++;
+    }
 }

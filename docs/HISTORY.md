@@ -2613,3 +2613,26 @@ The town keeps itself in the makings the carter used to bring.
   on the road is down to where they stood); the party loop plays seed 1234 (99's dice moved with the kilns).
 - Bench: seed 1234 state `5B644617887619E8`, full `D019E1AAC033B504`; seed 99 state `82049F2FF8ABCE34`,
   full `CC486CC08DBF190A`. Over 64 bot seasons, as before (won 36 to 35, dread 20 to 18).
+
+### Readying the multiplayer test: the musician and the miner on, a desync fixed (2026-11-19)
+- **On by default:** the musician and the miner (`defaultOn` in their `mod.json`), both player-only, so a round
+  without them is as before. The test content (`TestContent.Standard`) has them too.
+- **A trade only players take, late:** a late joiner can ask for one (`TakeTrade`); a newcomer comes to town for it
+  under the joiner's own name and look (`TakeTradeCommand` carries them now; a villager taken over keeps its face),
+  one to a trade, as the deal gives.
+- **A trade the town can't hold** (`RoundSystem.InTown`: its workplace isn't on the map, as Reedmere has no mine)
+  is neither dealt nor offered in the lobby or to a late joiner.
+- **The lobby** counts a player-only trade toward "more players than trades" only once someone wants it, and marks
+  it "only if played".
+- **A leaver's character:** a musician stops playing (nobody stands about for it) and keeps the instrument; a miner
+  keeps the trade and the pick.
+- **Fixed, a save and join desync:** an AI keeper mopping up chose between equally near spots by the mess
+  dictionary's order, which a load needn't keep (`CleanJob.For`: ties go to the lower cell index). It showed since
+  the bigger Millbrook as `GoodsTests.AnAskForAPieceSurvivesASave`; a join snapshot is a save, so it would have
+  split a co-op round.
+- **The miner's first lesson** (`MinerLessons`, words in `miner.json`): into the mine, a face hewn, what came away
+  carried to the shed's chest. The mine shed has its kit (`log_turf`).
+- **The sweep watches the town's makings** (`SeasonSweep.Stores`): each one's low, mean low, end and hours out a
+  season (charcoal, planks, timber, firewood, cloth, bandages, iron ore).
+- Bench: unchanged with the new mods off (`--mods -musician,-miner`); with the miner's shed standing, seed 1234
+  state `4053A2BDB5210BF2`, full `CBF62B88FA85A9C4`; seed 99 state `FD8F333AB780C411`, full `5B4A1B9322768C1A`.

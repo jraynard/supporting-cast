@@ -53,6 +53,14 @@ public static class SeasonSweepRun
         }
         Console.WriteLine($"Casks: drawn {results.Average(r => r.Drawn):F1} servings a season, kegs knocked in {results.Average(r => r.KegsTapped):F1}"
             + $" (drinks served {results.Average(r => r.Sim.Shops.Served(ServiceKind.Drink)):F1}, mixed {results.Average(r => r.Sim.Shops.Served(ServiceKind.MixedDrink)):F1})");
+        // The makings: the lowest any season fell to, the mean low and end, and the hours with none at all.
+        var watched = results.SelectMany(r => r.Stores.Keys).Distinct().ToList();
+        if (watched.Count > 0)
+            Console.WriteLine("Stores (low, mean low, mean end, hours out a season): " + string.Join("; ", watched.Select(k =>
+            {
+                var w = results.Select(r => r.Stores.GetValueOrDefault(k)).OfType<Sim.Scenarios.StoreWatch>().Where(x => x.Hours > 0).ToList();
+                return w.Count == 0 ? $"{k} -" : $"{k} {w.Min(x => x.Low)}, {w.Average(x => x.Low):F0}, {w.Average(x => x.Last):F0}, {w.Average(x => x.HoursOut):F1}";
+            })));
         var kinds = results.SelectMany(r => r.Sim.Reckoning.Crises).GroupBy(c => c.Kind).OrderBy(g => g.Key);
         Console.WriteLine("Crises met: " + string.Join(", ", kinds.Select(g => $"{g.Key} {g.Count(c => c.Met)}/{g.Count()}")));
         // What each trade's bot played: a game no bot starts shows here as missing, not just as a lost round.

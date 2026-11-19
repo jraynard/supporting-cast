@@ -4,5 +4,6 @@
   "version": "0.1.0",
   "authors": ["Heroes Not Included"],
   "description": "A trade only players take: the mine in Millbrook's hill, east of town. Iron and coal hewn from the rock face by hand, struck where the cracks run, and sold on to the smith. A first pass, to be played and changed.",
-  "gameVersion": "0.1"
+  "gameVersion": "0.1",
+  "defaultOn": true
 }

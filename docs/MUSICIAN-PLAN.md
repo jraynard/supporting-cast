@@ -44,10 +44,8 @@ Each with its tests in `tests/HeroesNotIncluded.Sim.Tests/MusicianModTests.cs`.
 - Everything musician-related checks for someone playing, not for the trade, so a round without a musician plays as
   before (`--bench` hashes, `VillageDayScenario` and the season sweep baseline are untouched). `SeasonSweep.TradesIn`
   leaves it out (it has no workplace) unless it's asked for.
-- **Left:** `TakeTrade` (a late joiner) can't take the musician yet: it only finds open villagers. The lobby doesn't yet
-  leave player-only trades out of the "trades vs players" count or mark the musician as "comes only if someone plays
-  it". When the musician's player leaves, check what the character does as an AI: it should keep its instruments and
-  not perform.
+- A late joiner can take it (`TakeTrade`, a newcomer under their own name); the lobby counts and marks player-only
+  trades; a musician whose player leaves stops playing and keeps the instrument (HISTORY, 2026-11-19).
 
 ### §1. The instruments and how they're played
 - **Defs:** `instruments` in `musician.json` (`InstrumentDef`): the voice (breath, plucked, bowed, struck), its range,
