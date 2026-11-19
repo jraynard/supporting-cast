@@ -4,7 +4,8 @@
   "trades": [
     { "name": "Musician", "label": "musician", "pace": "Steady", "playerOnly": true, "formerly": [ "Bard" ],
       "description": "Music for the town: the pipe, the lute, the fiddle and the drum, for whoever will listen. Comes only if someone plays it.",
-      "kit": [ { "def": "Pipe" }, { "def": "Lute" }, { "def": "Fiddle" }, { "def": "HandDrum" }, { "def": "Hat" }, { "def": "Strings", "count": 4 } ],
+      // A dagger at the belt for the road and a raid (R draws it): instruments are no use against a blade.
+      "kit": [ { "def": "Dagger" }, { "def": "Pipe" }, { "def": "Lute" }, { "def": "Fiddle" }, { "def": "HandDrum" }, { "def": "Hat" }, { "def": "Strings", "count": 4 } ],
       "tutorialIntro": "You're the town's musician: a pipe, a lute, a fiddle and a hand drum in your pack, and no shop. Play where people gather (the inn of an evening, the square, a party setting out) and they'll come to listen, dance, and toss silver in your hat.",
       // ~@id~ names any action by its id (a mod's own as "musician:note1"), so the words follow the player's bindings.
       "lessons": [

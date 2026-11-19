@@ -72,6 +72,10 @@ public class MusicianModTests
         var musician = Assert.Single(Musicians(with));
         Assert.Equal(Players.CharacterOf(with, Arin), musician);
         Assert.False(MusicianModule.InstrumentOf(with, musician).IsNull, "the kit's pipe");
+        // And a dagger, worn, to defend themselves: the pipe's still what F plays.
+        Assert.True(with.World.TryGet<Equipment>(musician, out var eq) && with.World.IsAlive(eq.Weapon), "armed");
+        Assert.Equal("Dagger", with.World.Get<Thing>(eq.Weapon).Def.Name);
+        Assert.Equal("Pipe", with.World.Get<Thing>(MusicianModule.InstrumentOf(with, musician)).Def.Name);
         // A newcomer: every villager the round would have had is still there, doing their trade.
         Assert.Equal(without.Creatures().Count(e => with.World.Has<Trade>(e)) + 1, with.Creatures().Count(e => with.World.Has<Trade>(e)));
         return 0;

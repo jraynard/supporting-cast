@@ -2708,3 +2708,4 @@ From the user's playing on a Deck:
 - **Faltering, a beat kept steadies the mind twice as fast** (`PlaySession.RallyFactor`), so a slip doesn't snowball.
 - **The opening's guide on a pad:** each key cap is at least as wide as its button's name (the jig's quick notes
   were caps too narrow to read).
+- **The musician carries a dagger** (its kit): something to defend themselves with in a raid, R to draw it.
