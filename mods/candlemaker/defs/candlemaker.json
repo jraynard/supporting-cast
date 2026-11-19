@@ -1,0 +1,15 @@
+// The candlemaker: dips candles for the town, a layer of wax at a time. A trade only a player takes
+// (playerOnly), worked anywhere with the dipping rod for now: no chandlery or wax vat yet.
+{
+  "trades": [
+    { "name": "Candlemaker", "label": "candlemaker", "pace": "Steady", "playerOnly": true,
+      "description": "Light for the town: dips candles by hand, a layer of wax at a time, and lets each one set. Comes only if someone plays it.",
+      "kit": [ { "def": "DippingRod" } ] }
+  ],
+  "things": [
+    { "name": "DippingRod", "label": "dipping rod", "category": "Item", "mass": 0.6, "sprite": "items/dipping_rod", "flammability": 0.4, "maxHp": 60 },
+    // What the rod makes: a candle dipped patiently, or one dipped again before the wax had set.
+    { "name": "Candle", "label": "candle", "category": "Item", "mass": 0.2, "sprite": "items/candle", "flammability": 0.6, "maxHp": 20, "stackLimit": 12 },
+    { "name": "LumpyCandle", "label": "lumpy candle", "category": "Item", "mass": 0.2, "sprite": "items/candle_lumpy", "flammability": 0.6, "maxHp": 20, "stackLimit": 12 }
+  ]
+}

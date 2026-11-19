@@ -1,0 +1,38 @@
+T:System.Random;Use sim.Rand or a system's own SimRandom: the sim must be deterministic (CLAUDE.md, Determinism)
+T:System.Security.Cryptography.RandomNumberGenerator;Use sim.Rand or a SimRandom
+M:System.Guid.NewGuid;Not deterministic: derive ids from the sim
+P:System.DateTime.Now;The sim's clock is its tick: no wall time in sim state
+P:System.DateTime.UtcNow;The sim's clock is its tick: no wall time in sim state
+P:System.DateTime.Today;The sim's clock is its tick: no wall time in sim state
+P:System.DateTimeOffset.Now;The sim's clock is its tick: no wall time in sim state
+P:System.DateTimeOffset.UtcNow;The sim's clock is its tick: no wall time in sim state
+P:System.Environment.TickCount;The sim's clock is its tick: no wall time in sim state
+P:System.Environment.TickCount64;The sim's clock is its tick: no wall time in sim state
+M:System.Math.Sin(System.Double);Platform-dependent: use DetMath
+M:System.Math.Cos(System.Double);Platform-dependent: use DetMath
+M:System.Math.Tan(System.Double);Platform-dependent: use DetMath
+M:System.Math.Asin(System.Double);Platform-dependent: use DetMath
+M:System.Math.Acos(System.Double);Platform-dependent: use DetMath
+M:System.Math.Atan(System.Double);Platform-dependent: use DetMath
+M:System.Math.Atan2(System.Double,System.Double);Platform-dependent: use DetMath
+M:System.Math.SinCos(System.Double);Platform-dependent: use DetMath
+M:System.Math.Pow(System.Double,System.Double);Platform-dependent: use DetMath
+M:System.Math.Exp(System.Double);Platform-dependent: use DetMath
+M:System.Math.Log(System.Double);Platform-dependent: use DetMath
+M:System.Math.Log(System.Double,System.Double);Platform-dependent: use DetMath
+M:System.Math.Log10(System.Double);Platform-dependent: use DetMath
+M:System.Math.Log2(System.Double);Platform-dependent: use DetMath
+M:System.MathF.Sin(System.Single);Platform-dependent: use DetMath
+M:System.MathF.Cos(System.Single);Platform-dependent: use DetMath
+M:System.MathF.Tan(System.Single);Platform-dependent: use DetMath
+M:System.MathF.Asin(System.Single);Platform-dependent: use DetMath
+M:System.MathF.Acos(System.Single);Platform-dependent: use DetMath
+M:System.MathF.Atan(System.Single);Platform-dependent: use DetMath
+M:System.MathF.Atan2(System.Single,System.Single);Platform-dependent: use DetMath
+M:System.MathF.SinCos(System.Single);Platform-dependent: use DetMath
+M:System.MathF.Pow(System.Single,System.Single);Platform-dependent: use DetMath
+M:System.MathF.Exp(System.Single);Platform-dependent: use DetMath
+M:System.MathF.Log(System.Single);Platform-dependent: use DetMath
+M:System.MathF.Log(System.Single,System.Single);Platform-dependent: use DetMath
+M:System.MathF.Log10(System.Single);Platform-dependent: use DetMath
+M:System.MathF.Log2(System.Single);Platform-dependent: use DetMath

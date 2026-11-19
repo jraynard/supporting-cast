@@ -1,0 +1,8 @@
+{
+  "id": "candlemaker",
+  "name": "The Candlemaker",
+  "version": "0.1.0",
+  "authors": [ "Heroes Not Included" ],
+  "description": "A trade only players take: candles for the town, dipped by hand. A first pass: the dipping rod, worked anywhere.",
+  "gameVersion": "0.1"
+}
