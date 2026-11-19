@@ -10,6 +10,6 @@
   ],
   "things": [
     { "name": "ExampleTradeTool", "label": "exampletrade's tool", "category": "Item", "mass": 1, "sprite": "items/exampletrade_tool", "maxHp": 60 },
-    { "name": "ExampleTradeWare", "label": "exampletrade's ware", "category": "Item", "mass": 0.5, "sprite": "items/exampletrade_tool", "maxHp": 30, "stackLimit": 10 }
+    { "name": "ExampleTradeWare", "label": "exampletrade's ware", "category": "Item", "mass": 0.5, "sprite": "items/exampletrade_ware", "maxHp": 30, "stackLimit": 10 }
   ]
 }

@@ -25,18 +25,23 @@ bow's tiller, the pipe's lead-in). So:
 
 1. **Make the mod from the template** (it builds and checks as it stands):
    ```sh
-   dotnet new install modkit/templates/hni-trade        # once
+   dotnet new install modkit/templates/hni-trade        # once (in a worktree or a throwaway checkout, add
+                                                        # --debug:custom-hive <a scratch dir> to this and the next
+                                                        # line, so the user's template cache isn't pointed at it)
    dotnet new hni-trade -n Glassblower -o mods/glassblower
    dotnet build mods/glassblower/src/Glassblower         # both halves (the sim half first)
    dotnet run --project src/HeroesNotIncluded -- --check-mod mods/glassblower
    dotnet run --project src/HeroesNotIncluded -- --new-game --trade Glassblower --mods glassblower --drill glassblower
    ```
-   Add both projects to `HeroesNotIncluded.sln` (`dotnet sln add --solution-folder mods ...`).
+   Add both projects to `HeroesNotIncluded.sln` (`dotnet sln add --solution-folder mods ...`), and a line for the
+   mod to `mods/README.md`.
 2. **Defs** (`mods/<id>/defs/<id>.json`): the trade (`trades`), its tools and wares (`things`), and kinds of
    your own if you need them (any top-level key the game doesn't know; read with
    `sim.Defs.ModDefs<T>("kind")`; the musician's `instruments` and `songs`). A workplace of its own is a role
    named in its building's `roles` and the trade's `workplace` ("Glassworks"); an order of its own is a
-   `services` def with a new name ("Glasswork"), its kind `sim.Defs.ServiceKindOf("Glasswork")`. Read the game's
+   `services` def with a new name ("Glasswork"), its kind `sim.Defs.ServiceKindOf("Glasswork")`. A ware keeps how well it
+   was made as a `Crafted` component (the template's `Finish` adds it: `Crafting.QualityFrom(Quality)`), shown as
+   its grade and worth more; a different *kind* of result (a cracked bottle) is a def of its own. Read the game's
    `data/defs/trades.json` for every field a trade can have. `"playerOnly": true` for a trade no AI takes.
 3. **The sim half** (`src/<Name>.Sim`, references only `HeroesNotIncluded.Sim`): an `ISimMod` that registers
    - `registry.Trade(new <Name>Module())`: an `ITradeModule`, answering only the hooks that are yours (each
@@ -50,11 +55,16 @@ bow's tiller, the pipe's lead-in). So:
    and, if it reads keys of its own, `WorkInput` and `Control`s; and anything else it draws
    (`StationTab`, `WagonPanel`, `AimLine`, `Tilt`, `WorldSounds`). Draw through `WorkView`
    (`view.Begin`/`End`, `view.TakesPointer`, `view.Perceived`), colours from `HeroesNotIncluded.Ui.Theme`.
-5. **Art and sounds** go in the mod's own `textures/` and `sounds/sounds.json`; make them with a tool in the
-   mod's `tools/` that writes into the mod (see `mods/musician/tools/musician_assets.py`).
+5. **Art and sounds** go in the mod's own `textures/` (32x32 items) and `sounds/sounds.json`; make them with a
+   tool in the mod's `tools/` that writes into the mod (see `mods/musician/tools/musician_assets.py`, PIL and
+   numpy). For a first pass a view may play one of the game's sounds by id: they're listed in
+   `data/sounds/sounds.json` (`ui.open`, `water.splash`, `anvil.good`...); give the mod its own once it matters.
 6. **Tests** in `tests/HeroesNotIncluded.Sim.Tests/<Name>ModTests.cs`, in the `SimContentTests` collection
    (the content is process-wide), turning the mod on as `MusicianModTests.WithMusician` does: the deal, the
-   session's inputs and outcome, save and load, the predictor's copy.
+   session's inputs and outcome, save and load, the predictor's copy. First add the mod's sim half to
+   `tests/HeroesNotIncluded.Sim.Tests/HeroesNotIncluded.Sim.Tests.csproj` (a `ProjectReference` beside the
+   musician's), or its types won't compile there; load its defs with
+   `DefDatabase.LoadDirectories([.. TestWorld.DefDirectories(), "<repo>/mods/<id>/defs"])`.
 
 ## The rules a trade keeps (CLAUDE.md is the law; these bite mods most)
 

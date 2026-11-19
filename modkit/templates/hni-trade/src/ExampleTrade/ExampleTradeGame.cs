@@ -20,7 +20,7 @@ public sealed class ExampleTradeGame : IGameMod
     private static void Draw(WorkView view, ExampleTradeSession s)
     {
         view.Begin(s.Title, ("F", "strike when the marker's over the mark"), ("Esc", "stop"));
-        ImGuiText.Colored(Theme.Dim, $"{s.Done_} of {ExampleTradeSession.Strokes} good strokes.");
+        ImGuiText.Colored(Theme.Dim, $"{s.Good} of {ExampleTradeSession.Strokes} good strokes.");
         var dl = ImGui.GetWindowDrawList();
         var min = ImGui.GetCursorScreenPos();
         var size = new float2(Gui.S(320), Gui.S(28));
@@ -42,8 +42,8 @@ public sealed class ExampleTradeGame : IGameMod
     /// <summary>A sound each good stroke (the game's own "ui.open" for now: give the mod a sounds/sounds.json of its own).</summary>
     private static void Sound(WorkSoundContext ctx, ExampleTradeSession s)
     {
-        if (s.Done_ > ctx.A)
+        if (s.Good > ctx.A)
             ctx.Audio.Play("ui.open", gain: 0.6f);
-        ctx.A = s.Done_;
+        ctx.A = s.Good;
     }
 }

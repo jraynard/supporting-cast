@@ -76,7 +76,9 @@ public sealed class ExampleTradeSession : WorkSession
     public const float Mark = 0.7f, MarkWidth = 0.12f;
 
     public Entity Tool;
-    public int Done_;
+
+    /// <summary>Good strokes so far (the base class's <see cref="WorkSession.Done"/> is whether it's over).</summary>
+    public int Good;
 
     /// <summary>Where the marker is now (0..1): read by the view and the bot, never by the world.</summary>
     public float Marker => Triangle(StepsDone, Sweep);
@@ -95,15 +97,19 @@ public sealed class ExampleTradeSession : WorkSession
         var off = MathF.Abs(Marker - Mark);
         Sample(Math.Clamp(1f - off / 0.5f, 0f, 1f));
         if (off <= MarkWidth / 2f)
-            Done_++;
-        if (Done_ >= Strokes)
+            Good++;
+        if (Good >= Strokes)
             Done = true;
     }
 
-    /// <summary>The ware, as good as the strokes were.</summary>
+    /// <summary>
+    /// The ware, as good as the strokes were: an item keeps how well it was made as <see cref="Crafted"/>
+    /// (shown as its grade, and worth more), as everything the game's trades make does.
+    /// </summary>
     public override void Finish(Simulation sim)
     {
         var ware = sim.CreateItem(sim.Defs.Thing(ExampleTradeModule.WareDef), 1);
+        sim.World.Add(ware, new Crafted { Quality = Crafting.QualityFrom(Quality), Maker = Worker });
         Inventory.Stow(sim, Worker, ware);
         sim.Messages.Tell(Worker, MessageKind.Good, Quality >= 0.75f ? "A fine one." : "It'll do.", sim.LocationOf(Worker));
     }
@@ -111,13 +117,13 @@ public sealed class ExampleTradeSession : WorkSession
     protected override void WriteState(SaveWriter w)
     {
         w.Entity(Tool);
-        w.Int(Done_);
+        w.Int(Good);
     }
 
     protected override void ReadState(SaveReader r)
     {
         Tool = r.Entity();
-        Done_ = Math.Clamp(r.Int(), 0, Strokes);
+        Good = Math.Clamp(r.Int(), 0, Strokes);
     }
 }
 

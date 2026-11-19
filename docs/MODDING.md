@@ -226,5 +226,10 @@ The game's own rules (CLAUDE.md) bind its mods:
 - [x] The ModKit (`modkit/`: `hni-trade`, `hni-content`, each with an `AGENTS.md`; `modkit/check.sh` makes,
   builds and checks a mod from each) and the skills (`.claude/skills/new-trade`, `new-minigame`,
   `content-mod`, `new-map`), the mini-game's many passes with the user first among them.
-- [ ] A fresh agent, given only a template and "make a trade that does X", builds one that checks: the skills' own test.
+- [x] The skills' own test: a fresh agent, given only the skills, the ModKit and "a candlemaker who dips candles
+  (dip again before the wax has cooled and it's lumpy)", built `mods/candlemaker` in one pass: warning-free,
+  `--check-mod` clean, five tests passing, a screenshot, and the questions it would ask the player. What it
+  stumbled on went into the skills and the template: the test project's reference, a ware's quality
+  (`Crafted`), a ware's own sprite, the game's sound ids, colours that read on the panel, drills that start
+  part-way, a private template hive in a worktree, `mods/README.md`.
 - [ ] Steam Workshop (ROADMAP.md, Later).

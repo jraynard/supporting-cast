@@ -26,3 +26,6 @@ data/sounds/music/free/
 /mods/*/*.pdb
 /mods/*/src/*/bin/
 /mods/*/src/*/obj/
+
+# Agent worktrees (Claude Code): working copies, never part of the repository.
+/.claude/worktrees/

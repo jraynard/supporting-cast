@@ -33,13 +33,17 @@ Taste decides when it's done, and the taste is the user's.
 - **The view** (`GameRegistry.WorkView<T>`): `view.Begin(title, (keys, what)...)` ... `view.End()`; draw with
   ImGui's draw list in `Theme` colours, sizes through `Gui.S`; `view.TakesPointer(min, max)` where the mouse
   works the game; `view.Aside()` for work out in the world. Show heat as colour, a flaw as its effect: never a number the
-  character couldn't know.
+  character couldn't know. On the panel's dark `Theme.Inset` ground, draw with the light colours (`Parchment`,
+  `Text`, `Dim`, `Barrel`, `Accent` for the one thing that matters now); `Cellar`, `Oak` and `Inset` vanish on
+  it. Look at a screenshot before handing it over.
 - **Keys of its own** (`GameRegistry.Control`, `GameRegistry.WorkInput<T>`): pack each into an `int` for
   `Custom`. Otherwise the game's own inputs reach it already (F, A/D, W/S, Space, 1-9, the mouse).
 - **Sound** (`GameRegistry.WorkSound<T>`): a sound each time a count the player can see moves on
   (`ctx.A` keeps the last count); never keyed to hidden state.
 - **A bot** (`IBotTrade.Play`) plays it from the session as a player would see it.
-- **A drill** (`SimRegistry.Drill`) puts the player straight into it: `--drill <name>`.
+- **A drill** (`SimRegistry.Drill`) puts the player straight into it: `--drill <name>`. It shows the game's start;
+  to look at it part-way for a screenshot, register a second drill that starts it further on (the musician's
+  `pipe` drill starts playing, the carpenter's `felling` starts the felling).
 
 Worked examples: `mods/musician/src/Musician.Sim/Musician.cs` (`PlaySession`: custom inputs, a tune carried
 on), `mods/carpenter/src/Carpenter.Sim/*Session.cs` (felling's aim and lean, the saw's stroke, the pit saw
