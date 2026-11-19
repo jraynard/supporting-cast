@@ -963,12 +963,12 @@ public class MusicianModTests
         Assert.Equal(120f, p.Tempo); // four a second: eighths of a 120 beat
         // Ragged: notes at odd gaps, heard but not danced to.
         var ragged = On(defs, "Lute");
-        int[] at = [0, 17, 29, 70, 77, 128, 137, 170, 199];
-        ragged.Advance([.. at.Select(t => new WorkInput(t, WorkInputKind.Custom, PlaySession.Pack(2, false, true)))], 200);
+        int[] at = [0, 7, 29, 40, 77, 85, 128, 133, 170, 199, 207];
+        ragged.Advance([.. at.Select(t => new WorkInput(t, WorkInputKind.Custom, PlaySession.Pack(2, false, true)))], 210);
         Assert.True(Performance.Of(ragged).Playing);
         Assert.False(Performance.Of(ragged).Danceable);
         // A few seconds' quiet: the music's over.
-        ragged.Advance([], 200 + Performance.Lately);
+        ragged.Advance([], 210 + Performance.Lately);
         Assert.False(Performance.Of(ragged).Playing);
         return 0;
     });
@@ -999,6 +999,11 @@ public class MusicianModTests
         flourished.Sort();
         var (ornate, _) = Performance.Rhythm(flourished);
         Assert.True(ornate >= 0.85f, $"{ornate}");
+        // Quick notes, four a second, each up to two steps (a thirtieth of a second) off, as a good hand plays them:
+        // steady as a heartbeat. (A playtest: playing well, it read middling.)
+        int[] wobble = [0, 2, -2, 1, -2, 2, 0, -1, 2, -2, 1, 2, -1];
+        var (quick, _) = Performance.Rhythm([.. wobble.Select((d, i) => i * 15 + d)]);
+        Assert.True(quick >= 0.75f, $"{quick}");
         // Gaps of any length at all: no rhythm in it.
         var (ragged, _) = Performance.Rhythm([0, 7, 29, 40, 77, 85, 128, 133, 170, 199, 207]);
         Assert.True(ragged < 0.5f, $"{ragged}");

@@ -121,6 +121,12 @@ public readonly record struct Performance(bool Playing, float Energy, float Stea
         var n = merged.Count;
         if (n < 3)
             return (0.5f, n == 2 ? Math.Max(LeastUnit, merged[1] - merged[0]) : 60f);
+        // No pulse finer than half the gap notes usually come at: against one that fine, any jumble fits.
+        var gaps = new List<int>(n - 1);
+        for (var i = 1; i < n; i++)
+            gaps.Add(merged[i] - merged[i - 1]);
+        gaps.Sort();
+        var finest = gaps[gaps.Count / 2] * FinestShare;
         var (bestScore, bestErr, bestUnit) = (float.MaxValue, 0.5f, 60f);
         for (var g = 1; g < n; g++)
             for (var div = 1; div <= 4; div++)
@@ -128,8 +134,10 @@ public readonly record struct Performance(bool Playing, float Energy, float Stea
                 var unit = (merged[g] - merged[g - 1]) / (float)div;
                 if (unit < LeastUnit)
                     break;
+                if (unit < finest)
+                    continue;
                 var (last, kept, ornaments) = (merged[0], 0, 0);
-                float err = 0f, units = 0f;
+                float err = 0f, units = 0f, off = 0f;
                 for (var i = 1; i < n; i++)
                 {
                     var gap = merged[i] - last;
@@ -141,22 +149,42 @@ public readonly record struct Performance(bool Playing, float Energy, float Stea
                     var x = gap / unit;
                     var whole = Math.Max(1f, MathF.Round(x));
                     err += whole <= MostUnits ? MathF.Abs(x - whole) : 0.5f;
+                    // How far out it came in time, past what a hand's sure of anyway (Grace): what steadiness reads.
+                    // (never more than a share of the pulse, or a tiny pulse would forgive any jumble).
+                    off += whole <= MostUnits ? Math.Max(0f, MathF.Abs(x - whole) * unit - Math.Min(Grace, unit * GraceShare)) / unit : 0.5f;
                     units += whole;
                     kept++;
                     last = merged[i];
                 }
                 if (kept < 2)
                     continue;
-                err = err / kept + OrnamentCost * ornaments / n;
+                var ornamented = OrnamentCost * ornaments / n;
+                err = err / kept + ornamented;
                 var score = err + 0.005f * units / kept; // as good a fit in fewer, longer pulses is the likelier
                 if (score < bestScore)
-                    (bestScore, bestErr, bestUnit) = (score, err, unit);
+                    (bestScore, bestErr, bestUnit) = (score, off / kept + ornamented, unit);
             }
         var beat = bestUnit;
         while (beat < 18f)
             beat *= 2f;
-        return (Math.Clamp(1f - bestErr * 3f, 0f, 1f), beat);
+        return (Math.Clamp(1f - bestErr * Strictness, 0f, 1f), beat);
     }
+
+    /// <summary>
+    /// Steps a gap between notes may come off its pulse and still be dead on (about a fifteenth of a second; a gap carries
+    /// both its notes' wobble): how near a steady hand comes anyway. Without it quick notes read as ragged however well they're kept: a playtest's "doing
+    /// awesome, and it shows middling at best".
+    /// </summary>
+    public const float Grace = 4f;
+
+    /// <summary>The most of a pulse the grace may be.</summary>
+    public const float GraceShare = 0.25f;
+
+    /// <summary>The finest pulse tried, as a share of the middle gap between notes.</summary>
+    public const float FinestShare = 0.5f;
+
+    /// <summary>How much the time past <see cref="Grace"/> (as a share of the pulse, on average) takes off steadiness.</summary>
+    public const float Strictness = 5f;
 
     /// <summary>A note this soon after the last on the pulse (a share of it) is an ornament, between the pulse's notes.</summary>
     public const float OrnamentShare = 0.6f;

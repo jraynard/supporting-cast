@@ -2717,3 +2717,8 @@ From the user's playing on a Deck:
 - **Tuning, quicker to land** (from play): the peg turns faster the further the string's out (`TuneSession.RateAt`:
   about four times as fast at 40 cents, the old slow turn near the note), and let go within 5 cents a string seats
   on its note (`SeatCents`).
+- **Free play's rhythm meter, fairer** (from play: "doing awesome, and it shows middling"): a gap within 4 steps
+  (about a fifteenth of a second) of its pulse is dead on (`Performance.Grace`, never more than a quarter of the
+  pulse), and no pulse finer than half the usual gap is tried (`FinestShare`: against one that fine any jumble fits).
+  A good hand at four notes a second now reads about 0.9, steady as a heartbeat (it read 0.6); a sloppy one about 0.8;
+  a jumble about 0.35, ragged.
