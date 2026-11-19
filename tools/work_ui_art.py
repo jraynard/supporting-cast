@@ -643,7 +643,8 @@ def generate():
     out = os.path.join(ROOT, "ui", "work")
     os.makedirs(out, exist_ok=True)
     for name, make in SPRITES:
-        make().save(os.path.join(out, name + ".png"))
+        from artroot import texture_path  # the game's, or the mod that owns it
+        make().save(texture_path("ui/work/" + name))
     print(f"work ui: wrote {len(SPRITES)} props")
 
 

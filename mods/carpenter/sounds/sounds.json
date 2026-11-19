@@ -1,0 +1,5 @@
+{
+  "sounds": {
+    "carpenter.saw": { "files": ["amb/work_saw.ogg"], "gain": 0.5 }
+  }
+}

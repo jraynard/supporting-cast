@@ -27,9 +27,8 @@ def graded(c):
 
 
 def save(img, name):
-    path = os.path.join(ROOT, name + ".png")
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    img.save(path)
+    from artroot import texture_path  # the game's, or the mod that owns it
+    img.save(texture_path(name))
 
 
 def canvas(w=S, h=S, fill=(0, 0, 0, 0)):

@@ -34,7 +34,9 @@ bow's tiller, the pipe's lead-in). So:
    Add both projects to `HeroesNotIncluded.sln` (`dotnet sln add --solution-folder mods ...`).
 2. **Defs** (`mods/<id>/defs/<id>.json`): the trade (`trades`), its tools and wares (`things`), and kinds of
    your own if you need them (any top-level key the game doesn't know; read with
-   `sim.Defs.ModDefs<T>("kind")`; the musician's `instruments` and `songs`). Read the game's
+   `sim.Defs.ModDefs<T>("kind")`; the musician's `instruments` and `songs`). A workplace of its own is a role
+   named in its building's `roles` and the trade's `workplace` ("Glassworks"); an order of its own is a
+   `services` def with a new name ("Glasswork"), its kind `sim.Defs.ServiceKindOf("Glasswork")`. Read the game's
    `data/defs/trades.json` for every field a trade can have. `"playerOnly": true` for a trade no AI takes.
 3. **The sim half** (`src/<Name>.Sim`, references only `HeroesNotIncluded.Sim`): an `ISimMod` that registers
    - `registry.Trade(new <Name>Module())`: an `ITradeModule`, answering only the hooks that are yours (each

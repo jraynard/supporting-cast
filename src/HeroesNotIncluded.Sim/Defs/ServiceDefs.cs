@@ -120,11 +120,24 @@ public sealed class ServiceDef : Def
 
     internal override void Resolve(DefDatabase db)
     {
-        if (!Enum.TryParse<ServiceKind>(Name, out var kind))
-            throw new Exception($"Service '{Name}' isn't one of {string.Join(", ", Enum.GetNames<ServiceKind>())}");
-        Kind = kind;
+        Kind = db.ServiceKindOf(Name); // the game's own, or a mod's ("Song")
         AtRole = TownRoles.Parse(At, $"Service '{Name}' at");
         if (DefaultPrice < 0 || DefaultPrice > Shops.ShopPrices.MaxPrice || WorthMin < 0 || WorthMin > WorthMax || PatienceHours <= 0)
             throw new Exception($"Service '{Name}': bad price, worth or patience");
     }
+}
+
+/// <summary>Reads a service in defs by name, a mod's own included (<see cref="DefDatabase.ServiceKindOf"/>).</summary>
+internal sealed class ServiceKindJsonConverter : System.Text.Json.Serialization.JsonConverter<ServiceKind>
+{
+    public override ServiceKind Read(ref System.Text.Json.Utf8JsonReader reader, Type type, System.Text.Json.JsonSerializerOptions options)
+    {
+        var name = reader.GetString() ?? "";
+        if (Enum.TryParse<ServiceKind>(name, true, out var core) && Enum.IsDefined(core))
+            return core;
+        return DefDatabase.Reading?.ServiceKindOf(name) ?? throw new System.Text.Json.JsonException($"'{name}' isn't a service");
+    }
+
+    public override void Write(System.Text.Json.Utf8JsonWriter writer, ServiceKind value, System.Text.Json.JsonSerializerOptions options) =>
+        writer.WriteStringValue(DefDatabase.Reading?.ServiceName(value) ?? value.ToString());
 }

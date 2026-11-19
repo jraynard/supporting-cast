@@ -15,18 +15,21 @@ public sealed class ShopPrices
     /// <summary>The most silver a sign may ask.</summary>
     public const int MaxPrice = 999;
 
-    public static readonly int Count = Enum.GetValues<ServiceKind>().Length;
+    /// <summary>Services on a sign: the game's and the mods' (<see cref="DefDatabase.ServiceKindCount"/>).</summary>
+    public int Count => Price.Length;
 
     /// <summary>Silver asked, by <see cref="ServiceKind"/>.</summary>
-    public readonly int[] Price = new int[Count];
+    public readonly int[] Price;
 
     /// <summary>Whether the shop is offering it, by <see cref="ServiceKind"/>.</summary>
-    public readonly bool[] Offered = new bool[Count];
+    public readonly bool[] Offered;
+
+    private ShopPrices(int count) => (Price, Offered) = (new int[count], new bool[count]);
 
     /// <summary>A sign with every service at its default price, offered.</summary>
     public static ShopPrices Defaults(DefDatabase defs)
     {
-        var p = new ShopPrices();
+        var p = new ShopPrices(defs.ServiceKindCount);
         foreach (var d in defs.AllServices)
         {
             p.Price[(int)d.Kind] = d.DefaultPrice;

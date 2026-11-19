@@ -78,8 +78,9 @@ The core registers its own trades the same way. What can be registered, and what
 | Work sessions (mini-games), found by type (built) | `WorkSession.Read`'s switch |
 | Component codecs, `SimRegistry.Component<T>` (built) | `ComponentCodecs.All` |
 | Commands, found in every content assembly (built) | `CommandCodec`'s scan of one assembly |
-| Work givers per work type (`WorkTypeDef`) | `WorkGivers`' arms and the `WorkType` enum |
-| Town roles as defs (`RoleDef`, with what a workplace is stocked with) | the `TownRole` enum, `VillageRound.Stock*` |
+| A trade's AI jobs, under the game's work types (`ITradeModule.JobFor`, built) | `WorkGivers`' arms (`WorkType` stays the game's: see below) |
+| Workplaces of a mod's own: a role named in its defs ("Glassworks"), built | the `TownRole` enum; stocking is `ITradeModule.Stock` |
+| Services of a mod's own: a service def with a new name ("Song"), built; `defs.ServiceKindOf(name)` | the `ServiceKind` enum |
 | Station actions (what F does at a station with what's in hand) | the dispatch in `AvatarSystem` |
 | Lessons per trade | `Lessons.All` |
 | Crises by name, for `season.json` beats | the `CrisisKind` enum |
@@ -128,6 +129,25 @@ one didn't. Each is now part of the API:
 - **A simulation keeps the modules it was made with** (`Simulation.TradeModules`), and `--check-mod`
   puts the content back after looking: a check once left the carpenter's hooks reaching into a
   simulation made without its systems.
+
+### Kinds a mod adds by naming them
+
+- **A workplace** is a town role: name one in a building's `roles`, a trade's `workplace` or a service's
+  `at` that the game doesn't have, and it's a role of its own (`TownRoles.Parse`, the next free bit).
+- **A service** is a `services` def with a name the game's `ServiceKind` hasn't: numbered after the
+  game's in load order, priced on signs and saved by name. A mod's code gets its kind with
+  `defs.ServiceKindOf("Song")`.
+- **Work types stay the game's** (Craft, Cook, Haul, Doctor...): they're each villager's priorities, so a
+  new one would be a new column for every villager and the work tab. A trade's AI jobs come under one
+  of them (`ITradeModule.JobFor(sim, pawn, WorkType.Craft)`), as the carpenter's do.
+
+### Art and sounds that tools make
+
+A sprite or a sound a generator makes goes to the game's `data/`, or to the mod whose folder already
+holds it (`tools/artroot.py`: `texture_path`, `sound_path`). Move a file into a mod once, and every
+generator writes it there from then on. A mod's own tool writes into its folder outright
+(`mods/musician/tools/musician_assets.py`). The carpenter's five sprites of its own and its saw are in
+`mods/carpenter` this way.
 
 ## The rules a mod keeps
 
@@ -194,10 +214,10 @@ The game's own rules (CLAUDE.md) bind its mods:
   (`--mods -carpenter`, or the Mods panel), a round deals no carpenter, the woodshop's plot stands
   empty (`MapDef.Absent`), and its services aren't asked for; `WithoutTheCarpenterTests` plays a
   season to the end that way. Turned on, bench hashes and bot-played seasons are unchanged.
-- [ ] The carpenter's art and sounds moved into the mod (`textures/`, `sounds/`). Waiting on the art and sound
-  generators (`tools/*_art.py`, `norse_buildings.py`, `sfx_synth.py`), which write one tree for everything:
-  they need to write a mod's files into the mod first. Only five sprites are the carpenter's alone; the rest
-  (bows, quivers, logs) are the core's. Left in the core they change nothing about play.
+- [x] The carpenter's art and sounds moved into the mod: the generators write a mod's files into the mod
+  (`tools/artroot.py`); its five sprites and its saw (`carpenter.saw`) are `mods/carpenter`'s.
+- [x] Workplaces and services of a mod's own, named in its defs (`TownRoles.Parse`, `ServiceKindOf`);
+  work types stay the game's, by design.
 - [x] Game modes: `IGameMode`, the season and the practice yard as the game's own, a mode saved with the
   round, "Other ways to play" on the title screen, `--mode`; `mods/siege` as the example.
 - [x] The musician as a mod, first pass: a player-only trade with a tin pipe, played free (eight scale keys and

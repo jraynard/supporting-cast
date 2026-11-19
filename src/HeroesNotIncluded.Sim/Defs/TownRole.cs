@@ -26,9 +26,47 @@ public enum TownRole
 
 public static class TownRoles
 {
-    /// <summary>A single role by name ("Kitchen"); empty is <see cref="TownRole.None"/>.</summary>
-    public static TownRole Parse(string name, string where) =>
-        name.Length == 0 ? TownRole.None
-        : Enum.TryParse<TownRole>(name, out var r) && r != TownRole.None && (r & (r - 1)) == 0 ? r
-        : throw new Exception($"{where}: '{name}' isn't a town role ({string.Join(", ", Enum.GetNames<TownRole>().Skip(1))})");
+    private static readonly Dictionary<string, TownRole> Added = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly object Gate = new();
+
+    /// <summary>
+    /// A single role by name ("Kitchen"); empty is <see cref="TownRole.None"/>. A name the game doesn't have
+    /// (a mod's workplace, "Glassworks") is a role of its own, given the next free bit the first time it's
+    /// named: roles are only ever read from defs by name, so the bit never travels.
+    /// </summary>
+    public static TownRole Parse(string name, string where)
+    {
+        if (name.Length == 0)
+            return TownRole.None;
+        if (Enum.TryParse<TownRole>(name, true, out var r) && r != TownRole.None && (r & (r - 1)) == 0 && Enum.IsDefined(r))
+            return r;
+        if (!name.All(c => char.IsLetterOrDigit(c) || c == '_'))
+            throw new Exception($"{where}: '{name}' isn't a town role's name ({string.Join(", ", Enum.GetNames<TownRole>().Skip(1))}, or a word of your own)");
+        lock (Gate)
+        {
+            if (Added.TryGetValue(name, out var added))
+                return added;
+            var bit = BitsUsed + Added.Count;
+            if (bit >= 31)
+                throw new Exception($"{where}: too many town roles (no room for '{name}')");
+            return Added[name] = (TownRole)(1 << bit);
+        }
+    }
+
+    /// <summary>Bits the game's own roles take.</summary>
+    private static readonly int BitsUsed = Enum.GetValues<TownRole>().Select(v => (int)v).Where(v => v > 0).Select(v => 32 - System.Numerics.BitOperations.LeadingZeroCount((uint)v)).DefaultIfEmpty(0).Max();
+
+    /// <summary>A role's name: the game's own, or a mod's as it was first named.</summary>
+    public static string NameOf(TownRole role) =>
+        Enum.IsDefined(role) ? role.ToString() : Added.FirstOrDefault(kv => kv.Value == role).Key ?? role.ToString();
+}
+
+/// <summary>Reads a role in defs by name, a mod's own included (<see cref="TownRoles.Parse"/>).</summary>
+internal sealed class TownRoleJsonConverter : System.Text.Json.Serialization.JsonConverter<TownRole>
+{
+    public override TownRole Read(ref System.Text.Json.Utf8JsonReader reader, Type type, System.Text.Json.JsonSerializerOptions options) =>
+        TownRoles.Parse(reader.GetString() ?? "", "a role");
+
+    public override void Write(System.Text.Json.Utf8JsonWriter writer, TownRole value, System.Text.Json.JsonSerializerOptions options) =>
+        writer.WriteStringValue(TownRoles.NameOf(value));
 }

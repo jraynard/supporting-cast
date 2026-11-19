@@ -159,6 +159,9 @@ public sealed class CarpenterGame : IGameMod
 /// <summary>The sound of the carpenter's hands-on work, from the session in hand: as the game's own work sounds do.</summary>
 internal static class CarpenterSounds
 {
+    /// <summary>The carpenter's own sound ids (its sounds/sounds.json).</summary>
+    public const string Saw = "carpenter.saw";
+
     /// <summary>Fade for loops a held key turns on and off: quick, or they never come up.</summary>
     private const float Quick = 0.08f;
 
@@ -170,7 +173,7 @@ internal static class CarpenterSounds
                 // The axe's thunk on each blow while hewing; then the saw's rasp on the downstroke, louder rushed.
                 if (s.Hewing)
                     Count(ctx, s.Blows, Sounds.Knock);
-                ctx.Audio.Hold("work:saw", Sounds.Saw, s.Cutting ? 0.5f + 0.5f * Math.Min(1f, s.Pace / SawSession.MostPace) : 0f, fade: Quick);
+                ctx.Audio.Hold("work:saw", CarpenterSounds.Saw, s.Cutting ? 0.5f + 0.5f * Math.Min(1f, s.Pace / SawSession.MostPace) : 0f, fade: Quick);
                 break;
             case FellSession s:
                 // The axe biting into the trunk on each blow, deeper notes as the cut goes in.
@@ -178,11 +181,11 @@ internal static class CarpenterSounds
                 break;
             case BuckSession s:
                 // The crosscut's rasp on the pull; a snap when the saw binds in the kerf.
-                ctx.Audio.Hold("work:saw", Sounds.Saw, s.Cutting ? 0.4f + 0.5f * Math.Min(1f, s.Pace / BuckSession.MostPace) : 0f, pitch: 0.85f, fade: Quick);
+                ctx.Audio.Hold("work:saw", CarpenterSounds.Saw, s.Cutting ? 0.4f + 0.5f * Math.Min(1f, s.Pace / BuckSession.MostPace) : 0f, pitch: 0.85f, fade: Quick);
                 Count(ctx, s.Binds, Sounds.Snap);
                 break;
             case CrosscutSession s:
-                ctx.Audio.Hold("work:saw", Sounds.Saw, s.Held && s.Drawn < 1f ? 0.45f : 0f, pitch: 0.85f, fade: Quick);
+                ctx.Audio.Hold("work:saw", CarpenterSounds.Saw, s.Held && s.Drawn < 1f ? 0.45f : 0f, pitch: 0.85f, fade: Quick);
                 break;
             case SplitSession s:
                 // Each blow knocks; a split cracks the log open.

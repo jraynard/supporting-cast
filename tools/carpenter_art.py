@@ -132,9 +132,8 @@ def prop_shavings():
 
 def generate():
     for name, make in (("quiver", quiver), ("feathers", feathers)):
-        path = os.path.join(ROOT, "items", name + ".png")
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-        make().save(path)
+        from artroot import texture_path  # the game's, or the mod that owns it
+        make().save(texture_path("items/" + name))
     nb.save(prop_bow_rack(), "props/bow_rack")
     nb.save(prop_arrows_top(), "props/arrows_top")
     nb.save(prop_shavings(), "props/shavings")

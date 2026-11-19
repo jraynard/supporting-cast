@@ -20,9 +20,8 @@ def canvas():
 
 
 def save(img, rel):
-    path = os.path.join(TEXTURES, rel + ".png")
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    img.save(path)
+    from artroot import texture_path  # the game's, or the mod that owns it
+    img.save(texture_path(rel))
 
 
 def blob(img, cx, cy, r, colour, rnd, wobble=0.25, alpha=255):

@@ -1290,17 +1290,41 @@ internal static class ComponentCodecs
 
     private static void WriteShopPrices(SaveWriter w, Shops.ShopPrices p)
     {
-        WriteByName<ServiceKind>(w, p.Price);
-        WriteByName<ServiceKind>(w, p.Offered.Select(o => o ? 1 : 0).ToArray());
+        WriteServices(w, p.Price);
+        WriteServices(w, p.Offered.Select(o => o ? 1 : 0).ToArray());
+    }
+
+    // By the services' names, the game's and the mods' (a mod's service has no enum name), so a sign keeps them all.
+    private static void WriteServices(SaveWriter w, int[] values)
+    {
+        w.Int(values.Length);
+        for (var i = 0; i < values.Length; i++)
+        {
+            w.String(w.Defs.ServiceName((ServiceKind)i));
+            w.Int(values[i]);
+        }
+    }
+
+    private static void ReadServices(SaveReader r, int[] into)
+    {
+        var n = r.Count(1000);
+        for (var i = 0; i < n; i++)
+        {
+            var name = r.String();
+            var value = r.Int();
+            var kind = r.Defs.ServiceOrNull(Enum.TryParse<ServiceKind>(name, true, out var core) && Enum.IsDefined(core) ? core : r.Defs.KnownServiceKind(name)) is { } def ? (int)def.Kind : -1;
+            if (kind >= 0 && kind < into.Length)
+                into[kind] = value;
+        }
     }
 
     // A service added since the save keeps its default price, offered.
     private static Shops.ShopPrices ReadShopPrices(SaveReader r)
     {
         var p = Shops.ShopPrices.Defaults(r.Defs);
-        ReadByName<ServiceKind>(r, p.Price);
+        ReadServices(r, p.Price);
         var offered = p.Offered.Select(o => o ? 1 : 0).ToArray();
-        ReadByName<ServiceKind>(r, offered);
+        ReadServices(r, offered);
         for (var i = 0; i < offered.Length; i++)
             p.Offered[i] = offered[i] != 0;
         return p;

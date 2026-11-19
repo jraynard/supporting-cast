@@ -23,7 +23,6 @@ public static class Sounds
     public const string ForgeQuench = "forge.quench";
     public const string ForgeSteam = "forge.steam";
     public const string Grind = "work.grind";
-    public const string Saw = "work.saw";
 
     // Kitchen and bar.
     public const string PotBubble = "kitchen.bubble";
@@ -86,7 +85,7 @@ public static class Sounds
     public static readonly IReadOnlyList<string> All =
     [
         UiOpen, UiClose, UiCoin, UiBell, UiGood,
-        AnvilGood, AnvilFair, AnvilPoor, AnvilCold, ForgeFire, ForgeBellows, ForgeQuench, ForgeSteam, Grind, Saw,
+        AnvilGood, AnvilFair, AnvilPoor, AnvilCold, ForgeFire, ForgeBellows, ForgeQuench, ForgeSteam, Grind,
         PotBubble, PotStir, Pinch, Pour, Fizz, Clink, Knock, Scrub, Cloth, Creak,
         Click, Ratchet, Rune, Weave, Hum, Pulse, Drawn, Snap,
         Swing, Clash, Wound, Bow, Miss, Din, Parry, Block, Thrust, Heavy, Roar, Breath, Wings,

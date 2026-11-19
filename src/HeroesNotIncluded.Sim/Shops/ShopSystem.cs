@@ -1021,6 +1021,8 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
     {
         if (!e.IsOpen)
             return;
+        if ((int)e.Kind.Kind >= _served.Length)
+            Array.Resize(ref _served, (int)e.Kind.Kind + 1); // a mod's service, numbered after the game's
         _served[(int)e.Kind.Kind]++;
         var paid = Coin.Pay(sim, e.Poster, by, e.Price);
         Close(sim, e, OrderStatus.Done);
@@ -1774,10 +1776,10 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
         }
     }
 
-    private readonly int[] _served = new int[Enum.GetValues<ServiceKind>().Length];
+    private int[] _served = new int[Enum.GetValues<ServiceKind>().Length];
 
     /// <summary>Orders of a kind done this round: the inn keeping its customers fed through a shortage.</summary>
-    public int Served(ServiceKind kind) => _served[(int)kind];
+    public int Served(ServiceKind kind) => (int)kind < _served.Length ? _served[(int)kind] : 0;
 
     public void Load(Saving.SaveReader r, Simulation sim)
     {

@@ -807,7 +807,8 @@ def main():
             if folder == "voice":
                 per = len(ONSETS) * 5
                 suffix = f"_{i // per}{i % per // 5}{i % 5}"
-            path = os.path.join(OUT, folder, f"{name}{suffix}.ogg")
+            from artroot import sound_path  # the game's, or the mod that owns it
+            path = sound_path(os.path.join(folder, f"{name}{suffix}.ogg"))
             to_ogg(x, path)
             made.append((name, x))
             print(f"{os.path.relpath(path, ROOT)}  {len(x) / RATE:.2f}s")

@@ -39,7 +39,50 @@ public sealed class DefDatabase
     private readonly Dictionary<string, AdventurerKindDef> _adventurerKinds = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, PartyDef> _parties = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, ServiceDef> _services = new(StringComparer.OrdinalIgnoreCase);
-    private readonly ServiceDef?[] _byServiceKind = new ServiceDef?[Enum.GetValues<ServiceKind>().Length];
+    private ServiceDef?[] _byServiceKind = new ServiceDef?[Enum.GetValues<ServiceKind>().Length];
+
+    /// <summary>The services a mod's defs added (names the game's enum hasn't), numbered after the game's, in load order.</summary>
+    private readonly List<string> _addedServices = [];
+
+    /// <summary>The database being read on this thread: a def naming a mod's service is given its kind here.</summary>
+    [ThreadStatic] internal static DefDatabase? Reading;
+
+    /// <summary>How many service kinds there are: the game's, then the mods'.</summary>
+    public int ServiceKindCount => Enum.GetValues<ServiceKind>().Length + _addedServices.Count;
+
+    /// <summary>
+    /// A service's kind by name: the game's own (<see cref="ServiceKind"/>), or a mod's ("Song"), given the
+    /// next number after the game's the first time this database names it. A mod's code asks for its own
+    /// kind this way; the numbers follow the defs' load order, so they're the same wherever the mods are.
+    /// </summary>
+    public ServiceKind ServiceKindOf(string name)
+    {
+        if (Enum.TryParse<ServiceKind>(name, true, out var core) && Enum.IsDefined(core))
+            return core;
+        var i = _addedServices.FindIndex(n => string.Equals(n, name, StringComparison.OrdinalIgnoreCase));
+        if (i < 0)
+        {
+            if (name.Length == 0 || !name.All(c => char.IsLetterOrDigit(c) || c == '_'))
+                throw new Exception($"'{name}' isn't a service's name");
+            _addedServices.Add(name);
+            i = _addedServices.Count - 1;
+        }
+        return (ServiceKind)(Enum.GetValues<ServiceKind>().Length + i);
+    }
+
+    /// <summary>A mod's service kind by name, only if these defs have it (reading a save mustn't add one); <see cref="ServiceKind"/> past the end if not.</summary>
+    public ServiceKind KnownServiceKind(string name)
+    {
+        var i = _addedServices.FindIndex(n => string.Equals(n, name, StringComparison.OrdinalIgnoreCase));
+        return (ServiceKind)(i < 0 ? int.MaxValue : Enum.GetValues<ServiceKind>().Length + i);
+    }
+
+    /// <summary>A service kind's name: the game's own, or a mod's.</summary>
+    public string ServiceName(ServiceKind kind)
+    {
+        var i = (int)kind - Enum.GetValues<ServiceKind>().Length;
+        return i < 0 ? kind.ToString() : i < _addedServices.Count ? _addedServices[i] : kind.ToString();
+    }
 
     private readonly Dictionary<string, MendingDef> _mendings = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, GhostErrandDef> _ghostErrands = new(StringComparer.OrdinalIgnoreCase);
@@ -148,7 +191,8 @@ public sealed class DefDatabase
         PropertyNameCaseInsensitive = true,
         ReadCommentHandling = JsonCommentHandling.Skip,
         AllowTrailingCommas = true,
-        Converters = { new JsonStringEnumConverter() },
+        // A role or a service a mod names (one the game doesn't have) is a kind of its own: these come before the enum converter.
+        Converters = { new TownRoleJsonConverter(), new ServiceKindJsonConverter(), new JsonStringEnumConverter() },
     };
 
     private sealed class DefFile
@@ -336,16 +380,21 @@ public sealed class DefDatabase
                 merged[kind.Key] = new JsonArray([.. kind.Order.Select(n => (JsonNode)kind.ByName[n])]);
             foreach (var (key, value) in _singles)
                 merged[key] = value;
+            var db = new DefDatabase();
             DefFile file;
             try
             {
+                Reading = db; // a mod's service named in a def (a trade's serves) is numbered here
                 file = merged.Deserialize<DefFile>(JsonOptions) ?? new DefFile();
             }
             catch (JsonException e)
             {
                 throw new Exception($"Failed to read defs: {e.Message}", e);
             }
-            var db = new DefDatabase();
+            finally
+            {
+                Reading = null;
+            }
             // Kinds the game doesn't know are a mod's own ("instruments"): kept, merged and patched like the
             // game's, and read typed through ModDefs.
             var known = typeof(DefFile).GetProperties().Select(p => p.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
@@ -458,7 +507,11 @@ public sealed class DefDatabase
         foreach (var d in AllServices)
         {
             d.Resolve(this);
+        {
+            if ((int)d.Kind >= _byServiceKind.Length)
+                Array.Resize(ref _byServiceKind, ServiceKindCount);
             _byServiceKind[(int)d.Kind] = d;
+        }
         }
         GeneratePhaseDefs();
         // Every element a dragon can have needs its def (one each).
@@ -625,10 +678,10 @@ public sealed class DefDatabase
 
     /// <summary>The def for a kind of service; every kind needs one.</summary>
     /// <summary>The service's def, or null when none is loaded (a trade's mod turned off).</summary>
-    public ServiceDef? ServiceOrNull(ServiceKind kind) => _byServiceKind[(int)kind];
+    public ServiceDef? ServiceOrNull(ServiceKind kind) => (int)kind < _byServiceKind.Length ? _byServiceKind[(int)kind] : null;
 
     public ServiceDef Service(ServiceKind kind) =>
-        _byServiceKind[(int)kind] ?? throw new KeyNotFoundException($"No service def for {kind}");
+        ServiceOrNull(kind) ?? throw new KeyNotFoundException($"No service def for {ServiceName(kind)}");
     public ThoughtDef Thought(string name) => Lookup(_thoughts, name);
     public InteractionDef Interaction(string name) => Lookup(_interactions, name);
     public RecipeDef Recipe(string name) => Lookup(_recipes, name);
@@ -653,13 +706,19 @@ public sealed class DefDatabase
         foreach (var raw in _modKinds.GetValueOrDefault(kind) ?? [])
         {
             T def;
+            var was = Reading;
             try
             {
+                Reading = this; // a mod's service it names is this database's
                 def = raw.Deserialize<T>(JsonOptions) ?? throw new JsonException("empty");
             }
             catch (JsonException e)
             {
                 throw new Exception($"Failed to read a def in \"{kind}\": {e.Message}", e);
+            }
+            finally
+            {
+                Reading = was;
             }
             if (string.IsNullOrEmpty(def.Label))
                 def.Label = def.Name;
