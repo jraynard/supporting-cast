@@ -323,7 +323,13 @@ Watchers' satisfaction comes through `Played`. Without a musician, the festival 
    window; the renderer hops anyone whose job or session says it's dancing (`Dancing` on both). The lute's strum: a
    down-stroke sweeps four strings from the bass, an up-stroke flicks the top two, quicker and lighter. Left: the dance
    and playing art (frames in `tools/chibi_people.py`), pair dances; the festival's dance waits for step 7.
-5. Paying: the hat, requests, the inn's draw, send-offs, mood.
+5. Paying (in progress). Done: the hat (`Takings`): set down at the musician's feet as they start playing, the silver
+   listeners toss by it (real coin, lying in the open) taken up with it when they stop; a tip once a listener's heard a
+   good while (more for dancing, more from an adventurer, once a day); a tune called for aloud from the audience (an
+   adventurer likelier), shown in the musician's window only if they heard it, and tipped well if it's played while
+   they're there (`HeardTheirTune`). A request is the audience's, not the shop line's: a musician has no counter. Left:
+   the inn's draw, the send-off (`Heartened`), the innkeeper's music night. The rhythm meter forgives flourishes now
+   (grace notes merged, notes between the pulse's set aside as ornaments).
 6. Instrument care and tuning.
 7. The festival centrepiece.
 8. Lore songs, composing, inspiration.

@@ -3,6 +3,7 @@ using HeroesNotIncluded.Sim.Components;
 using HeroesNotIncluded.Sim.Defs;
 using HeroesNotIncluded.Sim.Modding;
 using HeroesNotIncluded.Sim.Saving;
+using HeroesNotIncluded.Sim.Speech;
 using HeroesNotIncluded.Sim.Systems;
 using HeroesNotIncluded.Sim.Work;
 
@@ -23,13 +24,24 @@ public sealed class MusicianMod : ISimMod
         if (instrument.IsNull)
             Inventory.Stow(sim, me, instrument = sim.CreateItem(def, 1));
         WorkSystem.Start(sim, me, PlaySession.For(sim, instrument));
-        return sim.World.Get<WorkSession>(me) as PlaySession;
+        var session = sim.World.Get<WorkSession>(me) as PlaySession;
+        if (session != null)
+            Takings.SetDown(sim, me, session);
+        return session;
     }
 
     public void Register(SimRegistry registry)
     {
         registry.Trade(new MusicianModule());
         registry.Pastime(new Listening()); // the audience: whoever's free goes to hear the music, or dance to it
+        registry.Component<Tipped>("Tipped", (w, t) => w.Int(t.Day), r => new Tipped { Day = r.Int() });
+        registry.Component<TuneRequest>("TuneRequest", (w, q) =>
+        {
+            w.Entity(q.Musician);
+            w.String(q.Tune);
+            w.Long(q.Until);
+            w.Bool(q.Heard);
+        }, r => new TuneRequest { Musician = r.Entity(), Tune = r.String(), Until = r.Long(), Heard = r.Bool() });
         // --drill pipe (lute, fiddle, drum): that instrument in your pack and playing it, wherever you are.
         foreach (var (drill, name) in new[] { ("pipe", "Pipe"), ("lute", "Lute"), ("fiddle", "Fiddle"), ("drum", "HandDrum") })
             registry.Drill(drill, (sim, me) =>
@@ -308,6 +320,23 @@ public sealed class PlaySession : WorkSession
     public Entity Instrument;
     public string InstrumentName = "";
 
+    /// <summary>The hat set down at the musician's feet for tips (<see cref="Takings"/>), or Entity.Null.</summary>
+    public Entity Hat = Entity.Null;
+
+    /// <summary>A tip as it landed by the hat: when (sim tick), from whom, how much.</summary>
+    public readonly record struct Tip(long Tick, Entity From, int Silver);
+
+    /// <summary>The last few tips (the newest last), for the musician's window: who to thank. Set by the sim, never read by the step.</summary>
+    public List<Tip> Tips = [];
+
+    public const int TipsKept = 8;
+
+    /// <summary>A bow asked for (the thanks key), shown by the sim as it settles: the playing goes on through it.</summary>
+    public bool BowAsked;
+
+    /// <summary>A <see cref="WorkInputKind.Custom"/> value's flag: a bow of thanks, not a note.</summary>
+    public const int BowBit = 1 << 9;
+
     /// <summary>The instrument's def, given when the session starts (it reads no defs while it plays): what its keys and its air are.</summary>
     public InstrumentDef Def = InstrumentDef.PipeLike();
 
@@ -466,10 +495,30 @@ public sealed class PlaySession : WorkSession
     /// <summary>A marked gap is open to breathe in now.</summary>
     public bool InGap => StepsDone >= GapFrom && StepsDone <= GapTo;
 
+    /// <summary>
+    /// A bow asked for, made: the game's own bow (<see cref="Emote.Bow"/>), seen by all as any is, while the playing goes
+    /// on (an emote's refused mid-work otherwise). Never read by the step.
+    /// </summary>
+    public override void Settle(Simulation sim)
+    {
+        if (!BowAsked)
+            return;
+        BowAsked = false;
+        var w = sim.World;
+        var now = sim.Clock.Tick;
+        if (w.TryGet<Emoting>(Worker, out var last) && now - last.Since < Emotes.Gap)
+            return;
+        w.Add(Worker, new Emoting { Kind = Emote.Bow, Since = now, Until = now + Emotes.Duration(Emote.Bow), From = w.Get<Position>(Worker).Cell });
+    }
+
+    /// <summary>Put down (Esc, walked off, or something else taken up): the hat comes back up with what's in it.</summary>
+    public override void Interrupted(Simulation sim) => Takings.TakeUp(sim, Worker, this);
+
     /// <summary>The predictor's copy plays ahead on lists of its own: it never writes into the sim's.</summary>
     protected override void Cloned()
     {
         Notes = [.. Notes];
+        Tips = [.. Tips];
         Book = [.. Book];
     }
 
@@ -655,6 +704,11 @@ public sealed class PlaySession : WorkSession
 
     protected override void Custom(int value)
     {
+        if ((value & BowBit) != 0)
+        {
+            BowAsked = true;
+            return;
+        }
         if ((value & BreathBit) != 0)
         {
             Breathing = (value & 1) != 0 && Def.Air != null;
@@ -858,6 +912,15 @@ public sealed class PlaySession : WorkSession
         w.Int(ChordOctave);
         w.Bool(StrumUp);
         w.Int(Strums);
+        w.Entity(Hat);
+        w.Bool(BowAsked);
+        w.Int(Tips.Count);
+        foreach (var t in Tips)
+        {
+            w.Long(t.Tick);
+            w.Entity(t.From);
+            w.Int(t.Silver);
+        }
     }
 
     protected override void ReadState(SaveReader r)
@@ -922,6 +985,11 @@ public sealed class PlaySession : WorkSession
         ChordOctave = Math.Clamp(r.Int(), 0, 1);
         StrumUp = r.Bool();
         Strums = r.Int();
+        Hat = r.Entity();
+        BowAsked = r.Bool();
+        Tips.Clear();
+        for (var n = r.Count(TipsKept); n > 0; n--)
+            Tips.Add(new Tip(r.Long(), r.Entity(), r.Int()));
         if (Carrying != null && Next > Carrying.Sequence.Count)
             Next = Carrying.Sequence.Count; // the tune's def grew shorter
         if (Carrying == null || LongAt >= Carrying.Sequence.Count)
@@ -979,6 +1047,10 @@ public sealed class MusicianModule : ITradeModule
                 WorkSystem.Start(sim, avatar, new DanceSession { Musician = action.Target, HeardAt = sim.Clock.Tick });
         }
         else if (Inventory.OnPerson(sim, avatar, action.Target))
+        {
             WorkSystem.Start(sim, avatar, PlaySession.For(sim, action.Target));
+            if (w.Get<WorkSession>(avatar) is PlaySession session)
+                Takings.SetDown(sim, avatar, session); // the hat down at their feet
+        }
     }
 }

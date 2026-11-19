@@ -5,6 +5,7 @@ using HeroesNotIncluded.Sim.Defs;
 using HeroesNotIncluded.Sim.Modding;
 using HeroesNotIncluded.Sim.Round;
 using HeroesNotIncluded.Sim.Scenarios;
+using HeroesNotIncluded.Sim.Speech;
 using HeroesNotIncluded.Sim.Work;
 
 namespace HeroesNotIncluded.Sim.Tests;
@@ -842,6 +843,87 @@ public class MusicianModTests
         var centre = sim.World.Get<Position>(me).Cell;
         Assert.All(Listening.Ring(sim, listener, centre), c => Assert.Equal(Sim.Ai.Festival.DanceRadius, Math.Max(Math.Abs(c.X - centre.X), Math.Abs(c.Y - centre.Y))));
         Assert.Contains(jobs, j => !j.ToDance); // and some just listen
+        return 0;
+    });
+
+    /// <summary>The musician's playing as F starts it (the hat set down with it), a listener with ten silver standing by.</summary>
+    private static (Simulation Sim, Entity Musician, PlaySession Session, Entity Listener) Busking(DefDatabase defs)
+    {
+        var (sim, me, old, listener) = Recital(defs);
+        WorkSystem.Stop(sim, me, null);
+        var module = new MusicianModule();
+        var here = sim.World.Get<Position>(me).Cell;
+        var pipe = Inventory.CarriedOf(sim, me, sim.Defs.AllThings.First(t => t.Name == "Pipe"))[0];
+        FireDrill.PutInHand(sim, me, pipe);
+        var play = module.EarlyActionAt(sim, me, here, here)!.Value;
+        module.Perform(sim, me, play with { By = module });
+        var session = (PlaySession)sim.World.Get<WorkSession>(me);
+        Array.Fill(sim.World.Get<Mind>(listener).WorkPriority, 0);
+        return (sim, me, session, listener);
+    }
+
+    /// <summary>Ten silver in the listener's hands (they've no pack), once they're in the audience: a job ended drops what's carried.</summary>
+    private static void Purse(Simulation sim, Entity listener) =>
+        Inventory.Stow(sim, listener, sim.CreateItem(sim.Defs.AllThings.First(t => t.Name == Sim.Shops.Coin.Silver), 10));
+
+    [Fact]
+    public void ListenersTipIntoTheHatOnceADayAndItComesBackUpFull() => WithMusician(() =>
+    {
+        var defs = MusicianDefs();
+        var (sim, me, session, listener) = Busking(defs);
+        Assert.True(sim.World.IsAlive(session.Hat) && sim.World.Get<Thing>(session.Hat).Spawned, "the hat down at their feet");
+        session.Carry(session.Book.First(t => t.Name == "MillersWheel"), 0, 0); // a jig, danced on the spot
+        var spot = Sim.Ai.AiQueries.RandomReachableNear(sim, listener, sim.World.Get<Position>(me).Cell, 2, reject: c => c == sim.World.Get<Position>(me).Cell)!.Value;
+        var job = new AudienceJob(me, spot, dance: false, most: AudienceJob.Remembered + 30);
+        AiSystem.Order(sim, listener, job);
+        Purse(sim, listener);
+        for (var t = 0; t < AudienceJob.Remembered + 400 && sim.World.Get<Mind>(listener).Job == job; t++)
+            Playing(sim, session);
+        Assert.Equal(1, Takings.InHat(sim, session.Hat)); // a villager who listened: a silver
+        Assert.Equal((listener, 1), (session.Tips[^1].From, session.Tips[^1].Silver)); // who, for the window: to thank them
+        // A bow for it, playing on (an emote's otherwise refused mid-work): shown as the sim settles.
+        session.Advance([new WorkInput(session.StepsDone, WorkInputKind.Custom, PlaySession.BowBit)], session.StepsDone + 1);
+        Playing(sim, session);
+        Assert.Equal(Emote.Bow, sim.World.Get<Emoting>(me).Kind);
+        Assert.Same(session, sim.World.Get<WorkSession>(me));
+        Assert.Contains(sim.World.Get<Mood>(listener).Memories, m => m.Def.Name == "HeardMusic");
+        // Again the same day: they've given their tip.
+        var again = new AudienceJob(me, spot, dance: false, most: AudienceJob.Remembered + 30);
+        AiSystem.Order(sim, listener, again);
+        Purse(sim, listener);
+        for (var t = 0; t < AudienceJob.Remembered + 400 && sim.World.Get<Mind>(listener).Job == again; t++)
+            Playing(sim, session);
+        Assert.Equal(1, Takings.InHat(sim, session.Hat));
+        // Put away: the hat comes back up, the silver into the pack.
+        var before = Sim.Shops.Coin.Count(sim, me);
+        var hat = session.Hat;
+        WorkSystem.Stop(sim, me, null);
+        Assert.Equal(before + 1, Sim.Shops.Coin.Count(sim, me));
+        Assert.False(sim.World.Get<Thing>(hat).Spawned);
+        Assert.True(Inventory.OnPerson(sim, me, hat));
+        return 0;
+    });
+
+    [Fact]
+    public void ATuneCalledForAndPlayedIsTippedWell() => WithMusician(() =>
+    {
+        var defs = MusicianDefs();
+        var (sim, me, session, listener) = Busking(defs);
+        var sailor = session.Book.First(t => t.Name == "DrunkenSailor");
+        Takings.Ask(sim, listener, me, sailor);
+        Assert.Equal("DrunkenSailor", Takings.Wants(sim, listener, me));
+        Assert.True(sim.World.Get<TuneRequest>(listener).Heard); // said aloud, beside the musician
+        Assert.Contains(sim.Speech.Kept, u => u.Speaker == listener && u.Text.Contains("Drunken Sailor"));
+        session.Carry(sailor, 0, 0);
+        var spot = Sim.Ai.AiQueries.RandomReachableNear(sim, listener, sim.World.Get<Position>(me).Cell, 2, reject: c => c == sim.World.Get<Position>(me).Cell)!.Value;
+        var job = new AudienceJob(me, spot, dance: false, most: AudienceJob.Remembered + 30);
+        AiSystem.Order(sim, listener, job);
+        Purse(sim, listener);
+        for (var t = 0; t < AudienceJob.Remembered + 400 && sim.World.Get<Mind>(listener).Job == job; t++)
+            Playing(sim, session);
+        Assert.Null(Takings.Wants(sim, listener, me)); // answered
+        Assert.Equal(Takings.ForTheirTune + Takings.ForListening, Takings.InHat(sim, session.Hat));
+        Assert.Contains(sim.World.Get<Mood>(listener).Memories, m => m.Def.Name == "HeardTheirTune");
         return 0;
     });
 }

@@ -4,20 +4,35 @@
   "trades": [
     { "name": "Musician", "label": "musician", "pace": "Steady", "playerOnly": true, "formerly": [ "Bard" ],
       "description": "Music for the town: the pipe, the lute, the fiddle and the drum, for whoever will listen. Comes only if someone plays it.",
-      "kit": [ { "def": "Pipe" }, { "def": "Lute" }, { "def": "Fiddle" }, { "def": "HandDrum" } ] }
+      "kit": [ { "def": "Pipe" }, { "def": "Lute" }, { "def": "Fiddle" }, { "def": "HandDrum" }, { "def": "Hat" } ] }
   ],
   "things": [
     // A tin whistle in D. Its music is the musician mod's own kind of def, below.
     { "name": "Pipe", "label": "tin pipe", "category": "Item", "mass": 0.2, "sprite": "items/pipe", "flammability": 0.1, "maxHp": 40 },
     { "name": "Lute", "label": "lute", "category": "Item", "mass": 1.6, "sprite": "items/lute", "flammability": 0.8, "maxHp": 30 },
     { "name": "Fiddle", "label": "fiddle", "category": "Item", "mass": 0.6, "sprite": "items/fiddle", "flammability": 0.8, "maxHp": 30 },
-    { "name": "HandDrum", "label": "hand drum", "category": "Item", "mass": 1.2, "sprite": "items/hand_drum", "flammability": 0.6, "maxHp": 40 }
+    { "name": "HandDrum", "label": "hand drum", "category": "Item", "mass": 1.2, "sprite": "items/hand_drum", "flammability": 0.6, "maxHp": 40 },
+    // Set down at the musician's feet as they play (Takings): listeners toss silver down by it, and it's all taken up
+    // when they stop. Not a container: a pack can't carry one, and it's the silver lying there that's real.
+    { "name": "Hat", "label": "musician's hat", "category": "Item", "mass": 0.2, "sprite": "items/hat", "stackLimit": 1,
+      "flammability": 0.8, "maxHp": 20,
+      "description": "A felt hat with a wide brim, turned up to take coins." }
   ],
   // What the audience remembers of an evening's music (Audience.cs: AudienceJob), as memories (mood.json's format).
   "thoughts": [
     { "name": "HeardMusic", "label": "heard some music", "description": "Stood a while and listened to a musician play.", "mood": 3, "durationHours": 6, "races": [ "Human" ] },
     { "name": "Danced", "label": "danced", "description": "Danced to a musician's tune.", "mood": 5, "durationHours": 8, "races": [ "Human" ] },
+    { "name": "HeardTheirTune", "label": "heard the tune they asked for", "description": "Called for a tune, and the musician played it.", "mood": 6, "durationHours": 8, "races": [ "Human" ] },
     { "name": "SourMusic", "label": "suffered sour music", "description": "Stood through a tune gone to pieces, and gave up on it.", "mood": -2, "durationHours": 3, "races": [ "Human" ] }
+  ],
+  // A listener calling for a tune (Takings.Ask): {thing} is the tune.
+  "barks": [
+    { "name": "musician.request", "lines": [
+      { "text": "Give us {thing}, musician!" },
+      { "text": "Do you know {thing}? Play it!" },
+      { "text": "{thing}! Play {thing}!", "when": [ "merry" ] },
+      { "text": "Play us {thing}, would you? For the road.", "when": [ "adventurer" ] }
+    ] }
   ],
   // The musician mod's own kind (DefDatabase.ModDefs): how an instrument sounds and what it plays.
   "instruments": [

@@ -40,6 +40,24 @@ public static class Coin
         return paid;
     }
 
+    /// <summary>
+    /// Put down up to <paramref name="amount"/> of someone's silver at or near a cell (a coin tossed by a musician's hat),
+    /// onto any pile already there. Returns how much was put down.
+    /// </summary>
+    public static int PayDown(Simulation sim, Entity from, int3 at, int amount)
+    {
+        var paid = 0;
+        foreach (var stack in Stacks(sim, from))
+        {
+            if (paid >= amount)
+                break;
+            var take = Math.Min(amount - paid, sim.World.Get<Stack>(stack).Count);
+            sim.PlaceItemNear(Inventory.TakeFromPerson(sim, from, stack, take), at);
+            paid += take;
+        }
+        return paid;
+    }
+
     private static List<Entity> Stacks(Simulation sim, Entity who)
     {
         var w = sim.World;

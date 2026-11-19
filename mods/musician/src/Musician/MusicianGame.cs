@@ -19,7 +19,7 @@ public sealed class MusicianGame : IGameMod
     /// <summary>The note keys' controls, the scale's first degree first.</summary>
     private static string[] _notes = [];
 
-    private static string _octave = "", _sharp = "", _breathe = "", _chord = "";
+    private static string _octave = "", _sharp = "", _breathe = "", _chord = "", _thank = "";
 
     public void Register(GameRegistry r)
     {
@@ -34,6 +34,8 @@ public sealed class MusicianGame : IGameMod
         _breathe = r.Control("breathe", "Take a breath or turn the bow (hold), while your hands carry a tune", [Binding.Key(GlfwKey.LeftShift)], [Binding.Pad(PadButton.LB)], "Music: a tune");
         // Only on an instrument of chords (the lute), so it may share a pad button with the semitone.
         _chord = r.Control("chord", "Hold a chord (with a note key); F strums it", [Binding.Key(GlfwKey.Q)], [Binding.Pad(PadButton.RT)], "Music: chords");
+        // Not 9: that's the hands-on work's ninth rune.
+        _thank = r.Control("thank", "A bow, to whoever just tipped you or to the crowd", [Binding.Key(GlfwKey.Number0)], [], "Music");
         r.WorkInput<PlaySession>(Inputs);
         r.WorkView<PlaySession>(Draw);
         r.WorkSound<PlaySession>(Sound);
@@ -44,6 +46,8 @@ public sealed class MusicianGame : IGameMod
 
     private static IEnumerable<int> Inputs(WorkView view, PlaySession s)
     {
+        if (view.Pressed(_thank))
+            yield return PlaySession.BowBit; // a bow, playing on: to whoever just tipped, or to the crowd
         if (s.Def.Air != null)
         {
             if (view.Pressed(_breathe))
@@ -229,6 +233,71 @@ public sealed class MusicianGame : IGameMod
         view.End();
     }
 
+    /// <summary>Seconds a tip stays news in the window (and you may bow for it).</summary>
+    private const float TipNews = 6f;
+
+    /// <summary>The tip last bowed for (its tick), so one bow answers one tip.</summary>
+    private static long _bowedFor = -1;
+
+    /// <summary>
+    /// Your hat as it lies at your feet, the silver by it piled in, a coin dropping in as each tip lands, and who
+    /// tossed it (by name if you can see them), so you can thank them: a bow, turned to them.
+    /// </summary>
+    private static void DrawHat(WorkView view, PlaySession s)
+    {
+        var sim = view.Sim;
+        var w = sim.World;
+        if (!w.IsAlive(s.Hat))
+        {
+            ImGuiText.Colored(Theme.Dim, "No hat down: tips need somewhere to go.");
+            return;
+        }
+        var silver = Takings.InHat(sim, s.Hat);
+        var dl = ImGui.GetWindowDrawList();
+        var min = ImGui.GetCursorScreenPos();
+        var size = new float2(Gui.S(LaneWidth), Gui.S(64));
+        var hatW = Gui.S(90);
+        var brimTop = min.Y + Gui.S(40);
+        // The coins, piled in the crown: a few for a little, more as it fills.
+        var shown = Math.Min(silver, 14);
+        for (var i = 0; i < shown; i++)
+        {
+            var c = new float2(min.X + Gui.S(24) + i % 7 * Gui.S(7), brimTop - Gui.S(4) - i / 7 * Gui.S(5));
+            dl.AddCircleFilled(in c, Gui.S(4), Theme.U8(new float4(0.86f, 0.84f, 0.76f, 1f)), 12);
+            dl.AddCircle(in c, Gui.S(4), Theme.U8(Theme.Cellar), 12, Gui.S(1));
+        }
+        var c0 = new float2(min.X + Gui.S(16), min.Y + Gui.S(20));
+        var c1 = new float2(min.X + hatW - Gui.S(16), brimTop + Gui.S(4));
+        dl.AddRect(in c0, in c1, Theme.U8(Theme.Oak), Gui.S(8), ImDrawFlags.None, Gui.S(3)); // the crown, open to us
+        var b0 = new float2(min.X, brimTop);
+        var b1 = new float2(min.X + hatW, brimTop + Gui.S(10));
+        dl.AddRectFilled(in b0, in b1, Theme.U8(Theme.Oak), Gui.S(5), ImDrawFlags.None); // the brim
+        var band0 = new float2(c0.X, brimTop - Gui.S(6));
+        var band1 = new float2(c1.X, brimTop - Gui.S(2));
+        dl.AddRectFilled(in band0, in band1, Theme.U8(Theme.HearthRed), 0f, ImDrawFlags.None);
+        // The newest tip: a coin dropping in, and who it was.
+        var x = min.X + hatW + Gui.S(14);
+        if (s.Tips.Count > 0 && s.Tips[^1] is var tip && (sim.Clock.Tick - tip.Tick) / (float)SimClock.TicksPerSecond is var age && age < TipNews)
+        {
+            if (age < 0.6f)
+            {
+                var fall = new float2(min.X + hatW * 0.5f, min.Y + (brimTop - min.Y - Gui.S(6)) * (age / 0.6f) * (age / 0.6f));
+                dl.AddCircleFilled(in fall, Gui.S(5), Theme.U8(Theme.Accent), 12);
+            }
+            var who = w.IsAlive(tip.From) && view.Perceived.CanSee(tip.From) ? w.Get<Creature>(tip.From).Name : "Someone";
+            var line0 = new float2(x, min.Y + Gui.S(8));
+            dl.AddText(in line0, Theme.U8(Theme.Good), $"{who} tossed you {tip.Silver} silver!");
+            var line1 = new float2(x, min.Y + Gui.S(8) + ImGui.GetTextLineHeightWithSpacing());
+            var bowed = _bowedFor == tip.Tick;
+            dl.AddText(in line1, Theme.U8(bowed ? Theme.Dim : Theme.Parchment), bowed ? "You bowed your thanks." : $"{WorkView.Glyph(_thank)}: a bow, to thank them");
+            if (!bowed && view.Pressed(_thank))
+                _bowedFor = tip.Tick; // the bow itself goes as an input (Inputs)
+        }
+        var total = new float2(x, min.Y + Gui.S(8) + 2 * ImGui.GetTextLineHeightWithSpacing());
+        dl.AddText(in total, Theme.U8(Theme.Dim), silver > 0 ? $"By your hat: {silver} silver." : "Nothing by it yet.");
+        ImGui.Dummy(in size);
+    }
+
     /// <summary>Who's come to the music, as far as you can see them: dancing, or stood listening.</summary>
     private static void DrawAudience(WorkView view)
     {
@@ -246,6 +315,18 @@ public sealed class MusicianGame : IGameMod
             if (w.Get<WorkSession>(e) is DanceSession d && d.Musician == view.Me && view.Perceived.CanSee(e))
                 dancing++;
         ImGui.Separator();
+        // The takings, and what you've heard called for (said aloud: only what reached you).
+        if (w.TryGet<WorkSession>(view.Me, out var mine) && mine is PlaySession playing)
+        {
+            DrawHat(view, playing);
+            var asked = new List<string>();
+            foreach (var e in w.Each<TuneRequest>())
+                if (w.Get<TuneRequest>(e) is { Heard: true } q && q.Musician == view.Me && q.Until > view.Sim.Clock.Tick
+                    && playing.Book.Find(t => t.Name == q.Tune) is { } tune && !asked.Contains(tune.Label))
+                    asked.Add(tune.Label);
+            if (asked.Count > 0)
+                ImGuiText.Colored(Theme.Accent, $"Called for: {string.Join(", ", asked)}. Play it while they're here.");
+        }
         if (dancing + listening == 0)
             ImGuiText.Colored(Theme.Dim, "No one's come to listen yet.");
         else
@@ -758,6 +839,9 @@ public sealed class MusicianGame : IGameMod
     {
         private readonly Dictionary<Sim.Ecs.Entity, (long Start, int Played)> _heard = [];
 
+        /// <summary>The last tip clinked for (sim tick); -1 before the first look, so old tips don't clink.</summary>
+        private long _clinked = -1;
+
         /// <summary>Session steps after the last note before the background music comes back.</summary>
         private const int QuietAfter = 7 * 60;
 
@@ -775,7 +859,16 @@ public sealed class MusicianGame : IGameMod
                 if (playing && (e == ctx.View.Viewer || ctx.Reach(at.Cell) != null))
                     ctx.HoldMusic();
                 if (e == ctx.View.Viewer)
+                {
+                    // A tip landing by your hat: the clink of it.
+                    if (s.Tips.Count > 0 && s.Tips[^1].Tick > _clinked)
+                    {
+                        if (_clinked >= 0)
+                            ctx.Audio.Play("ui.coin");
+                        _clinked = s.Tips[^1].Tick;
+                    }
                     continue; // your own notes are heard as you play them (Sound)
+                }
                 var was = _heard.TryGetValue(e, out var h) && h.Start == s.StartTick ? h.Played : s.Played; // a session first heard: from now
                 _heard[e] = (s.StartTick, s.Played);
                 if (ctx.Reach(at.Cell) is not { } muffle)

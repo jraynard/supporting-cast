@@ -248,6 +248,21 @@ def drum_icon(path):
     img.save(path)
 
 
+def hat_icon(path):
+    """A musician's felt hat, brim up to take coins, a feather in its band."""
+    img = Image.new("RGBA", (32, 32), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    d.ellipse([2, 16, 30, 28], fill=(40, 30, 26, 255))
+    d.ellipse([3, 17, 29, 27], fill=(96, 70, 52, 255))              # the brim
+    d.rounded_rectangle([9, 8, 23, 22], radius=5, fill=(40, 30, 26, 255))
+    d.rounded_rectangle([10, 9, 22, 21], radius=4, fill=(118, 86, 62, 255))  # the crown
+    d.rectangle([10, 17, 22, 19], fill=(150, 46, 40, 255))          # its band
+    d.line([(20, 17), (27, 6)], fill=(232, 220, 190, 255), width=2)  # a feather
+    d.ellipse([12, 22, 15, 25], fill=(214, 214, 220, 255))          # a coin in it
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    img.save(path)
+
+
 if __name__ == "__main__":
     # D5 and D6: the whistle's two octaves (the game pitches each up to the scale's notes).
     write_wav(os.path.join(MOD, "sounds", "pipe_d5.wav"), pipe_note(587.33, seed=1))
@@ -273,4 +288,5 @@ if __name__ == "__main__":
     lute_icon(os.path.join(MOD, "textures", "items", "lute.png"))
     fiddle_icon(os.path.join(MOD, "textures", "items", "fiddle.png"))
     drum_icon(os.path.join(MOD, "textures", "items", "hand_drum.png"))
+    hat_icon(os.path.join(MOD, "textures", "items", "hat.png"))
     print("musician assets written")

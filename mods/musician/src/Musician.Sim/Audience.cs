@@ -235,8 +235,11 @@ public sealed class AudienceJob(Entity musician, int3 spot, bool dance, int most
     private bool _dancing, _soured;
     private float _tempo;
 
-    /// <summary>Ticks spent hearing the music, and dancing to it, and the sour stretch now.</summary>
-    private int _heard, _danced, _sour;
+    /// <summary>Ticks spent hearing the music, and dancing to it, and the sour stretch now, and hearing the tune they asked for.</summary>
+    private int _heard, _danced, _sour, _theirs;
+
+    /// <summary>Tipped this time (or had nothing to give), and their tune answered.</summary>
+    private bool _tipped, _answered;
 
     public override bool Interruptible => true;
 
@@ -274,6 +277,18 @@ public sealed class AudienceJob(Entity musician, int3 spot, bool dance, int most
         _heard++;
         if (_dancing)
             _danced++;
+        // Heard a good while: a coin in the hat. Their own tune, played through a while: a good deal more.
+        if (!_tipped && _heard >= Remembered)
+        {
+            _tipped = true;
+            Takings.Tip(Sim, Pawn, musician, _danced >= Remembered / 2);
+        }
+        if (!_answered && Takings.Wants(Sim, Pawn, musician) is { } tune
+            && Sim.World.Get<WorkSession>(musician) is PlaySession { Carrying: { } playing } && playing.Name == tune && ++_theirs >= Remembered / 2)
+        {
+            _answered = true;
+            Takings.Answered(Sim, Pawn, musician);
+        }
         return true;
     }
 
@@ -283,6 +298,10 @@ public sealed class AudienceJob(Entity musician, int3 spot, bool dance, int most
         foreach (var s in GoTo(spot, PathEnd.OnTile)) yield return s;
         if (HasFailed)
             yield break;
+        // Come to the music, someone may call for a tune of the musician's (an adventurer, more likely).
+        if (Takings.Wants(Sim, Pawn, musician) == null && Alive(musician) && Sim.World.TryGet<WorkSession>(musician, out var w) && w is PlaySession { Book.Count: > 0 } playing
+            && Sim.Rand.NextFloat() < Takings.AskChance * (Sim.World.Has<Adventurer>(Pawn) ? 2f : 1f))
+            Takings.Ask(Sim, Pawn, musician, playing.Book[Sim.Rand.NextInt(playing.Book.Count)]);
         if (ring is { Count: > 0 })
         {
             // Round and round, a cell at a time, while the music lasts (on the spot, hopping, while it's too tender to dance round).
@@ -311,5 +330,6 @@ public sealed class AudienceJob(Entity musician, int3 spot, bool dance, int most
             MoodSystem.Remember(Sim, Pawn, Sim.Defs.ThoughtOrNull("SourMusic"));
         else if (_heard >= Remembered)
             MoodSystem.Remember(Sim, Pawn, Sim.Defs.ThoughtOrNull(_danced >= Remembered / 2 ? "Danced" : "HeardMusic"));
+        // (their tune answered is remembered as it's answered: Takings.Answered)
     }
 }
