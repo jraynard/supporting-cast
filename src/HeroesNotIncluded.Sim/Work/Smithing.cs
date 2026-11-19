@@ -147,6 +147,13 @@ public static class Smithing
         return (t * 0.95f, t * 1.2f, t * 1.3f);
     }
 
+    /// <summary>
+    /// Hot enough to work, by what's seen: its glow come up to the colour at the bottom of its window. A bronze piece's
+    /// window starts partway into dull red: judged by the degree, one drawn out at the right colour read as cold (the bot
+    /// smith went back and forth to the fire with a bronze spear, and a player would have too).
+    /// </summary>
+    public static bool HotEnough(RecipeDef recipe, float temp) => GlowOf(temp) >= GlowOf(Window(recipe).Lo);
+
     /// <summary>The colours to work a recipe's metal in, as a smith would say it ("cherry red to orange").</summary>
     public static string WorkingColours(RecipeDef recipe)
     {
@@ -372,7 +379,7 @@ public static class Smithing
                 : p.Temp >= lo ? "hot enough: to the anvil, and beat the slag out"
                 : p.Reduced < 1f ? "back in the fire: it'll grow some more" : "back in the fire for another heat";
         if (!p.Shaped)
-            return p.Temp >= lo ? "hot enough: to the anvil" : p.Shape > 0 ? "back to the fire" : "into the fire";
+            return HotEnough(p.Recipe, p.Temp) ? "hot enough: to the anvil" : p.Shape > 0 ? "back to the fire" : "into the fire";
         return p.Temp >= lo * 0.75f ? "quench it while it's hot" : "heat it again, then quench it";
     }
 

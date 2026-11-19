@@ -129,6 +129,9 @@ public class AdventurerTemperTests
         Assert.All(taken, i => Assert.Equal(Defs.DamageType.Blunt, i.Type));
         Assert.False(sim.World.Get<Creature>(a).Dead || sim.World.Get<Creature>(b).Dead);
         Assert.False(Brawls.InOne(sim, a) || Brawls.InOne(sim, b), "it's over");
-        Assert.Equal(swords, (sim.World.Get<Equipment>(a).Weapon, sim.World.Get<Equipment>(b).Weapon));
+        // Fists: no blade was broken or lost in it (either may have gone straight on to hand theirs to the smith after).
+        Assert.True(sim.World.IsAlive(swords.Item1) && sim.World.IsAlive(swords.Item2));
+        Assert.All(new[] { (a, swords.Item1), (b, swords.Item2) }, p => Assert.True(
+            sim.World.TryGet<Equipment>(p.Item1, out var eq) && eq.Weapon == p.Item2 || sim.World.Has<Entrusted>(p.Item2) || Inventory.OnPerson(sim, p.Item1, p.Item2)));
     }
 }

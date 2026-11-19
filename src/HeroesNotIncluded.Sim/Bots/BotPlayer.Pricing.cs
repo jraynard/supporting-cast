@@ -29,7 +29,7 @@ public sealed partial class BotPlayer
 
     /// <summary>
     /// A simple market, played from its side of the counter: hearing an adventurer call a price
-    /// too dear, it drops that one; seeing a line of <see cref="BusyLine"/> or more, it puts up the
+    /// too dear, it drops that one; knowing of <see cref="BusyLine"/> or more waiting on what it sells, it puts up the
     /// price of what they've asked for. Its sign starts at the defaults. Only what it heard and saw.
     /// </summary>
     private void Price(Simulation sim, Entity me, PerceptionView view, long now)
@@ -69,11 +69,12 @@ public sealed partial class BotPlayer
                         Set(p, p.Price - 1);
                 }
         }
-        var cells = ShopSystem.LineCells(sim, shop);
-        var waiting = view.Creatures().Where(e => e != me && sim.World.Has<Adventurer>(e) && cells.Contains(sim.World.Get<Position>(e).Cell)).ToHashSet();
+        // Busy: as many waiting on what its sign sells as it knows of, standing in the line or about the room (a long
+        // line spills off the line's cells: counted by bodies on them alone, seven waiting read as two).
+        var waiting = view.Orders().Where(o => o.Status == OrderStatus.Open && sign.Any(p => p.Kind == o.Kind && p.Offered)).ToList();
         if (waiting.Count < BusyLine)
             return;
-        foreach (var kind in view.Orders().Where(o => o.Status == OrderStatus.Open && waiting.Contains(o.Poster)).Select(o => o.Kind).Distinct())
+        foreach (var kind in waiting.Select(o => o.Kind).Distinct())
             if (sign.FirstOrDefault(p => p.Kind == kind) is { Offered: true } p)
                 Set(p, p.Price + 1);
     }

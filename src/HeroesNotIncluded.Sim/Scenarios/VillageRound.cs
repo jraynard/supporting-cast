@@ -164,6 +164,8 @@ public static class VillageRound
                 case "Chest":
                     sim.Store(e, sim.CreateItem(sim.Defs.Thing("IronOre"), SmithyOre));
                     sim.Store(e, sim.CreateItem(sim.Defs.Thing(Systems.Stock.PlanksDef), SmithyPlanks));
+                    foreach (var t in sim.Defs.Season.SmithyStock)
+                        sim.Store(e, sim.CreateItem(t.ThingDef, t.Count, t.MaterialDef));
                     break;
             }
         }

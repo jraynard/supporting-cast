@@ -340,7 +340,7 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
             return null;
         // Temp is what the colour shows; the UI draws the colour from it and never prints it.
         var next = smith == viewer || Omniscient ? Work.Smithing.NextStep(sim, smith, p) : null;
-        var hot = p.Temp >= Work.Smithing.Window(p.Recipe).Lo;
+        var hot = Work.Smithing.HotEnough(p.Recipe, p.Temp);
         return new KnownPiece(Work.Smithing.PieceLabel(sim, p), Work.Smithing.GlowOf(p.Temp), p.Temp, hot, Math.Clamp(p.Shape, 0f, 1f), p.Shaped, p.IsMend, next, p.Forge,
             p.IsBloom ? Work.Smithing.BloomWords(p.Reduced) : null);
     }

@@ -184,7 +184,7 @@ public sealed class HammerSession : WorkSession
     public bool Ready => _recovery <= 0;
 
     /// <summary>How well a blow now would move the metal, 0..1, from its heat.</summary>
-    public float Workable => Temp >= Lo ? 1f : Math.Clamp((Temp - Lo * TooCold) / (Lo * (1f - TooCold)), 0f, 1f);
+    public float Workable => Temp >= Lo || Smithing.GlowOf(Temp) >= Smithing.GlowOf(Lo) ? 1f : Math.Clamp((Temp - Lo * TooCold) / (Lo * (1f - TooCold)), 0f, 1f); // the colour shows it workable: so it is
 
     public bool Shaped => Shape >= 1f;
 

@@ -57,10 +57,12 @@ public sealed class HeatSession : WorkSession
     public bool Pumping => Held;
 
     /// <summary>
-    /// A practised eye's moment to draw it out: glowing the colour in the middle of its working
-    /// heat, or as hot as this fire will get it if that's short of the middle (for bots and tests).
+    /// A practised eye's moment to draw it out: glowing the colour at the top of its working heat (iron's orange; bronze,
+    /// worked cooler, its blood red: drawn out at its first dull glow, it was cold again in a few blows), or as hot as
+    /// this fire will get it if that's short of the middle (for bots and tests).
     /// </summary>
-    public bool LooksReady => Glow >= Smithing.GlowOf((Lo + Hi) * 0.5f) || (Fire >= FireMax - 15f && Temp >= Math.Min((Lo + Hi) * 0.5f, FireMax - 40f));
+    public bool LooksReady => Glow >= Smithing.GlowOf(Hi)
+        || (Fire >= FireMax - 15f && Temp >= Math.Min((Lo + Hi) * 0.5f, FireMax - 40f));
     public Glow Glow => Smithing.GlowOf(Temp);
     public bool Burning => Temp > BurnAt;
 

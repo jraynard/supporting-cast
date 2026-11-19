@@ -34,6 +34,33 @@ public class MaterialSupplyTests
     private static int Charcoal(Simulation sim, Entity bin) => Stock.CountIn(sim, bin, "Charcoal");
 
     [Fact]
+    public void TheSmithyHasBronzeAndTheCopperAndTinToAlloyMore()
+    {
+        // A playtest: adventurers asked for bronze pieces and the smith had none to make them from.
+        var (sim, me) = Round("Blacksmith");
+        var smithy = Shops.ShopSystem.WorkplaceOf(sim, me);
+        var chest = Part(sim, smithy, "Chest");
+        Assert.Equal(4, Stock.CountIn(sim, chest, "BronzeBar"));
+        Assert.Equal(8, Stock.CountIn(sim, chest, "CopperOre"));
+        Assert.Equal(4, Stock.CountIn(sim, chest, "TinOre"));
+        // The carter's morning load brings more copper and tin with the iron.
+        OreCarterSystem.Deliver(sim);
+        Assert.Equal(8 + 6, Stock.CountIn(sim, chest, "CopperOre"));
+        Assert.Equal(4 + 2, Stock.CountIn(sim, chest, "TinOre"));
+        // The ores handled, copper's smelted and bronze alloyed at the smithy's kiln, which charcoal brings hot enough.
+        RecipeBooks.Discover(sim, me, "handle:CopperOre");
+        RecipeBooks.Discover(sim, me, "handle:TinOre");
+        var kiln = sim.World.Query<Thing>().First(e => sim.World.Get<Thing>(e).Def.Name == "Kiln" && Crafting.KeptAt(sim, e) == smithy);
+        foreach (var name in new[] { "SmeltCopper", "AlloyBronze" })
+        {
+            var recipe = sim.Defs.Recipe(name);
+            Assert.True(Crafting.CanMake(sim, me, recipe), name);
+            Assert.Contains(recipe, sim.World.Get<Thing>(kiln).Def.Recipes);
+            Assert.True(sim.World.Get<Thing>(kiln).Def.Building!.Fuel!.OptionFor(sim.Defs.Thing("Charcoal"))!.Reach >= recipe.MinTemp, $"{name}: hot enough on charcoal");
+        }
+    }
+
+    [Fact]
     public void CraftedThingsTakePlanksAndTimberIsForBuilding()
     {
         var defs = TestWorld.LoadDefs();

@@ -125,6 +125,12 @@ public sealed class SeasonDef : Def
     /// <summary>Planks laid in the barn's stockpile at the deal: for what the town makes (hafts, contraptions, furniture), till the carpenter saws more.</summary>
     public int BarnPlanks { get; set; }
 
+    /// <summary>
+    /// More in the smithy's chest at the deal, beside its iron ore and planks: bronze for what's asked for in it, and copper
+    /// and tin to alloy more at the kiln (copper bars from the ore, then bronze).
+    /// </summary>
+    public List<ThingCount> SmithyStock { get; set; } = [];
+
     /// <summary>What the woodcutter leaves in the barn each morning from the second day: timber, for building and mending.</summary>
     public List<ThingCount> WoodDelivery { get; set; } = [];
 
@@ -161,6 +167,8 @@ public sealed class SeasonDef : Def
         foreach (var t in ShrineDelivery)
             t.Resolve(db);
         foreach (var t in OreDelivery)
+            t.Resolve(db);
+        foreach (var t in SmithyStock)
             t.Resolve(db);
         foreach (var t in WoodDelivery)
             t.Resolve(db);

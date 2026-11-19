@@ -2738,3 +2738,15 @@ From the user's playing on a Deck:
   bell, and a placed message reaches only who can see the place. In bot seasons the AI tinker's bell rang in every
   raid, so nobody away from the road got a banner. The town's bell is now unplaced ("Raid!", heard by all), and the
   trip-bell that set it off is noted where it is.
+- **Bronze at the smithy** (from play: pieces asked for in bronze, and none to make them): 4 bronze bars, 8 copper ore
+  and 4 tin ore in its chest at the deal (`season.json` `smithyStock`), and 6 copper and 2 tin in the carter's morning
+  load. Copper's smelted into bars at the kiln, then 3 bars and 2 tin alloy into 4 bronze (charcoal in the kiln makes
+  it hot enough). The smith's smelting lesson says so.
+- **Fixed: a piece worked cooler than iron (bronze) went back and forth to the fire.** "Hot" was by degree, and a
+  bronze window starts partway into dull red: drawn out at the right colour, it read as cold. Hot and the hammer's full
+  strength are now by the colour shown (`Smithing.HotEnough`, `HammerSession.Workable`), and a piece looks ready at the
+  colour at the top of its window (`HeatSession.LooksReady`). The bot smith over 8 seasons: heats 47 to 7, hammerings
+  2.5 to 6.5, mends 4.1 to 5.1 (the roadmap's stall on the smithy's heat was this, mostly).
+- **A bot keeper counts who's waiting by the orders it knows** (on what its sign sells), not bodies on the line's cells:
+  a long line spills off them, and seven waiting read as two.
+- Bench: seed 1234 state `D07ABAFA413F0DA9`, full `E5C4F7BF87167692`; seed 99 state `76B9A4BDB726594C`, full `A3CAC15B8861C2E5`.
