@@ -27,13 +27,14 @@ Steam shows this beside the capsule. 300 characters at most.
 > **Somebody has to keep the lights on.**
 >
 > Every adventure starts in a tavern. Ours starts behind the bar. You and your friends are the
-> village the heroes walk past on the way to glory: the innkeeper, the smith, the cook, the empath
-> and the tinker. They get the glory. You get the tab.
+> village the heroes walk past on the way to glory: the innkeeper, the smith, the cook, the empath,
+> the tinker and the carpenter. They get the glory. You get the tab.
 >
 > **Your trade is your game.** Pour ales and mix drinks while the line grows. Heat, hammer and
 > quench a blade by the colour of the steel. Taste the stew, sniff the larder, and hope nobody
 > notices the cabbage. Draw a stranger's wounds into yourself and weave the right mending before
-> they do you in. Pick the lock on the strongbox a party dragged home, carefully.
+> they do you in. Pick the lock on the strongbox a party dragged home, carefully. Fell a pine
+> where you meant it to fall, and fletch the arrows the archers will lose by Thursday.
 >
 > **Nobody can do it alone.** The cook feeds the inn, the smith arms the party, the empath patches
 > up whatever comes back. Set your own prices, pin favours to the notice board, and talk to each
@@ -55,7 +56,8 @@ Steam shows this beside the capsule. 300 characters at most.
 
 > - Co-op for 1 to 12 players, online or on your local network. Villagers fill any trade nobody
 >   takes, so a round works with two of you or a full town.
-> - Five trades, each its own game: innkeeper, cook, blacksmith, empath and tinker.
+> - Six trades, each its own game: innkeeper, cook, blacksmith, empath, tinker and carpenter.
+>   The musician and the miner are on their way.
 > - Two towns: Millbrook by the river and Reedmere, on stilts over the long lake.
 > - Seasons of 30 to 40 minutes: parties to serve, crises to weather, and a festival at the end.
 > - Optional traitors, and rounds without them for groups who'd rather not.
@@ -65,7 +67,27 @@ Steam shows this beside the capsule. 300 characters at most.
 In development line, until traitors ship:
 
 > Heroes Not Included is in active development. Traitors are on their way; co-op seasons are
-> playable now.
+> playable now. Try a season in the free demo.
+
+The last sentence goes in once the demo is public (February 2027).
+
+## The demo's page
+
+The demo is an app of its own, with its own small page (NEXT-FEST.md). It takes the game's capsules
+with a "Demo" mark, and links back to the game's page for wishlists.
+
+**Short description:**
+
+> One season in Millbrook, with the bar, the forge, the kitchen, the shrine, the tinker's bench
+> and the woodshop. Play alone with the villagers or bring friends. Keep the heroes happy until
+> the festival. They won't thank you.
+
+**What's in it** (keep it true of the demo build):
+
+> - A shortened season in Millbrook, from the deal to the festival and the reveal.
+> - Six trades, and the practice yard with lessons for each.
+> - Play alone, villagers taking the other trades, or invite friends through Steam.
+> - Your characters carry over to the full game.
 
 ## Tags
 
@@ -91,12 +113,14 @@ Steam asks these of every Early Access game. Draft answers:
 > set of trades and the traitors are properly sneaky.
 
 **How is the full version planned to differ?**
-> More trades (the constable, the apothecary, the musician and others), more towns, deeper betrayals
+> More trades (the musician and the miner first, then the constable, the apothecary and others), more towns, deeper betrayals
 > and the evidence to catch them, and something of your character to carry between rounds.
 
 **What is the current state of the Early Access version?**
-> A complete season with friends: five trades, two towns, crises, the festival, death and ghosts,
-> and traitors. Expect rough edges and balance changes.
+> A complete season with friends: six trades or more, two towns, crises, the festival, death and
+> ghosts, and traitors. Expect rough edges and balance changes.
+
+(Write this at launch from what's actually in: the musician and the miner may be in by then.)
 
 **Will the price change after Early Access?**
 > Probably a little, as the game grows. Anyone who buys in Early Access gets every update.
@@ -106,6 +130,23 @@ Steam asks these of every Early Access game. Draft answers:
 > what's in the game came from watching friends and family play.
 
 ## Capsules and media
+
+Made in-house for Next Fest, and commissioned from an artist before Early Access (MARKETING.md,
+Phase 2). Steam's required sizes, in pixels (check Steamworks' current list when uploading):
+
+| Asset | Size |
+|---|---|
+| Header capsule | 920x430 |
+| Small capsule | 462x174 |
+| Main capsule | 1232x706 |
+| Vertical capsule | 748x896 |
+| Page background (optional) | 1438x810 |
+| Library capsule | 600x900 |
+| Library hero | 3840x1240 |
+| Library logo | 1280 wide or 720 tall, transparent |
+| Screenshots | 1920x1080, at least 5 |
+
+The demo needs its own set: the same art with a "Demo" mark.
 
 - **Main capsule (and the small one):** the emblem and logo on a lit common room at dusk. Readable
   at the small capsule's size (231x87); test it shrunk. No heroes in front: the brand is the
@@ -117,7 +158,9 @@ Steam asks these of every Early Access game. Draft answers:
   `--festival-at` sets most of these up; `--screenshot-no-ui` for the clean ones.
 - **Trailer (30 to 60 s):** first 5 seconds is the hook (a hero walks past you without a word), then
   one shot per trade, a crisis, the festival, and (once in) a traitor moment. End on the tagline
-  and "Wishlist now". Cut from real play; the stories in MARKETING.md are the shot list.
+  and "Wishlist now" (for the fest, "Play the demo"). Cut from real play; the stories in MARKETING.md are the shot list.
+  Ready by late January (NEXT-FEST.md). Score it with a theme of our own, not the placeholder
+  tracks, so Content ID leaves our videos and streamers' alone.
 
 ## Pricing
 

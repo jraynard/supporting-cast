@@ -21,6 +21,14 @@ Playtests say it's becoming quite fun, and rounds without traitors are a real mo
 want no PvP, not just a stepping stone. What's left before M4 is making that mode solid over the
 internet, with the weakest trade brought up and the numbers tuned.
 
+## Now: the Next Fest demo
+
+Until 1 Mar 2027 the plan is [NEXT-FEST.md](NEXT-FEST.md): a demo in Steam Next Fest (22 Feb to
+1 Mar). It's one shortened Millbrook season with six trades, solo-first with bots, co-op through
+Steam invites, and no traitors. The store page goes public by mid-December, registration closes
+10 Jan, and the demo goes in for review by 25 Jan. Below, **(demo)** marks the items the demo
+needs. The rest waits until after the fest unless there's time.
+
 ## Now: the co-op round, solid
 
 What outside testers have shown so far (playtests 18 to 22): **getting in** was rough from an
@@ -32,13 +40,13 @@ numbers. Tuning a season with players who don't yet know their work only measure
 ### 1. The first ten minutes
 The tutorial (playtest.20), F to take an order and the "waiting" tags (playtest.22) are the answer
 so far. Nobody new has tried them yet.
-- [ ] **The tutorial, played by someone new:** one trade at a time, the whole run (`--practice
+- [ ] **(demo) The tutorial, played by someone new:** one trade at a time, the whole run (`--practice
   TRADE`): the words, the step shown, the arrow and the glowed button, the stuck hint
   (PLAYTEST.md, "The lessons"). Check it alone first, then watch a non-gamer (and a child, if
   one's handy) play their first ten minutes without help.
-- [ ] **The tutorial's gaps:** handing over a drink, a dish or a box from the order (as "Take it
+- [ ] **(demo) The tutorial's gaps:** handing over a drink, a dish or a box from the order (as "Take it
   back" does for a mend), and the customer pointer for notice-board errands (`VillageGame.Errands`).
-- [ ] **For you to decide: a first-round hint.** The tutorial is optional, so anyone who skips it
+- [ ] **(demo) For you to decide, now: a first-round hint.** The tutorial is optional, so anyone who skips it
   starts a round confused. Either a one-line "your work: ..." on the trade's card until that trade
   has a finished round (`CharacterProgress`), or a nudge on the trade picker toward the tutorial
   for a trade never played. The first goes against "no in-round tips" (CLAUDE.md).
@@ -55,12 +63,12 @@ so far. Nobody new has tried them yet.
 
 ### 2. From testers
 Visual issues and requests from playtests, so they don't get lost between HISTORY.md and the Backlog.
-- [ ] **Flicker** at wall corners and on furniture, and the upper floors when walking past the inn.
-- [ ] **Asked-for pieces, by bots and the AI** (Deck playtest, Nov 2026): adventurers now buy off the shelf
+- [ ] **(demo) Flicker** at wall corners and on furniture, and the upper floors when walking past the inn.
+- [ ] **(demo) Asked-for pieces, by bots and the AI** (Deck playtest, Nov 2026): adventurers now buy off the shelf
   themselves and, finding nothing, ask a shop a player keeps to make one by name (`Order.Wants`,
   `ShopSystem.AskToMake`). Bot players don't answer those asks yet (they lapse, gently), and AI keepers never
   stock a shelf, so nobody asks them. Teach `BotPlayer.Goods` to make to order, then let the AI keepers do it.
-- [ ] **The bot smith stalls on the smithy's heat** (`BotPlayer.Forge.TooHotToForge`): on a warm afternoon it
+- [ ] **(demo) The bot smith stalls on the smithy's heat** (`BotPlayer.Forge.TooHotToForge`): on a warm afternoon it
   waits hours "letting the smithy cool" with a customer's blade in hand (and on `main` too, by luck less often).
   `PartyLoopScenarioTests` seed 99 and the Reedmere `SeasonScenario` (Dread ends it before the dragon) tip on it.
 - [ ] **HUD layout: move, fold, choose** (Deck playtest, Nov 2026): testers want windows they can drag about and
@@ -72,6 +80,7 @@ Visual issues and requests from playtests, so they don't get lost between HISTOR
   The character block's lines are in `VillageGame.Needs` (`DrawNeedsPanel`: `all = !SimpleHud || hovered`).
 
 ### 3. The tuning playtest
+**(demo)** The connection checks and a pass on the season's numbers, for the demo's shorter season.
 Rounds with friends over the internet, to prove the round and tune its numbers, then a pass on
 what they show, once players know their work (1). Play on **Millbrook**; Reedmere is untuned and
 still being built (Later, "Reedmere, in progress"). How to run it: [PLAYTEST.md](PLAYTEST.md).
@@ -138,16 +147,13 @@ with friends, not before.
   ride (`Possession.DrainPerHour`, by mass) and whether a ridden boar is too strong a fighter; how
   hard the dead's unnerving bites (`Hauntings.Unnerved*`).
 
-### 4. Alongside: Steam Playtest
-Testers with a download and a key got in smoothly. Steam Playtest is that done properly: one click
-to ask for access, and updates for everyone, so the whole group is always on the same build.
-Moved up from "once Whispers plays" (Toward Steam, "When").
-- [ ] Steamworks account and app fee; the app with a **Coming soon** page (capsule and
-  screenshots; the trailer can wait for the music). Check whether Valve wants the page public
-  before a Playtest can open.
-- [ ] Steam Playtest set up and builds uploaded by the release workflow, beside itch.
-- Keep itch keys as the fallback until it's running. Steam invites, lobbies and Datagram Relay
-  stay with Early Access prep.
+### 4. Alongside: Steam (now the demo's)
+The Steamworks account, the **Coming soon** page, uploads from the release workflow, and Steam
+invites and lobbies are all demo work now, dated in [NEXT-FEST.md](NEXT-FEST.md). Invites and lobbies
+were left for Early Access prep before. A **Steam Playtest** is optional: testers can play the demo's
+release candidate from a private branch instead, and Valve advises against running one during the
+fest. Keep itch keys as the fallback until Steam builds are running. Datagram Relay stays with Early
+Access prep.
 
 *Exit: newcomers get through their first ten minutes, friends play a whole round from their own
 homes, and the numbers have had a pass.*
@@ -267,16 +273,19 @@ The people side (playtests, clips, creators, Next Fest) is [MARKETING.md](MARKET
 page's copy is drafted in [STEAM-PAGE.md](STEAM-PAGE.md).
 
 ### When
-Don't wait for breadth (M6) to start; do wait for M4 to launch.
+Don't wait for breadth (M6) to start; do wait for M4 to launch. The dates for the page and the
+demo are in [NEXT-FEST.md](NEXT-FEST.md).
 
-- **Store page: now, with the Playtest** (Now, 4). A "Coming soon" page costs little and is how
-  wishlists accumulate, and wishlists at launch decide how much Steam shows the game. Pages usually
-  want six months or more of lead time. Put it up with a capsule and screenshots; the trailer
-  follows once the co-op round looks and sounds good (a theme for it, Backlog "Sound").
-- **Steam Playtest: now** (Now, 4), moved up from "once Whispers plays": a download and a key
-  proved the smooth way in. Later, use it to grow beyond friends and family and to see whether
-  traitors land with groups who don't know you.
-- **Early Access launch: after M4, with a little breadth.** The traitors are what make this
+- **Store page: public by mid-December 2026.** Next Fest requires it. A "Coming soon" page costs
+  little and is how wishlists accumulate, and wishlists at launch decide how much Steam shows the
+  game. Put it up with a capsule and screenshots, and add the trailer in January (a theme for it,
+  Backlog "Sound").
+- **The demo: public early February 2027, in Next Fest (22 Feb to 1 Mar).** A game gets only one
+  Next Fest, so this is it.
+- **Steam Playtest: optional.** It's a way to grow beyond friends and family, and later to see
+  whether traitors land with groups who don't know you. Not during the fest.
+- **Early Access launch: spring or summer 2027, after M4, with a little breadth.** It can't come
+  before the fest ends. The traitors are what make this
   different from other cosy co-op games, and what streamers and friend groups pick up, so launch
   with them in. Before launch, have: a round that's reliable over the internet with Steam invites,
   Whispers through its gate, a second map or a couple more trades so rounds don't feel the same
@@ -290,8 +299,8 @@ Don't wait for breadth (M6) to start; do wait for M4 to launch.
 - **Store page:** Steamworks account and app fee, capsule art in the brand's style, a short
   trailer from real play, screenshots (`--screenshot` covers these), the description in the
   brand's voice. Put the page up as "Coming soon" to start gathering wishlists.
-- **Steamworks:** invites and lobbies through Steam (friends join from the overlay), Steam
-  Datagram Relay as a transport in place of (or beside) our own relay, rich presence, Steam Cloud
+- **Steamworks:** invites and lobbies through Steam (friends join from the overlay; for the demo,
+  NEXT-FEST.md), Steam Datagram Relay as a transport in place of (or beside) our own relay, rich presence, Steam Cloud
   for `characters.json`. Keep it behind an interface in the game, not in Narsil's sim.
 - **Deck Verified:** the remaining pad gaps (a cursor on the right stick for placing buildings and
   dragging areas), sound on the Deck, text size.
