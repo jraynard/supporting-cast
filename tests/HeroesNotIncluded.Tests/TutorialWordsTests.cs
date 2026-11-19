@@ -21,6 +21,21 @@ public class TutorialWordsTests
     [Fact]
     public void EveryKeyMarkIsOneTheGameKnows()
     {
+        // A mod's lessons name its own controls (~@musician:note1~): registered as the game registers a mod's game half.
+        var before = Mods.GameMods.Loaded;
+        Mods.GameMods.Use([.. before.Where(m => m.ModId != "musician"), ("musician", typeof(Musician.MusicianGame).Assembly)]);
+        try
+        {
+            Marks();
+        }
+        finally
+        {
+            Mods.GameMods.Use(before);
+        }
+    }
+
+    private static void Marks()
+    {
         var texts = Defs.Value.AllTrades.Select(t => ($"{t.Name} intro", t.TutorialIntro))
             .Concat(Chapters().SelectMany(c => c.Lesson.Steps.SelectMany(s => new[] { ($"{c.Where}/{s.Id}", s.Text), ($"{c.Where}/{s.Id} more", s.More ?? "") })
                 .Concat(c.Lesson.Notes.Select(n => ($"{c.Where} note", n)))));

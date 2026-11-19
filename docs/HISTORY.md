@@ -2665,3 +2665,20 @@ The town keeps itself in the makings the carter used to bring.
 - Tests: each instrument's own tune plays through minded (`EachInstrumentsOwnTunePlaysThroughMinded`); Greensleeves takes
   the shanty's place in the book tests (its form, call, breaths and long notes); the dance and the draw use the jig,
   the ring a reel.
+
+### The musician's lessons and bot; the drum louder (2026-11-19)
+- **Lessons** (`MusicianLessons`, words in `musician.json`, and a `tutorialIntro`): core, "Play a scale", "Strike up a
+  tune" (the book, an opening, the beat and the breath kept to the end) and "Tune the lute" (put out of tune for it);
+  after, "Busking" (a tip in the hat).
+- **`ITradeModule.SetUpLesson`**: a trade's own setup for a lesson, after the core's stock and customers.
+- **`~@id~` in the tutorial's words** (`Controls.Keys`): any action by its id, a mod's own included
+  (`~@musician:note1~`), shown as bound now. `TutorialWordsTests` registers the musician's game half to check them.
+- **The bot** (`MusicianBot`): of an evening at the inn, the book opened, its tune's opening played and carried
+  through, a rest, again. **`BotPlayer.Custom`** carries a trade bot's own inputs (notes, breaths). Over 16 bot
+  seasons with a musician seated: the same outcomes, Renown 66.5 against 67.8. The sweep lists every seated bot's stats.
+- **Rune 9 on the pad** (R3): a lute's or fiddle's tuning couldn't be opened from a Deck. Camera mode waits while
+  you work, so they share the button.
+- **The drum louder** (a Deck playtest): the tek and the ka driven and let ring (their played level about 0.27
+  from 0.05), the doum's body longer; gains near 1.
+- `docs/RECORDING-THE-LUTE.md`: how to sample a guitar for the lute.
+- Bench unchanged (seed 1234 `B0538FAED4A548A7`, 99 `4B5E9182A811FD84`).

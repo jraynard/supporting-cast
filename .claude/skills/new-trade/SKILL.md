@@ -46,11 +46,14 @@ bow's tiller, the pipe's lead-in). So:
 3. **The sim half** (`src/<Name>.Sim`, references only `HeroesNotIncluded.Sim`): an `ISimMod` that registers
    - `registry.Trade(new <Name>Module())`: an `ITradeModule`, answering only the hooks that are yours (each
      defaults to "not mine"): work at a station, mending, what F does (`EarlyActionAt`, `SiteActionAt`,
-     then `Perform`), the AI's jobs (`JobFor`), stocking its workplace, practice customers;
+     then `Perform`), the AI's jobs (`JobFor`), stocking its workplace, practice customers, a lesson's own setup
+     (`SetUpLesson`);
    - its work sessions (subclasses of `WorkSession`: found by scanning, nothing to register);
    - `registry.Component<T>(...)` for every component it adds (an unsaved one vanishes on load);
    - `registry.System(...)` for a system, placed `after:`/`before:` a named one;
-   - `registry.Lesson(...)`, `registry.Bot(...)`, `registry.Drill(...)`.
+   - `registry.Lesson(...)`, `registry.Bot(...)`, `registry.Drill(...)`. Lesson words name keys as `~F~`, `~Space~`
+     (`Controls.Keys`), and the mod's own controls by id, `~@<modid>:<control>~`. A bot sends the mod's own
+     inputs by adding them to `bot.Custom` each frame (`MusicianBot`).
 4. **The game half** (`src/<Name>`): an `IGameMod` that registers each session's `WorkView`, `WorkSound`
    and, if it reads keys of its own, `WorkInput` and `Control`s; and anything else it draws
    (`StationTab`, `WagonPanel`, `AimLine`, `Tilt`, `WorldSounds`). Draw through `WorkView`
@@ -60,7 +63,9 @@ bow's tiller, the pipe's lead-in). So:
    numpy). For a first pass a view may play one of the game's sounds by id: they're listed in
    `data/sounds/sounds.json` (`ui.open`, `water.splash`, `anvil.good`...); give the mod its own once it matters.
 6. **Tests** in `tests/HeroesNotIncluded.Sim.Tests/<Name>ModTests.cs`, in the `SimContentTests` collection
-   (the content is process-wide), turning the mod on as `MusicianModTests.WithMusician` does: the deal, the
+   (the content is process-wide), turning the mod on with `SimContent.Use([.. TestContent.Standard, ("<id>", typeof(<Name>Mod).Assembly)])`
+   in a try/finally that puts `TestContent.Standard` back (as `CandlemakerModTests` does: a mod on by default is in
+   the standard content already): the deal, the
    session's inputs and outcome, save and load, the predictor's copy. First add the mod's sim half to
    `tests/HeroesNotIncluded.Sim.Tests/HeroesNotIncluded.Sim.Tests.csproj` (a `ProjectReference` beside the
    musician's), or its types won't compile there; load its defs with

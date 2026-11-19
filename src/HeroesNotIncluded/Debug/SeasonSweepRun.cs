@@ -67,7 +67,7 @@ public static class SeasonSweepRun
         // What each trade's bot played: a game no bot starts shows here as missing, not just as a lost round.
         Console.WriteLine();
         Console.WriteLine("BOTS (means a season)");
-        foreach (var trade in SeasonSweep.TradesIn(defs))
+        foreach (var trade in trades)
         {
             var stats = results.Select(r => r.Bots.GetValueOrDefault(trade)).OfType<Sim.Bots.BotStats>().ToList();
             if (stats.Count == 0)

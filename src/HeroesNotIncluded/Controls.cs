@@ -65,7 +65,7 @@ public static class Controls
         A(Act.Rune6, "Rune 6", "Hands-on work", Work, [K(GlfwKey.Number6)], P(PadButton.RB)),
         A(Act.Rune7, "Rune 7", "Hands-on work", Work, [K(GlfwKey.Number7)]),
         A(Act.Rune8, "Rune 8", "Hands-on work", Work, [K(GlfwKey.Number8)]),
-        A(Act.Rune9, "Rune 9", "Hands-on work", Work, [K(GlfwKey.Number9)]),
+        A(Act.Rune9, "Rune 9", "Hands-on work", Work, [K(GlfwKey.Number9)], P(PadButton.R3)), // R3: camera mode waits while you work (a musician tunes with it)
         A(Act.Back, "Back: stop, close, put the work down", "Hands-on work", Menu, [K(GlfwKey.Escape)], P(PadButton.B)),
 
         A(Act.GhostChill, "A sudden chill", "Among the dead", Dead, [K(GlfwKey.Number1)]),
@@ -176,6 +176,8 @@ public static class Controls
     {
         if (!text.Contains('~'))
             return text;
+        // Any action by its id, a mod's own included ("~@musician:note1~"): its key or button, as bound now.
+        text = ActionToken.Replace(text, m => Map.Has(m.Groups[1].Value) ? Glyph(m.Groups[1].Value) : m.Value);
         return text
             .Replace("~F~", Glyph(Act.Use))
             .Replace("~AD~", Pair(Act.WalkLeft, Act.WalkRight))
@@ -205,6 +207,8 @@ public static class Controls
             .Replace("~H~", Glyph(Act.ControlsCard))
             .Replace("~1-4~", UsingPad ? "the wheel" : $"{Glyph(Act.Hotbar1)}–{Glyph(Act.Hotbar4)}");
     }
+
+    private static readonly System.Text.RegularExpressions.Regex ActionToken = new(@"~@([\w.:\-]+)~");
 
     public static bool UsingPad => Map.Device == InputDevice.Gamepad;
 

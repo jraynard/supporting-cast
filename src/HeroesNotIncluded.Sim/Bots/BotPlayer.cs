@@ -108,6 +108,7 @@ public sealed partial class BotPlayer(Func<Simulation> world, Guid player, Actio
         _axis2 = 0;
         _rune = -1;
         _act = false;
+        _custom.Clear();
         var (press, held, axis) = _work.Session?.StartTick == live ? Play(_work.Session) : (false, false, 0);
         // At the anvil it puts the hammer down as the colour fades, and takes the piece back to the fire.
         // A slip: it keeps striking after the colour's gone, on metal too cold to take it.
@@ -126,7 +127,7 @@ public sealed partial class BotPlayer(Func<Simulation> world, Guid player, Actio
             _stopped = true;
             Send(new StopWorkCommand(me));
         }
-        _work.Update(sim, me, steps, press, held, axis, Send, _axis2, _rune, _act);
+        _work.Update(sim, me, steps, press, held, axis, Send, _axis2, _rune, _act, custom: _custom.Count > 0 ? _custom : null);
         if (_work.Session is { } started && started.StartTick != _countedSession)
         {
             _countedSession = started.StartTick;

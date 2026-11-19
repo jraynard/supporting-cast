@@ -171,17 +171,21 @@ def drum_stroke(kind, seed=10):
         # sound 82 Hz at all, and from these the ear hears the low note that isn't there. A little drive rounds
         # them into one thump; on big speakers and headphones the body's still underneath.
         over = 0.55 * np.sin(2 * phase) + 0.4 * np.sin(3 * phase) + 0.22 * np.sin(4 * phase) + 0.1 * np.sin(5 * phase)
-        tone = body * np.exp(-t / 0.22) + over * np.exp(-t / 0.13)
-        tone = np.tanh(1.6 * tone) / np.tanh(1.6)
+        tone = body * np.exp(-t / 0.3) + over * np.exp(-t / 0.16)
+        tone = np.tanh(2.2 * tone) / np.tanh(2.2)
         out = tone + rng.normal(0, 1, t.size) * np.exp(-t / 0.006) * 0.4
     elif kind == "tek":
         f = 330 + 60 * np.exp(-t / 0.01)
         phase = 2 * math.pi * np.cumsum(f) / RATE
         body = np.sin(phase) + 0.5 * np.sin(2.3 * phase) + 0.3 * np.sin(3.6 * phase)
-        out = body * np.exp(-t / 0.05) + rng.normal(0, 1, t.size) * np.exp(-t / 0.004) * 0.5
+        # Driven and let ring a little longer, so a quick stroke holds its own beside a held note.
+        tone = np.tanh(2.5 * body * np.exp(-t / 0.08)) / np.tanh(2.5)
+        out = tone + rng.normal(0, 1, t.size) * np.exp(-t / 0.004) * 0.5
     else:
         click = np.convolve(rng.normal(0, 1, t.size), [1, -1], mode="same")
-        out = click * np.exp(-t / 0.012) + np.sin(2 * math.pi * 1250 * t) * np.exp(-t / 0.02) * 0.3
+        # The rim's crack, and the shell's knock under it, so the click has some weight.
+        knock = np.sin(2 * math.pi * 420 * t) * np.exp(-t / 0.03)
+        out = np.tanh(2.0 * (click * np.exp(-t / 0.016) * 0.6 + knock + np.sin(2 * math.pi * 1250 * t) * np.exp(-t / 0.025) * 0.4))
     out *= np.clip(t / 0.001, 0, 1)
     return out / np.max(np.abs(out)) * 0.85
 

@@ -70,6 +70,9 @@ public interface ITradeModule
     /// <summary>A customer sent to the practice yard for this trade's player: make them want what the trade sells.</summary>
     void PracticeCustomer(Simulation sim, Entity player, Entity customer, int index) { }
 
+    /// <summary>A lesson of this trade's is set up in the practice yard (after its stock and customers): anything of its own it needs (a lute put out of tune).</summary>
+    void SetUpLesson(Simulation sim, Entity player, LessonDef lesson) { }
+
     /// <summary>The practice yard's "every job for two" drill (<c>--pairs-test</c>): set out this trade's part.</summary>
     IEnumerable<string> PairsDrill(Simulation sim) => [];
 }

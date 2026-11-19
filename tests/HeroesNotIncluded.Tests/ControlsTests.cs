@@ -20,6 +20,14 @@ public class ControlsTests
     }
 
     [Fact]
+    public void TheMusiciansTuningIsOnThePadToo()
+    {
+        // Rune 9 opens a lute's or fiddle's tuning; a Deck had no way to it (keyboard 9 only).
+        var map = new ActionMap(Controls.Defs);
+        Assert.Equal("R3", map.Glyph(Act.Rune9, InputDevice.Gamepad));
+    }
+
+    [Fact]
     public void KeyboardDefaultsAreTheOldKeys()
     {
         var map = new ActionMap(Controls.Defs);

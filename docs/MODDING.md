@@ -135,6 +135,13 @@ one didn't. Each is now part of the API:
   (`Listening`, an `AudienceJob`). A job says it's danced (`Job.Dancing`, `DanceTempo`) for the renderer's step.
 - **Thoughts of a mod's own** (`"thoughts"` in its defs, mood.json's format), remembered through
   `DefDatabase.ThoughtOrNull`, so a thought gone with its mod is nothing rather than an error.
+- **A lesson's own setup** (`ITradeModule.SetUpLesson`, after the core's stock and customers): the musician's lute
+  put out of tune for its strings lesson.
+- **A mod's own controls in its words** (`~@id~` in lesson and intro text, `Controls.Keys`): any action by its id,
+  a mod's as `musician:note1`, shown as the key or button bound now. `TutorialWordsTests` registers the musician's
+  game half to check its marks.
+- **A bot's own inputs** (`BotPlayer.Custom`): a trade's bot adds `WorkInputKind.Custom` values each frame, as its
+  game half packs a player's keys (the musician bot's notes and breaths).
 - **A simulation keeps the modules it was made with** (`Simulation.TradeModules`), and `--check-mod`
   puts the content back after looking: a check once left the carpenter's hooks reaching into a
   simulation made without its systems.

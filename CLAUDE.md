@@ -266,8 +266,16 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. ` (R3
   `Mods/GameContent` (defs, then `$patch` merges; atlas and sound roots; the build tag; save meta).
   Read content through `GameContent.Current`, never a hardcoded `data/defs` path. A new trade, mini-game,
   content mod or town: the skills in `.claude/skills/` (`new-trade`, `new-minigame`, `content-mod`, `new-map`)
-  and the ModKit (`modkit/`). The game's own trades are mods too: `mods/carpenter`, `mods/musician`. A round's
-  mode is an `IGameMode` (`Modding/GameMode.cs`; `new-mode` skill, `mods/siege`); `--mode NAME`.
+  and the ModKit (`modkit/`). The game's own trades are mods too, on by default: `mods/carpenter`, `mods/musician`
+  and `mods/miner` (both player-only: `TradeDef.PlayerOnly`; a trade whose workplace the town hasn't is neither dealt
+  nor offered, `RoundSystem.InTown`). A round's mode is an `IGameMode` (`Modding/GameMode.cs`; `new-mode` skill,
+  `mods/siege`); `--mode NAME`.
+- The musician (`mods/musician`, docs/MUSICIAN-PLAN.md): instruments and tunes are the mod's own kinds of def
+  (`instruments`, `songs`, a tune's `for` its instrument), played in `PlaySession` (free, or from the book: an
+  opening played, the hands carry the rest while the player keeps the beat and the breath); the audience is a
+  pastime (`Listening`), tips land in the hat (`Takings`), strings drift and are tuned (`Tuning`, `TuneSession`).
+  Its lessons (`MusicianLessons`) name its own controls as `~@musician:note1~`; its bot (`MusicianBot`) plays at the
+  inn of an evening, sending its notes through `BotPlayer.Custom`. Samples come from `mods/musician/tools`.
 
 ## Rules
 

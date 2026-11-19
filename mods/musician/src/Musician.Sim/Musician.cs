@@ -33,6 +33,8 @@ public sealed class MusicianMod : ISimMod
     public void Register(SimRegistry registry)
     {
         registry.Trade(new MusicianModule());
+        registry.Lesson([.. MusicianLessons.All]);
+        registry.Bot(bot => new MusicianBot(bot));
         registry.Pastime(new Listening()); // the audience: whoever's free goes to hear the music, or dance to it
         registry.Component<Tipped>("Tipped", (w, t) => w.Int(t.Day), r => new Tipped { Day = r.Int() });
         registry.Component<Entertained>("Entertained", (w, e) =>
@@ -1141,7 +1143,16 @@ public sealed class PlaySession : WorkSession
 /// <summary>The musician's hooks: F with an instrument carried plays it, where you stand.</summary>
 public sealed class MusicianModule : ITradeModule
 {
-    public string? Trade => "Musician";
+    public const string TradeName = "Musician";
+
+    public string? Trade => TradeName;
+
+    /// <summary>The strings lesson begins with the lute put out of tune (<see cref="MusicianLessons.PutOut"/>).</summary>
+    public void SetUpLesson(Simulation sim, Entity player, LessonDef lesson)
+    {
+        if (lesson.Id == "strings")
+            MusicianLessons.PutOut(sim, player);
+    }
 
     /// <summary>The instrument the character has in hand, or else the first in their pack; Entity.Null if none.</summary>
     public static Entity InstrumentOf(Simulation sim, Entity who)

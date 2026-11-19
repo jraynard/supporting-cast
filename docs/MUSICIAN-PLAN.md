@@ -212,19 +212,16 @@ Today festival jobs come before pastimes (`Ai/Brains.cs`: `Festival.Gathering` i
   - a performer's outfit: a town's hired player in good cloth, not an adventurer
   - `CreatureAnimator` keys the dance frames off the musician's beat, so everyone moves in time
 
-### 12. Lessons, the bot, practice, docs
-- **Lessons** through `registry.Lesson` (as `mods/carpenter`'s `CarpenterLessons` do), their words as the trade's
-  `lessons` in `musician.json`, held to `TradeLessonTests`.
-  - **Core:** play a scale, strike up a tune, keep the beat and the breath, tune a string.
-  - **After:** the hat and requests, dancing, a lore verse.
-- **Practice:** `MusicianModule.PracticeCustomer`, so "send customers" sends listeners.
-- **The bot:** `MusicianBot : IBotTrade` (registered with `registry.Bot`).
-  - `Play` minds the beat and the breath.
-  - `Between` strikes up tunes, tunes when sour, and plays at the inn of an evening and at send-offs.
-  - A sweep with the musician wanted (`SeasonSweep.Play(trades: [..., "Musician"])`) compares; the default baseline is
-    untouched.
-- **Docs:** DESIGN.md's musician row and notes, ROADMAP, AUDIO.md (music voices), MODDING.md (the new doors), a
-  CLAUDE.md bullet for the musician mod.
+### 12. Lessons, the bot, practice, docs (built 2026-11-19)
+- **Lessons** (`MusicianLessons`, words in `musician.json`): core, play a scale, strike up a tune (book, opening,
+  carried to the end: the beat and the breath minded), tune the lute (put out of tune by `SetUpLesson`); after, busking.
+  Keys are named through `~@musician:...~`.
+- **Practice:** no customer hook was needed: practice customers come with silver, hear the music and tip.
+- **The bot** (`MusicianBot`): of an evening it goes to the inn's common room, opens the book and plays its tune
+  through (beat, breath, long notes), rests 40 minutes and plays again. Over 16 bot seasons with a musician seated:
+  the same outcomes, Renown 66.5 to 67.8 without. **Left:** playing at send-offs, tuning when sour, answering a
+  request, and the dance and hat lessons' finer points.
+- Rune 9 (tuning) had no pad button; it's R3 now (camera mode waits while you work).
 
 ### Afterwards: a band
 Several musicians in co-op playing one tune together, joining on a tune struck up and keeping its beat (the drum's way

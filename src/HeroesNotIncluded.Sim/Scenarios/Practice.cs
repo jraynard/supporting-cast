@@ -120,6 +120,8 @@ public static class Practice
             BringPatient(sim, player, wound);
         if (lesson.Spent && sim.World.Has<Mana>(player))
             sim.World.Get<Mana>(player).Current = 0f;
+        if (sim.World.TryGet<Trade>(player, out var trade) && Modding.Trades.Of(sim, trade.Def.Name) is { } module)
+            module.SetUpLesson(sim, player, lesson); // the trade's own setup
     }
 
     /// <summary>

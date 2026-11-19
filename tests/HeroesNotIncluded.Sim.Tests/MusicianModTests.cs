@@ -77,6 +77,130 @@ public class MusicianModTests
         return 0;
     });
 
+    /// <summary>A musician in the practice yard, a lesson of theirs set up (as the practice panel does), and its run.</summary>
+    private static (Simulation Sim, Entity Me, Sim.Scenarios.Lessons.LessonRun Run) Lesson(string id)
+    {
+        var sim = Round(MusicianDefs(), (Arin, "Musician"));
+        sim.Round.Practice = true;
+        var me = Players.CharacterOf(sim, Arin);
+        var trade = sim.Defs.Trade("Musician");
+        var index = trade.Lessons.FindIndex(l => l.Id == id);
+        var run = new Sim.Scenarios.Lessons.LessonRun(sim, me, trade, trade.Lessons[index]);
+        sim.ApplyNow(new PracticeCommand(me, PracticeAction.Lesson, index));
+        return (sim, me, run);
+    }
+
+    private static Sim.Scenarios.Lessons.LessonStage StageOf(Simulation sim, Entity me, Sim.Scenarios.Lessons.LessonRun run) =>
+        Sim.Scenarios.Lessons.Lessons.Stage(sim, me, run);
+
+    [Fact]
+    public void TheScaleLessonIsTheEightKeysPlayedLowToHigh() => WithMusician(() =>
+    {
+        var (sim, me, run) = Lesson("scale");
+        Assert.Equal("start", StageOf(sim, me, run).Step);
+        WorkSystem.Start(sim, me, PlaySession.For(sim, MusicianModule.InstrumentOf(sim, me)));
+        var s = (PlaySession)sim.World.Get<WorkSession>(me);
+        Assert.Equal("scale", StageOf(sim, me, run).Step);
+        // A slip on the way (a stray B), then up again: still the scale.
+        int[] played = [0, 1, 2, 5, 3, 4, 5, 6];
+        s.Advance([.. played.SelectMany((k, i) => new[] { new WorkInput(i * 20, WorkInputKind.Custom, PlaySession.Pack(k, false, true)),
+            new WorkInput(i * 20 + 10, WorkInputKind.Custom, PlaySession.Pack(k, false, false)) })], 170);
+        Assert.False(StageOf(sim, me, run).Done, "the top D's still to come");
+        s.Advance([new WorkInput(170, WorkInputKind.Custom, PlaySession.Pack(7, false, true))], 180);
+        Assert.True(StageOf(sim, me, run).Done);
+        WorkSystem.Stop(sim, me, null);
+        Assert.True(StageOf(sim, me, run).Done); // kept once done
+        return 0;
+    });
+
+    [Fact]
+    public void TheTuneLessonOpensTheBookStrikesUpATuneAndSeesItThrough() => WithMusician(() =>
+    {
+        var (sim, me, run) = Lesson("tune");
+        Assert.Equal("start", StageOf(sim, me, run).Step);
+        WorkSystem.Start(sim, me, PlaySession.For(sim, MusicianModule.InstrumentOf(sim, me)));
+        var s = (PlaySession)sim.World.Get<WorkSession>(me);
+        Assert.Equal("book", StageOf(sim, me, run).Step);
+        s.Advance([new WorkInput(0, WorkInputKind.Act)], 1);
+        Assert.Equal("opening", StageOf(sim, me, run).Step);
+        var jig = s.Book[0];
+        Assert.Equal("KeshJig", jig.Name); // the pipe's own, first in its book
+        s.Advance(Opening(jig, from: 40), 200);
+        Assert.Same(jig, s.Carrying);
+        Assert.Equal("carry", StageOf(sim, me, run).Step);
+        KeepTime(s, 200 + 120 * 60);
+        Assert.Equal(1, s.Finished);
+        Assert.True(StageOf(sim, me, run).Done);
+        return 0;
+    });
+
+    [Fact]
+    public void TheStringsLessonPutsTheLuteOutAndIsDoneWhenEveryStringIsTrue() => WithMusician(() =>
+    {
+        var (sim, me, run) = Lesson("strings");
+        var lute = MusicianLessons.LuteOf(sim, me);
+        var def = sim.Defs.ModDef<InstrumentDef>(InstrumentDef.Kind, "Lute")!;
+        var tuning = Tunings.Of(sim, lute, def)!;
+        Assert.All(tuning.Cents, c => Assert.True(MathF.Abs(c) > MusicianLessons.InTune, "put out for the lesson"));
+        Assert.True(Performance.SourCents <= tuning.Cents.Average(MathF.Abs), "out enough to hear");
+        Assert.Equal("lute", StageOf(sim, me, run).Step);
+        FireDrill.PutInHand(sim, me, lute);
+        Assert.Equal("start", StageOf(sim, me, run).Step);
+        WorkSystem.Start(sim, me, PlaySession.For(sim, lute));
+        Assert.Equal("start", StageOf(sim, me, run).Step); // playing it: now to its tuning
+        WorkSystem.Stop(sim, me, null);
+        WorkSystem.Start(sim, me, TuneSession.For(sim, me, lute));
+        Assert.Equal("tune", StageOf(sim, me, run).Step);
+        var tuningSession = (TuneSession)sim.World.Get<WorkSession>(me);
+        Array.Fill(tuningSession.Cents, 3f); // each string brought true (TuneSession's own tests turn the pegs)
+        WorkSystem.Stop(sim, me, null);
+        Assert.True(StageOf(sim, me, run).Done);
+        return 0;
+    });
+
+    [Fact]
+    public void TheBuskingLessonIsDoneWithATipInTheHat() => WithMusician(() =>
+    {
+        var (sim, me, run) = Lesson("busk");
+        Assert.Equal("start", StageOf(sim, me, run).Step);
+        WorkSystem.Start(sim, me, PlaySession.For(sim, MusicianModule.InstrumentOf(sim, me)));
+        var s = (PlaySession)sim.World.Get<WorkSession>(me);
+        Assert.Equal("tips", StageOf(sim, me, run).Step);
+        s.Tips.Add(new PlaySession.Tip(sim.Clock.Tick, Entity.Null, 1));
+        Assert.True(StageOf(sim, me, run).Done);
+        return 0;
+    });
+
+    [Fact]
+    public void ABotMusicianPlaysATuneThroughAtTheInnOfAnEvening() => WithMusician(() =>
+    {
+        var sim = Round(MusicianDefs(), (Arin, "Musician"));
+        var me = Players.CharacterOf(sim, Arin);
+        // On to the evening, the bot steady (no slips) and wide awake.
+        while (sim.Clock.HourOfDay < MusicianBot.EveningFrom || sim.Clock.HourOfDay >= MusicianBot.EveningFrom + 0.5f)
+            sim.Clock.Tick += SimClock.TicksPerHour / 4;
+        Array.Fill(sim.World.Get<Needs>(me).Values, 1f);
+        var bot = new Sim.Bots.BotPlayer(() => sim, Arin, c => sim.ApplyNow(c), 7) { Temper = Sim.Bots.BotTemperament.Steady };
+        var inn = Sim.Shops.ShopSystem.BuildingFor(sim, TownRole.Tavern);
+        var (played, finished, atInn) = (false, 0, false);
+        for (var t = 0; t < SimClock.TicksPerHour * 3 && finished == 0; t++)
+        {
+            sim.Tick();
+            bot.Tick();
+            if (sim.World.TryGet<WorkSession>(me, out var s) && s is PlaySession p)
+            {
+                played = true;
+                atInn |= Buildings.At(sim, sim.World.Get<Position>(me).Cell) == inn;
+                finished = Math.Max(finished, p.Finished);
+                Assert.Equal(0, p.Slipped);
+            }
+        }
+        Assert.True(played, "it took out an instrument");
+        Assert.True(atInn, "in the inn");
+        Assert.Equal(1, finished);
+        return 0;
+    });
+
     [Fact]
     public void TheTriggersPlayingMusicSwingNoBlowWithAWeaponDrawn() => WithMusician(() =>
     {

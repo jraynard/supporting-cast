@@ -59,6 +59,14 @@ public sealed partial class BotPlayer
     /// <summary>The session's second axis this frame, for a trade's bot to set.</summary>
     public int Axis2 { get => _axis2; set => _axis2 = value; }
 
+    /// <summary>
+    /// A trade's own inputs this frame (<see cref="WorkInputKind.Custom"/> values, as its game half sends a player's
+    /// keys: a musician's notes and breaths), for a trade's bot to add to. Sent and cleared each frame.
+    /// </summary>
+    public List<int> Custom => _custom;
+
+    private readonly List<int> _custom = [];
+
     /// <summary>Done with the pot's seasoning: step away, which keeps it.</summary>
     private bool _seasoned;
 
