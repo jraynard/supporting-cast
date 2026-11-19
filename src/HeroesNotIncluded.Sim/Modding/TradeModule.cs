@@ -73,6 +73,12 @@ public interface ITradeModule
     /// <summary>A lesson of this trade's is set up in the practice yard (after its stock and customers): anything of its own it needs (a lute put out of tune).</summary>
     void SetUpLesson(Simulation sim, Entity player, LessonDef lesson) { }
 
+    /// <summary>The kinds of work for two this trade leads, to be played as the helper alone (<c>--help-as</c>: the carpenter's "pitman").</summary>
+    IEnumerable<string> PairsKinds => [];
+
+    /// <summary>One of <see cref="PairsKinds"/> set out, <paramref name="lead"/> (a bot) at it and <paramref name="helper"/> beside it; what was staged, or null.</summary>
+    string? PairsLead(Simulation sim, string kind, Entity lead, Entity helper) => null;
+
     /// <summary>The practice yard's "every job for two" drill (<c>--pairs-test</c>): set out this trade's part.</summary>
     IEnumerable<string> PairsDrill(Simulation sim) => [];
 }

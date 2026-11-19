@@ -99,6 +99,11 @@ public sealed partial class BotPlayer
             // The festival's striker: swing at the top of the gauge.
             case StrikerSession striker:
                 return (striker.Flight == 0 && striker.Needle >= 0.93f, false, 0);
+            case HammerSession { Heavy: true } great when !Pairs.Linked(world(), great):
+                // Work for two with no striker: no tap (a call nobody answers is a missed blow); call for one now and then.
+                if (great.StepsDone % (SimClock.TicksPerSecond * 4) == 1)
+                    Send(new AskForHandCommand(great.Worker));
+                return (false, false, 0);
             case HammerSession h:
                 // Raise it to the mark (W held), let go, and keep it over the piece.
                 _axis2 = HammerSwing(h);

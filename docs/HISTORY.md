@@ -2682,3 +2682,17 @@ The town keeps itself in the makings the carter used to bring.
   from 0.05), the doum's body longer; gains near 1.
 - `docs/RECORDING-THE-LUTE.md`: how to sample a guitar for the lute.
 - Bench unchanged (seed 1234 `B0538FAED4A548A7`, 99 `4B5E9182A811FD84`).
+
+### Work for two, played as the helper alone (2026-11-19)
+- **`--help-as KIND`** (striker, keeper, pitman, lifter): a solo round where one bot takes the lead's trade and the
+  player another, both stood by the work (`PairsLead`, `DevPairsLeadCommand`; a trade's module adds its own kinds,
+  `ITradeModule.PairsKinds` and `PairsLead`, the carpenter's pitman and lifter). The lead's work is begun as F
+  begins it (`CraftCommand` with the materials on them); whatever either was about is put down first.
+- **`BotPlayer.WaitsForHand`**: a lead that never calls for a hand (no villager comes in the player's place).
+- **The bot smith leads a greatsword:** a two-handed piece is heated only once someone's at the anvil to strike
+  (meanwhile it calls for a hand); its hammer doesn't tap with no striker linked. Before, it went back and forth to
+  the fire with nobody there, and the smithy went from 4 to 44 degrees in half a minute, past the bot's step-back
+  point (`Safety`): the stall on the smithy's heat in the roadmap, reached at once.
+- **Fixed, from a co-op try:** F at a lead waiting for a hand (the smith at the anvil) lends it when the work's in
+  your reach; it offered "Trade with" them, the striker's sledge only from F aimed at the anvil itself.
+- Tests: `PairsLeadTests`, each of the four led by a bot, waited on, and done with a hand; F at the smith lends it.

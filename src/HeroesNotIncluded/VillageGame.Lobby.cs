@@ -52,18 +52,26 @@ public sealed partial class VillageGame
         var round = _sim.Round;
         round.Sit(Guid.Empty, string.IsNullOrWhiteSpace(HeroName) ? "Arin" : HeroName.Trim(), look, clothes);
         var heroTrade = HeroTrade == null ? null : _sim.Defs.Trade(HeroTrade); // by an old name too ("Healer")
+        // --help-as: the lead's trade is the one bot's, and the hero's any other (the tinker's, unless told).
+        var lead = HelpAs == null ? null : Sim.Scenarios.PairsLead.LeadTrade(_sim, HelpAs) is { } l ? _sim.Defs.Trade(l) : null;
+        if (HelpAs != null && lead == null)
+            Console.WriteLine($"warning: no work for two called {HelpAs}; try one of {string.Join(", ", Sim.Scenarios.PairsLead.Kinds(_sim))}");
+        if (lead != null && (heroTrade == null || heroTrade == lead))
+            heroTrade = _sim.Defs.Trade(lead.Name == "Tinker" ? "Innkeeper" : "Tinker");
         if (heroTrade != null)
-            round.SetPreferences(Guid.Empty, [heroTrade], []);
+            round.SetPreferences(Guid.Empty, [heroTrade], lead != null ? [lead] : []);
         // Bots ask for the trades that have a game to play, the hero's aside, so a solo round has its cast.
         var wanted = Sim.Scenarios.SeasonSweep.TradesIn(_sim.Defs).Where(t => t != heroTrade?.Name).ToList();
         var names = BotNames(HeroName);
-        for (var i = 0; i < Bots; i++)
+        if (lead != null)
+            wanted = [lead.Name]; // one bot, the lead: any other might lend the hand that's yours to lend
+        for (var i = 0; i < (lead != null ? 1 : Bots); i++)
         {
             var id = new Guid(i + 1, 0, 0, new byte[8]);
             round.Sit(id, i < names.Count ? names[i] : $"Bot {i + 1}", null, null);
             if (wanted.Count > 0)
                 round.SetPreferences(id, wanted.Skip(i % wanted.Count).Concat(wanted.Take(i % wanted.Count)).Select(_sim.Defs.Trade).ToList(), []);
-            _bots.Add(new Sim.Bots.BotPlayer(() => _sim, id, Issue, seed + (ulong)i) { Skill = BotSkill });
+            _bots.Add(new Sim.Bots.BotPlayer(() => _sim, id, Issue, seed + (ulong)i) { Skill = BotSkill, WaitsForHand = lead != null });
         }
         round.Start(_sim);
         foreach (var e in _sim.World.Query<Avatar>())

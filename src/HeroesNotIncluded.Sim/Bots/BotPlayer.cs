@@ -67,11 +67,19 @@ public sealed partial class BotPlayer(Func<Simulation> world, Guid player, Actio
     private bool _wasGhost;
     private readonly HashSet<int> _counted = [];
 
+    /// <summary>
+    /// A lead that waits for a player's hand (<c>--help-as</c>): it never calls for one, so no villager comes in the
+    /// player's place, and work for two waits at the station till someone joins it.
+    /// </summary>
+    public bool WaitsForHand { get; set; }
+
     /// <summary>Every command goes out through here, so what it says is counted.</summary>
     public void Send(ISimCommand command)
     {
         if (command is SayCommand)
             Stats.Said++;
+        if (WaitsForHand && command is AskForHandCommand)
+            return;
         send(command);
     }
 

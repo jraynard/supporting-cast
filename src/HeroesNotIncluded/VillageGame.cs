@@ -264,6 +264,12 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
     /// </summary>
     public bool PairsTest { get; init; }
 
+    /// <summary>
+    /// Debug (<c>--help-as KIND</c>): a job for two played as its second player, alone (<see cref="PairsLead"/>). A bot
+    /// takes the lead's trade and waits at the work for a hand (<see cref="BotPlayer.WaitsForHand"/>), staged once dealt.
+    /// </summary>
+    public string? HelpAs { get; init; }
+
     private bool _pairsStaged;
 
     /// <summary>Debug (<c>--die-at SECONDS</c>): your character drops dead this long in, to try being a ghost. Negative: never.</summary>

@@ -5,6 +5,7 @@ using HeroesNotIncluded.Sim.Modding;
 using HeroesNotIncluded.Sim.Scenarios;
 using HeroesNotIncluded.Sim.Shops;
 using HeroesNotIncluded.Sim.Systems;
+using HeroesNotIncluded.Sim.Work;
 
 namespace HeroesNotIncluded.Sim.Carpentry;
 
@@ -156,6 +157,40 @@ public sealed class CarpenterModule : ITradeModule
             Inventory.Stow(sim, customer, old);
         }
         sim.EquipItem(customer, sim.CreateItem(sim.Defs.Thing("Bow"), 1));
+    }
+
+    public IEnumerable<string> PairsKinds => ["pitman", "lifter"];
+
+    /// <summary>
+    /// The carpenter's work for two, a bot at it and the player by it (<c>--help-as</c>): a great log on the sawhorse,
+    /// hewn first, then sawn with someone in the pit; or a wagon's cracked axle, the new one trimmed, then its hubs
+    /// driven on with someone holding the wagon up.
+    /// </summary>
+    public string? PairsLead(Simulation sim, string kind, Entity lead, Entity helper)
+    {
+        var woodshop = ShopSystem.BuildingFor(sim, TownRole.Woodshop);
+        if (woodshop.IsNull || sim.World.Has<WorkSession>(lead))
+            return null;
+        switch (kind)
+        {
+            case "pitman" when Systems.Stock.StationOf(sim, woodshop, Carpenters.SawhorseDef) is { IsNull: false } horse
+                && sim.Defs.AllRecipes.FirstOrDefault(r => r.TwoHanded && r.StationDef == sim.World.Get<Thing>(horse).Def) is { } great:
+                Scenarios.PairsDrill.StandBy(sim, lead, horse);
+                Scenarios.PairsDrill.StandBy(sim, helper, horse);
+                // Begun as F at the sawhorse begins it: the great log in the carpenter's arms, taken up onto it.
+                Scenarios.FireDrill.PutInHand(sim, lead, sim.CreateItem(sim.Defs.Thing(Felling.GreatLogDef), 1));
+                new Core.CraftCommand(lead, horse, great).Apply(sim);
+                if (!sim.World.Has<WorkSession>(lead))
+                    return null;
+                return "a great log on the sawhorse: the carpenter hews it, then saws. Get in the pit with F there";
+            case "lifter" when Scenarios.PairsDrill.Wagon(sim, woodshop) is { IsNull: false } wagon:
+                Inventory.Stow(sim, lead, sim.CreateItem(sim.Defs.Thing("Wood"), Tinkering.Wagons.AxleWood + 1));
+                Scenarios.PairsDrill.StandBy(sim, lead, wagon);
+                Scenarios.PairsDrill.StandBy(sim, helper, wagon);
+                WagonJoinery.StartAxle(sim, lead, wagon);
+                return "a wagon with a cracked axle: the carpenter trims the new one, then drives the hubs on. Lift the wagon with F there";
+        }
+        return null;
     }
 
     public IEnumerable<string> PairsDrill(Simulation sim)

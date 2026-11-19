@@ -158,7 +158,11 @@ rest"). Each wants two players over the internet, one as the lead and one as the
 `--host --pairs-test` stages them all at once (`Scenarios/PairsDrill`): a greatsword's iron by the
 forge, a great log by the sawhorse, a wagon with a cracked axle by the woodshop, and a villager
 dead on a shrine pallet with the empath's mana full. Take the four trades between you and swap.
-- [ ] **The striker:** a greatsword at the anvil. Is the call's window (`SledgeSession.CallSteps`)
+- **Alone, as the helper:** `--new-game --help-as striker|keeper|pitman|lifter`: a bot takes the lead's trade and waits
+  at the work for you (`PairsLead`, `BotPlayer.WaitsForHand`); F at the work or at the lead lends the hand.
+- [ ] **The striker:** a greatsword at the anvil. A co-op tester had trouble as the striker: F beside the smith
+  offered "Trade with" them, not the sledge (fixed: F at a lead waiting for a hand lends it). Play it again with
+  `--help-as striker`. Is the call's window (`SledgeSession.CallSteps`)
   wide enough at a real round trip? Does the smith wait for the striker's heave? Tune `TapShare`,
   `StrikeShaping`, `OffbeatCrack`.
 - [ ] **The keeper:** `--die-at 5` with an empath and a third player. Does the empath see the

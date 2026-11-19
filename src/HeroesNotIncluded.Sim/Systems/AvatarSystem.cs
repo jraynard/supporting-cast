@@ -415,6 +415,11 @@ public sealed class AvatarSystem : ISimSystem
         if (tool == AvatarTool.Use && !held.IsNull && InReach(here, cell) && CustomerAt(sim, cell, avatar) is { IsNull: false } customer
             && Shops.Handing.InReach(sim, avatar, customer) && Shops.ShopSystem.AskedFor(sim, customer, held) is { } wanted)
             return new AvatarAction(AvatarActionKind.HandOver, $"Hand {ItemLabel(sim, avatar, held)} to {wanted.PosterName} ({wanted.Price} silver)", cell, customer) { Item = held };
+        // Someone at work for two in front of you, with nobody helping and the work in your reach: F at them lends the
+        // hand, as F at their anvil would (a striker went up to the smith and was offered a trade instead).
+        if (tool == AvatarTool.Use && held.IsNull && !w.Has<Work.WorkSession>(avatar) && LeadAt(sim, cell, avatar) is { IsNull: false } leading
+            && w.Get<Work.WorkSession>(leading).Focus(sim) is { } work && InReach(here, work))
+            return new(AvatarActionKind.LendAHand, $"Lend {w.Get<Creature>(leading).Name} a hand", cell, leading);
         // Another player in front of you: hand them what you hold, or (hands empty) trade.
         if (tool == AvatarTool.Use && PlayerAt(sim, cell, avatar) is { IsNull: false } other && Shops.Handing.InReach(sim, avatar, other))
         {
@@ -834,6 +839,16 @@ public sealed class AvatarSystem : ISimSystem
             Perform(sim, e, action);
         if (mind.Job == walk)
             AiSystem.EndJob(sim, e, mind, true);
+    }
+
+    /// <summary>Someone standing on this cell at work that wants a second pair of hands and has none (<see cref="Work.Pairs.WantsHand"/>), or Entity.Null.</summary>
+    private static Entity LeadAt(Simulation sim, int3 cell, Entity asker)
+    {
+        var w = sim.World;
+        foreach (var e in w.Query<Work.WorkSession>())
+            if (e != asker && w.Get<Position>(e).Cell == cell && Work.Pairs.WantsHand(sim, e))
+                return e;
+        return Entity.Null;
     }
 
     /// <summary>Another player's character standing at a cell, up and about; null if there's none.</summary>

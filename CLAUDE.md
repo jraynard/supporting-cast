@@ -24,6 +24,7 @@ dotnet run --project src/HeroesNotIncluded -- --bridge-test --name Arin        #
 dotnet run --project src/HeroesNotIncluded -- --fell-test --name Arin          # the carpenter by a pine in the open, axe and saw to hand (a mod's drill: --drill felling starts the felling)
 dotnet run --project src/HeroesNotIncluded -- --new-game --trade Miner --mods miner --drill hewing   # the miner in the mine, at a face, hewing
 dotnet run --project src/HeroesNotIncluded -- --host --name Arin --pairs-test  # every job for two ready: a greatsword's iron, a great log, a wagon's axle, a body on a shrine pallet (solo: --new-game, and Help! brings a villager)
+dotnet run --project src/HeroesNotIncluded -- --new-game --name Arin --help-as striker  # be the second pair of hands alone: a bot leads and waits for you (striker, keeper, pitman, lifter)
 dotnet run --project src/HeroesNotIncluded -- --new-game --die-at 5            # your character drops dead: try being a ghost
 dotnet run --project src/HeroesNotIncluded -- --new-game --festival-at 5       # the season's festival, now, you by the well
 dotnet run --project src/HeroesNotIncluded -- --practice Empath          # the tutorial in the practice yard: no season, customers on request (--lesson ID: straight into a chapter, `basics` too)

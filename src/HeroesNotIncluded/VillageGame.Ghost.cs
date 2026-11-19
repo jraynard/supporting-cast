@@ -45,7 +45,15 @@ public sealed partial class VillageGame
         MarkFrost(); // the living read it as well as the dead
         if (DieAt >= 0 && _time >= DieAt && HasAvatar && InRound)
             Issue(new DevKillCommand(_avatar)); // --die-at: once; the avatar is gone after
-        if (PairsTest && !_pairsStaged && InRound && _sim.Round.Live)
+        if (HelpAs != null && !_pairsStaged && InRound && _sim.Round.Live && HasAvatar)
+        {
+            _pairsStaged = true;
+            // --help-as: the lead is the one bot's character, at its trade.
+            var leadTrade = Sim.Scenarios.PairsLead.LeadTrade(_sim, HelpAs);
+            var leader = _sim.World.Query<Avatar>().FirstOrDefault(e => e != _avatar && _sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == leadTrade, Entity.Null);
+            Issue(new Sim.Scenarios.DevPairsLeadCommand(HelpAs, leader, _avatar));
+        }
+        else if (PairsTest && !_pairsStaged && InRound && _sim.Round.Live)
         {
             _pairsStaged = true;
             Issue(new Sim.Scenarios.DevPairsDrillCommand()); // --pairs-test: once, as the round's dealt

@@ -326,6 +326,9 @@ else
         // --pairs-test: every job for two pairs of hands ready at once (PairsDrill): a greatsword's iron, a great
         // log, a wagon's axle and a body on a shrine pallet. With --host, for co-op; alone, Help! brings a villager.
         PairsTest = args.Contains("--pairs-test"),
+        // --help-as KIND (striker, keeper, pitman, lifter): a job for two played as the second player, alone. A bot
+        // takes the lead's trade and waits at the work for you (PairsLead); you're dealt another trade, stood beside it.
+        HelpAs = ParseString(args, "--help-as"),
         // --practice TRADE: the practice yard (Practice): your trade's games, no season, customers when sent for.
         Practice = args.Contains("--practice"),
         // --lesson ID (with --practice): straight into one of the trade's lessons (trades.json "lessons").
@@ -372,7 +375,7 @@ SavedCharacter? PickedCharacter()
 
 static bool LaunchesDirectly(string[] args) =>
     args.Any(a => a is "--new-game" or "--seed" or "--skip-hours" or "--furniture-demo" or "--building-demo" or "--freeform" or "--show-roofs" or "--hide-roofs"
-        or "--ignite-forest" or "--raid-test" or "--fire-test" or "--fire-spread" or "--dragon-test" or "--bridge-test" or "--fell-test" or "--pairs-test" or "--arena" or "--practice" or "--yaw" or "--pitch" or "--camera-mode" or "--keep-replay-at" or "--cutaway" or "--difficulty" or "--map" or "--work-scenes");
+        or "--ignite-forest" or "--raid-test" or "--fire-test" or "--fire-spread" or "--dragon-test" or "--bridge-test" or "--fell-test" or "--pairs-test" or "--help-as" or "--arena" or "--practice" or "--yaw" or "--pitch" or "--camera-mode" or "--keep-replay-at" or "--cutaway" or "--difficulty" or "--map" or "--work-scenes");
 
 // --load and --check-save take a path, or the name of a slot in the saves directory ("quicksave").
 static string ResolveSave(string pathOrSlot)

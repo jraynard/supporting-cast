@@ -177,9 +177,35 @@ public sealed partial class BotPlayer
             return false;
         if (!piece.Hot && Nearest(sim, me, "Forge") is { IsNull: false } lit && view.FuelIn(lit) is <= 0f)
             return FeedForge(sim, me, view, lit, now);
+        // Work for two (a greatsword): heated only once there's someone at the anvil to strike, so it's not back and forth
+        // to the fire with nobody there (the smithy too hot to stand in); meanwhile it calls for a hand.
+        if (!piece.Hot && !piece.Shaped && Smithing.PieceOf(sim, me) is { Recipe.TwoHanded: true }
+            && Nearest(sim, me, "Anvil") is { IsNull: false } anvil && !StrikerAt(sim, me, anvil))
+        {
+            Doing = "waiting for a striker at the anvil";
+            if (now - _askedForHand > SimClock.TicksPerSecond * 20)
+            {
+                _askedForHand = now;
+                Send(new AskForHandCommand(me)); // dropped when it waits for a player's hand (WaitsForHand)
+            }
+            return true;
+        }
         var next = !piece.Hot ? "Forge" : piece.Shaped ? "QuenchTub" : "Anvil";
         Doing = $"forging: {piece.Label} to the {next.ToLowerInvariant()}";
         return AtStation(sim, me, Nearest(sim, me, next), now, st => Send(new SmithCommand(me, st)));
+    }
+
+    private long _askedForHand = -1_000_000;
+
+    /// <summary>Someone besides the smith standing where they could take the sledge at this anvil (or on their way, called).</summary>
+    private static bool StrikerAt(Simulation sim, Entity me, Entity anvil)
+    {
+        var w = sim.World;
+        foreach (var e in sim.Creatures())
+            if (e != me && w.Get<Creature>(e) is { Dead: false, Downed: false } && !w.Has<Components.Adventurer>(e)
+                && (AvatarSystem.InReach(sim, w.Get<Position>(e).Cell, anvil) || w.TryGet<Helping>(e, out var h) && h.Lead == me))
+                return true;
+        return false;
     }
 
     /// <summary>
