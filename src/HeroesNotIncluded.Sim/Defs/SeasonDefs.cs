@@ -113,6 +113,9 @@ public sealed class SeasonDef : Def
     /// </summary>
     public int BarnWood { get; set; }
 
+    /// <summary>Planks laid in the barn's stockpile at the deal: for what the town makes (hafts, contraptions, furniture), till the carpenter saws more.</summary>
+    public int BarnPlanks { get; set; }
+
     /// <summary>What the woodcutter leaves in the barn each morning from the second day: timber, for building and mending.</summary>
     public List<ThingCount> WoodDelivery { get; set; } = [];
 
@@ -129,6 +132,9 @@ public sealed class SeasonDef : Def
     /// <summary>What the carter leaves in the woodshop's chest each morning from the second day: feathers for fletching, which nobody in town grows.</summary>
     public List<ThingCount> WoodshopDelivery { get; set; } = [];
 
+    /// <summary>What the carter leaves at the shrine each morning from the second day: cloth to tear into bandages, which nobody in town weaves.</summary>
+    public List<ThingCount> ShrineDelivery { get; set; } = [];
+
     internal override void Resolve(DefDatabase db)
     {
         Pacing.Resolve(Name);
@@ -142,6 +148,8 @@ public sealed class SeasonDef : Def
                 throw new Exception($"Season {Name}: a beat's afterHours is [earliest, latest]");
         }
         foreach (var t in WoodshopDelivery)
+            t.Resolve(db);
+        foreach (var t in ShrineDelivery)
             t.Resolve(db);
         foreach (var t in OreDelivery)
             t.Resolve(db);

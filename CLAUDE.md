@@ -207,6 +207,9 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. ` (R3
   - Fires give off heat, light and radiant warmth from `Warmth.FireCell`: their own cell, or for a
     fireplace (`setInWall`) the room's cell in front of it, which is also the only place it's worked from.
     Wood-burning fires burn `Firewood`, never timber (`Wood`): the carter's barn load (`season.json`, none in a shortage) and the carpenter's splitting.
+    What's crafted (hafts, contraptions, furniture) takes `Planks`; timber is for building and mending. Charcoal is baked from
+    firewood at the kiln outside each smithy, kept in by the AI smith through `TradeDef.Keeps` (`Crafting.Kept`); the shrine's
+    cloth for bandages comes with the carter (`shrineDelivery`).
   - `Appearance` is cosmetic and left out of the hash, its `Folk` (human, elf) included. AI villagers
     have none: `HumanLook.Derived` hashes their look (and folk) from the entity, the same on every peer.
   - Fights are real time and readable (docs/ROADMAP.md, "Combat pass"): a melee blow is wound up

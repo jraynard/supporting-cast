@@ -26,7 +26,7 @@
       "name": "CollectorsCrate", "label": "collector's crate", "category": "Building", "solid": true, "sprite": "buildings/collectors_crate",
       "description": "A straw-packed crate with a collector's mark burned into the lid. Curios put in it go off with the morning carrier; the silver comes back the morning after.",
       "maxHp": 100, "flammability": 1.0,
-      "building": { "work": 120, "storageStacks": 6, "surfaceHeight": 0.5, "cost": [ { "def": "Wood", "count": 8 } ] },
+      "building": { "work": 120, "storageStacks": 6, "surfaceHeight": 0.5, "cost": [ { "def": "Planks", "count": 8 } ] },
       "model": [
         { "min": [0.12, 0.18, 0], "max": [0.88, 0.82, 0.5], "top": "props/straw", "side": "props/crate_side" }
       ]
@@ -114,17 +114,17 @@
       "name": "MakeCrossbow", "label": "crossbow", "station": "TinkerBench", "skill": "Crafting", "work": 1800, "minSkill": 3,
       "fit": { "parts": 3, "partNames": [ "stock", "steel bow", "trigger and nut" ], "wound": "string" },
       "description": "A stock, a steel-sprung bow and a trigger: something better than the dagger for when the bandits come.",
-      "ingredients": [ { "def": "Wood", "count": 3 }, { "def": "IronBar", "count": 2 } ],
+      "ingredients": [ { "def": "Planks", "count": 3 }, { "def": "IronBar", "count": 2 } ],
       "products": [ { "def": "Crossbow", "count": 1 } ]
     },
     {
       "name": "MakeTappingRod", "label": "tapping rod", "station": "TinkerBench", "skill": "Crafting", "work": 1200,
-      "ingredients": [ { "def": "Wood", "count": 2 }, { "def": "IronBar", "count": 1 } ],
+      "ingredients": [ { "def": "Planks", "count": 2 }, { "def": "IronBar", "count": 1 } ],
       "products": [ { "def": "TappingRod", "count": 1 } ]
     },
     {
       "name": "MakeGrapnel", "label": "grapnel and winch", "station": "TinkerBench", "skill": "Crafting", "work": 1500, "minSkill": 3,
-      "ingredients": [ { "def": "IronBar", "count": 2 }, { "def": "Wood", "count": 1 } ],
+      "ingredients": [ { "def": "IronBar", "count": 2 }, { "def": "Planks", "count": 1 } ],
       "products": [ { "def": "Grapnel", "count": 1 } ]
     },
     {
@@ -134,18 +134,18 @@
     },
     {
       "name": "MakeSpringSnare", "label": "spring snare", "station": "TinkerBench", "skill": "Crafting", "work": 1200,
-      "ingredients": [ { "def": "IronBar", "count": 1 }, { "def": "Wood", "count": 2 } ],
+      "ingredients": [ { "def": "IronBar", "count": 1 }, { "def": "Planks", "count": 2 } ],
       "products": [ { "def": "SpringSnare", "count": 1 } ]
     },
     {
       "name": "MakeTripBell", "label": "trip-bell", "station": "TinkerBench", "skill": "Crafting", "work": 900,
       "description": "A trip-bell for a way into town: when a raid's called, set it across their road.",
-      "ingredients": [ { "def": "IronBar", "count": 1 }, { "def": "Wood", "count": 1 } ],
+      "ingredients": [ { "def": "IronBar", "count": 1 }, { "def": "Planks", "count": 1 } ],
       "products": [ { "def": "TripBell", "count": 1 } ]
     },
     {
       "name": "MakeSignalRocket", "label": "signal rocket", "station": "TinkerBench", "skill": "Crafting", "work": 900,
-      "ingredients": [ { "def": "Charcoal", "count": 3 }, { "def": "Wood", "count": 1 } ],
+      "ingredients": [ { "def": "Charcoal", "count": 3 }, { "def": "Planks", "count": 1 } ],
       "products": [ { "def": "SignalRocket", "count": 1 } ]
     }
   ]

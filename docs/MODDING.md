@@ -150,6 +150,10 @@ one didn't. Each is now part of the API:
   boulders, the miner's) let it do that much in a round without `gathers`' crops and timber.
 - **What a trade supplies** (`supplies`: thing names) the carter brings less of while a player holds it
   (season.json's `suppliedShare`): the miner's iron ore.
+- **What a trade keeps in** (`keeps`: `[{ "recipe", "below" }]`) its AI holder makes without a bill, at a station
+  in its workplace or out of doors beside it (`Crafting.KeptAt`, within `YardReach`), while fewer than `below` of
+  the product are at the workplace or free about the town: the smith's charcoal, baked at the smithy's kiln. It
+  lights an on-demand fire as a bill would; a bot holder makes it too (`BotPlayer.KeepIn`), a player keeps their own.
 - **Work types stay the game's** (Craft, Cook, Haul, Doctor...): they're each villager's priorities, so a
   new one would be a new column for every villager and the work tab. A trade's AI jobs come under one
   of them (`ITradeModule.JobFor(sim, pawn, WorkType.Craft)`), as the carpenter's do.

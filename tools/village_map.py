@@ -36,7 +36,7 @@ FEATURE_LEGEND = {
     "O": "Oak", "P": "Pine", "B": "Birch", "b": "BerryBush", "o": "Boulder", "x": "WildFlax",
     "f": "Fence", "G": "Gate!", "g": "Gate", "c": "CabbagePlant", "W": "Well", "N": "NoticeBoard", "=": "StoneBridge@2",
     "u": "Barrel", "X": "Crate", "C": "Wagon", "/": "Slope", "R": "WeaponRack", "M": "Midden",
-    "h": "OutdoorBench", "T": "OutdoorTable", "_": "DoorStep", "L": "LanternPost", "F": "FlowerTub",
+    "h": "OutdoorBench", "T": "OutdoorTable", "_": "DoorStep", "L": "LanternPost", "F": "FlowerTub", "K": "Kiln",
     "l": f"LanternPost@{TOWN}",
 }
 
@@ -111,6 +111,8 @@ for box, gate in GARDENS:
 # ---------------- Things on the ground ----------------
 
 feature[45][43] = "W"                                            # the well
+# The smith's kiln, out in the open by the smithy's south wall (its fire would roast the smithy): charcoal from firewood.
+M.place_first("K", [(20, 35), (19, 35), (21, 35), (20, 25)], "the smithy's kiln")
 for x, y in [(46, 43), (46, 44), (47, 43), (40, 43)]:             # the notice board, by the well
     if not reserved[y][x] and level[y][x] == TOWN and feature[y][x] == "." and ground[y][x] not in "wk~":
         feature[y][x] = "N"

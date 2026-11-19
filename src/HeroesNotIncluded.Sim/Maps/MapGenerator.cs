@@ -348,8 +348,10 @@ public static class MapGenerator
         // The pile goes where it's kept (a town's stockpile, all of it from its middle out); in a
         // valley, about the villagers as it always has.
         int3 Pile(int dx, int dy) => pileAt ?? center + new int3(dx, dy, 0);
-        // The settlers brought pine planks; everything later comes from what they fell.
-        sim.SpawnItem(sim.Defs.Thing("Wood"), 60, Pile(3, -2), sim.Defs.Material("Pine"));
+        // The settlers brought pine planks for what they make, and timber for what they build; everything
+        // later comes from what they fell.
+        sim.SpawnItem(sim.Defs.Thing(Systems.Stock.PlanksDef), 30, Pile(3, -2), sim.Defs.Material("Pine"));
+        sim.SpawnItem(sim.Defs.Thing(Systems.Stock.TimberDef), 30, Pile(4, -2), sim.Defs.Material("Pine"));
         // And firewood for the hearths (the timber isn't burnt).
         sim.SpawnItem(sim.Defs.Thing("Firewood"), 30, Pile(3, 2), sim.Defs.Material("Pine"));
         // Food for the first days: after that it comes from hunting and fishing

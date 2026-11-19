@@ -187,7 +187,7 @@ public class CraftingProgressionTests
         var worker = Villager(sim, C(5, 5), only: [WorkType.Craft, WorkType.Refuel]);
         var kiln = Station(sim, "Kiln", C(12, 12));
         sim.World.Get<Fueled>(kiln).Fuel = 20;
-        sim.SpawnItem(sim.Thing("Wood"), 30, C(6, 8));
+        sim.SpawnItem(sim.Thing("Firewood"), 30, C(6, 8));
 
         TickFed(sim, SimClock.TicksPerHour * 2);
         Assert.Equal(20f, sim.World.Get<Fueled>(kiln).Fuel); // nothing to make: cold and unburned

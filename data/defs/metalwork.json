@@ -86,7 +86,7 @@
       "name": "Bellows", "label": "bellows", "category": "Building", "solid": true, "sprite": "buildings/bellows",
       "description": "Leather lungs for a forge. Built beside one, the smith pumps them while working: on coal, hot enough for iron and steel.",
       "maxHp": 120, "flammability": 0.6,
-      "building": { "work": 300, "cost": [ { "def": "Leather", "count": 4 }, { "def": "Wood", "count": 8 } ],
+      "building": { "work": 300, "cost": [ { "def": "Leather", "count": 4 }, { "def": "Planks", "count": 8 } ],
                     "bellows": { "heat": 2000, "maxTempBonus": 140, "lift": 270 } },
       // On a low stand: two boards with the leather between, a handle at the back, the iron nozzle
       // to the front (+Y), so a furnishing turns it to point at the forge.
@@ -107,7 +107,7 @@
       "name": "Anvil", "label": "anvil", "category": "Building", "solid": true, "sprite": "buildings/anvil",
       "description": "A block of iron on an oak stump: where hot metal is beaten into shape.",
       "maxHp": 600, "flammability": 0.1,
-      "building": { "work": 300, "surfaceHeight": 0.5, "smithy": "Anvil", "cost": [ { "def": "IronBar", "count": 6 }, { "def": "Wood", "count": 4 } ] },
+      "building": { "work": 300, "surfaceHeight": 0.5, "smithy": "Anvil", "cost": [ { "def": "IronBar", "count": 6 }, { "def": "Planks", "count": 4 } ] },
       "model": [
         // The stump, bound with two iron hoops.
         { "min": [0.30, 0.30, 0.00], "max": [0.70, 0.70, 0.34], "top": "props/log_end", "side": "props/log_side" },
@@ -126,7 +126,7 @@
       "name": "QuenchTub", "label": "quench tub", "category": "Building", "solid": true, "sprite": "buildings/quench_tub",
       "description": "A hooped tub of water. Hot steel plunged in and held for the right breath hardens; too long and it turns brittle.",
       "maxHp": 140, "flammability": 0.3,
-      "building": { "work": 160, "surfaceHeight": 0.36, "smithy": "Quench", "cost": [ { "def": "Wood", "count": 10 }, { "def": "IronBar", "count": 1 } ] },
+      "building": { "work": 160, "surfaceHeight": 0.36, "smithy": "Quench", "cost": [ { "def": "Planks", "count": 10 }, { "def": "IronBar", "count": 1 } ] },
       "model": [
         // Staves around sunken water, so there's a rim and the inside of the tub above the surface.
         { "min": [0.20, 0.20, 0.00], "max": [0.80, 0.80, 0.24], "top": "props/water_deep", "side": "props/tub_inner" },
@@ -140,7 +140,7 @@
       "name": "Grindstone", "label": "grindstone", "category": "Building", "solid": true, "sprite": "buildings/grindstone",
       "description": "A sandstone wheel on a trestle, turned by a crank: where a blade takes its edge.",
       "maxHp": 200, "flammability": 0.4,
-      "building": { "work": 200, "smithy": "Grind", "cost": [ { "def": "Stone", "count": 4 }, { "def": "Wood", "count": 6 } ] },
+      "building": { "work": 200, "smithy": "Grind", "cost": [ { "def": "Stone", "count": 4 }, { "def": "Planks", "count": 6 } ] },
       "model": [
         // A wet trough under the wheel (a stone runs wet), between the posts the axle turns in.
         { "min": [0.38, 0.20, 0.00], "max": [0.62, 0.80, 0.10], "top": "props/water_deep", "side": "props/tub_inner" },
@@ -161,7 +161,7 @@
       "name": "ToolRack", "label": "tool rack", "category": "Building", "solid": true, "sprite": "buildings/tool_rack",
       "description": "A board on the wall hung with tongs, hammers and files.",
       "maxHp": 100, "flammability": 0.8,
-      "building": { "work": 120, "cost": [ { "def": "Wood", "count": 4 } ] },
+      "building": { "work": 120, "cost": [ { "def": "Planks", "count": 4 } ] },
       "model": [
         { "min": [0.06, 0.00, 0.10], "max": [0.94, 0.14, 0.90], "top": "props/planks", "side": "props/planks", "front": "props/tool_rack" }
       ]
@@ -170,7 +170,7 @@
       "name": "FuelBin", "label": "fuel bin", "category": "Building", "solid": true, "sprite": "buildings/fuel_bin",
       "description": "An open bin heaped with coal and charcoal for the forge. Holds 4 stacks.",
       "maxHp": 120, "flammability": 0.9,
-      "building": { "work": 120, "storageStacks": 4, "surfaceHeight": 0.4, "cost": [ { "def": "Wood", "count": 8 } ] },
+      "building": { "work": 120, "storageStacks": 4, "surfaceHeight": 0.4, "cost": [ { "def": "Planks", "count": 8 } ] },
       "model": [
         { "min": [0.10, 0.18, 0.00], "max": [0.90, 0.82, 0.40], "top": "props/coal", "side": "props/crate_side" }
       ]
@@ -181,7 +181,7 @@
       "name": "Mint", "label": "goldsmith's bench", "category": "Building", "solid": true, "sprite": "buildings/mint",
       "description": "Dies and a heavy hammer: strikes silver and gold into coin, and makes rings and torcs.",
       "maxHp": 150, "flammability": 0.6, 
-      "building": { "work": 250, "surfaceHeight": 0.5, "workbench": { "bills": 6 }, "cost": [ { "def": "Wood", "count": 6 }, { "def": "Stone", "count": 4 }, { "def": "CopperBar", "count": 2 } ] },
+      "building": { "work": 250, "surfaceHeight": 0.5, "workbench": { "bills": 6 }, "cost": [ { "def": "Planks", "count": 6 }, { "def": "Stone", "count": 4 }, { "def": "CopperBar", "count": 2 } ] },
       "model": [
         { "min": [0.10, 0.20, 0.00], "max": [0.90, 0.80, 0.46], "top": "props/planks", "side": "props/planks" },
         { "min": [0.30, 0.34, 0.46], "max": [0.70, 0.66, 0.62], "top": "props/stone_block", "side": "props/stone_block" }
@@ -276,19 +276,19 @@
 
     { "name": "ForgeCopperAxe", "label": "copper axe", "station": "Forge", "skill": "Crafting", "minSkill": 2, "work": 900, "minTemp": 600,
       "tools": [ "Hammer" ], "unlock": { "discover": "handle:CopperBar" },
-      "ingredients": [ { "def": "CopperBar", "count": 2 }, { "def": "Wood", "count": 1 } ], "products": [ { "def": "CopperAxe", "count": 1 } ] },
+      "ingredients": [ { "def": "CopperBar", "count": 2 }, { "def": "Planks", "count": 1 } ], "products": [ { "def": "CopperAxe", "count": 1 } ] },
     { "name": "ForgeCopperPick", "label": "copper pick", "station": "Forge", "skill": "Crafting", "minSkill": 2, "work": 900, "minTemp": 600,
       "tools": [ "Hammer" ], "unlock": { "discover": "handle:CopperBar" },
-      "ingredients": [ { "def": "CopperBar", "count": 2 }, { "def": "Wood", "count": 1 } ], "products": [ { "def": "CopperPick", "count": 1 } ] },
+      "ingredients": [ { "def": "CopperBar", "count": 2 }, { "def": "Planks", "count": 1 } ], "products": [ { "def": "CopperPick", "count": 1 } ] },
     { "name": "ForgeCopperHammer", "label": "copper hammer", "station": "Forge", "skill": "Crafting", "minSkill": 2, "work": 800, "minTemp": 600,
       "tools": [ "Hammer" ], "unlock": { "discover": "handle:CopperBar" },
-      "ingredients": [ { "def": "CopperBar", "count": 2 }, { "def": "Wood", "count": 1 } ], "products": [ { "def": "CopperHammer", "count": 1 } ] },
+      "ingredients": [ { "def": "CopperBar", "count": 2 }, { "def": "Planks", "count": 1 } ], "products": [ { "def": "CopperHammer", "count": 1 } ] },
     { "name": "ForgeCopperKnife", "label": "copper knife", "station": "Forge", "skill": "Crafting", "minSkill": 2, "work": 600, "minTemp": 600,
       "tools": [ "Hammer" ], "unlock": { "discover": "handle:CopperBar" },
-      "ingredients": [ { "def": "CopperBar", "count": 1 }, { "def": "Wood", "count": 1 } ], "products": [ { "def": "CopperKnife", "count": 1 } ] },
+      "ingredients": [ { "def": "CopperBar", "count": 1 }, { "def": "Planks", "count": 1 } ], "products": [ { "def": "CopperKnife", "count": 1 } ] },
     { "name": "ForgeCopperSpear", "label": "copper spear", "station": "Forge", "skill": "Crafting", "minSkill": 2, "work": 800, "minTemp": 600,
       "tools": [ "Hammer" ], "unlock": { "discover": "handle:CopperBar" },
-      "ingredients": [ { "def": "CopperBar", "count": 1 }, { "def": "Wood", "count": 2 } ], "products": [ { "def": "CopperSpear", "count": 1 } ] },
+      "ingredients": [ { "def": "CopperBar", "count": 1 }, { "def": "Planks", "count": 2 } ], "products": [ { "def": "CopperSpear", "count": 1 } ] },
     { "name": "StudJerkin", "label": "studded jerkin", "station": "TanningRack", "skill": "Crafting", "minSkill": 3, "work": 900,
       "tools": [ "Hammer" ], "unlock": { "discover": "handle:CopperBar" },
       "description": "Set copper studs into a leather jerkin.",
@@ -296,22 +296,22 @@
 
     { "name": "ForgeBronzeAxe", "label": "bronze axe", "station": "Forge", "skill": "Crafting", "minSkill": 3, "work": 1000, "minTemp": 600,
       "tools": [ "Hammer" ], "toolTier": "Copper", "unlock": { "discover": "handle:BronzeBar" },
-      "ingredients": [ { "def": "BronzeBar", "count": 2 }, { "def": "Wood", "count": 1 } ], "products": [ { "def": "BronzeAxe", "count": 1 } ] },
+      "ingredients": [ { "def": "BronzeBar", "count": 2 }, { "def": "Planks", "count": 1 } ], "products": [ { "def": "BronzeAxe", "count": 1 } ] },
     { "name": "ForgeBronzePick", "label": "bronze pick", "station": "Forge", "skill": "Crafting", "minSkill": 3, "work": 1000, "minTemp": 600,
       "tools": [ "Hammer" ], "toolTier": "Copper", "unlock": { "discover": "handle:BronzeBar" },
-      "ingredients": [ { "def": "BronzeBar", "count": 2 }, { "def": "Wood", "count": 1 } ], "products": [ { "def": "BronzePick", "count": 1 } ] },
+      "ingredients": [ { "def": "BronzeBar", "count": 2 }, { "def": "Planks", "count": 1 } ], "products": [ { "def": "BronzePick", "count": 1 } ] },
     { "name": "ForgeBronzeHammer", "label": "bronze hammer", "station": "Forge", "skill": "Crafting", "minSkill": 3, "work": 900, "minTemp": 600,
       "tools": [ "Hammer" ], "toolTier": "Copper", "unlock": { "discover": "handle:BronzeBar" },
-      "ingredients": [ { "def": "BronzeBar", "count": 2 }, { "def": "Wood", "count": 1 } ], "products": [ { "def": "BronzeHammer", "count": 1 } ] },
+      "ingredients": [ { "def": "BronzeBar", "count": 2 }, { "def": "Planks", "count": 1 } ], "products": [ { "def": "BronzeHammer", "count": 1 } ] },
     { "name": "ForgeBronzeSpear", "label": "bronze spear", "station": "Forge", "skill": "Crafting", "minSkill": 3, "work": 900, "minTemp": 600,
       "tools": [ "Hammer" ], "toolTier": "Copper", "unlock": { "discover": "handle:BronzeBar" },
-      "ingredients": [ { "def": "BronzeBar", "count": 1 }, { "def": "Wood", "count": 2 } ], "products": [ { "def": "BronzeSpear", "count": 1 } ] },
+      "ingredients": [ { "def": "BronzeBar", "count": 1 }, { "def": "Planks", "count": 2 } ], "products": [ { "def": "BronzeSpear", "count": 1 } ] },
     { "name": "ForgeBronzeSword", "label": "bronze sword", "station": "Forge", "skill": "Crafting", "minSkill": 4, "work": 1500, "minTemp": 600,
       "tools": [ "Hammer" ], "toolTier": "Copper", "unlock": { "discover": "handle:BronzeBar" },
       "ingredients": [ { "def": "BronzeBar", "count": 3 }, { "def": "Leather", "count": 1 } ], "products": [ { "def": "BronzeSword", "count": 1 } ] },
     { "name": "ForgeBronzeMace", "label": "bronze mace", "station": "Forge", "skill": "Crafting", "minSkill": 3, "work": 1100, "minTemp": 600,
       "tools": [ "Hammer" ], "toolTier": "Copper", "unlock": { "discover": "handle:BronzeBar" },
-      "ingredients": [ { "def": "BronzeBar", "count": 2 }, { "def": "Wood", "count": 1 } ], "products": [ { "def": "BronzeMace", "count": 1 } ] },
+      "ingredients": [ { "def": "BronzeBar", "count": 2 }, { "def": "Planks", "count": 1 } ], "products": [ { "def": "BronzeMace", "count": 1 } ] },
     { "name": "ForgeBronzeHelm", "label": "bronze helm", "station": "Forge", "skill": "Crafting", "minSkill": 4, "work": 1500, "minTemp": 600,
       "tools": [ "Hammer" ], "toolTier": "Bronze", "unlock": { "discover": "handle:BronzeBar" },
       "ingredients": [ { "def": "BronzeBar", "count": 3 } ], "products": [ { "def": "BronzeHelm", "count": 1 } ] },
@@ -321,10 +321,10 @@
 
     { "name": "ForgeIronSpear", "label": "iron spear", "station": "Forge", "skill": "Crafting", "minSkill": 4, "work": 1000, "minTemp": 800,
       "tools": [ "Hammer" ], "toolTier": "Bronze", "unlock": { "discover": "handle:IronBar" },
-      "ingredients": [ { "def": "IronBar", "count": 1 }, { "def": "Wood", "count": 2 } ], "products": [ { "def": "IronSpear", "count": 1 } ] },
+      "ingredients": [ { "def": "IronBar", "count": 1 }, { "def": "Planks", "count": 2 } ], "products": [ { "def": "IronSpear", "count": 1 } ] },
     { "name": "ForgeIronMace", "label": "iron mace", "station": "Forge", "skill": "Crafting", "minSkill": 4, "work": 1300, "minTemp": 800,
       "tools": [ "Hammer" ], "toolTier": "Bronze", "unlock": { "discover": "handle:IronBar" },
-      "ingredients": [ { "def": "IronBar", "count": 2 }, { "def": "Wood", "count": 1 } ], "products": [ { "def": "IronMace", "count": 1 } ] },
+      "ingredients": [ { "def": "IronBar", "count": 2 }, { "def": "Planks", "count": 1 } ], "products": [ { "def": "IronMace", "count": 1 } ] },
 
     { "name": "MintSilver", "label": "silver coins", "station": "Mint", "skill": "Crafting", "minSkill": 3, "work": 600,
       "tools": [ "Hammer" ], "toolTier": "Bronze", "unlock": { "discover": "handle:SilverBar" },
@@ -346,19 +346,19 @@
       "ingredients": [ { "def": "IronBar", "count": 2 }, { "def": "Coal", "count": 2 } ], "products": [ { "def": "SteelBar", "count": 2 } ] },
     { "name": "ForgeSteelAxe", "label": "bearded axe", "station": "Forge", "skill": "Crafting", "minSkill": 5, "work": 1400, "minTemp": 950,
       "tools": [ "Hammer" ], "toolTier": "Iron", "unlock": { "discover": "handle:SteelBar" },
-      "ingredients": [ { "def": "SteelBar", "count": 2 }, { "def": "Wood", "count": 1 } ], "products": [ { "def": "SteelAxe", "count": 1 } ] },
+      "ingredients": [ { "def": "SteelBar", "count": 2 }, { "def": "Planks", "count": 1 } ], "products": [ { "def": "SteelAxe", "count": 1 } ] },
     { "name": "ForgeSteelPick", "label": "steel pick", "station": "Forge", "skill": "Crafting", "minSkill": 5, "work": 1400, "minTemp": 950,
       "tools": [ "Hammer" ], "toolTier": "Iron", "unlock": { "discover": "handle:SteelBar" },
-      "ingredients": [ { "def": "SteelBar", "count": 2 }, { "def": "Wood", "count": 1 } ], "products": [ { "def": "SteelPick", "count": 1 } ] },
+      "ingredients": [ { "def": "SteelBar", "count": 2 }, { "def": "Planks", "count": 1 } ], "products": [ { "def": "SteelPick", "count": 1 } ] },
     { "name": "ForgeSteelHammer", "label": "steel hammer", "station": "Forge", "skill": "Crafting", "minSkill": 5, "work": 1300, "minTemp": 950,
       "tools": [ "Hammer" ], "toolTier": "Iron", "unlock": { "discover": "handle:SteelBar" },
-      "ingredients": [ { "def": "SteelBar", "count": 2 }, { "def": "Wood", "count": 1 } ], "products": [ { "def": "SteelHammer", "count": 1 } ] },
+      "ingredients": [ { "def": "SteelBar", "count": 2 }, { "def": "Planks", "count": 1 } ], "products": [ { "def": "SteelHammer", "count": 1 } ] },
     { "name": "ForgeLongsword", "label": "longsword", "station": "Forge", "skill": "Crafting", "minSkill": 7, "work": 2400, "minTemp": 950,
       "tools": [ "Hammer", "Tongs" ], "toolTier": "Iron", "unlock": { "discover": "handle:SteelBar" },
       "ingredients": [ { "def": "SteelBar", "count": 3 }, { "def": "Leather", "count": 1 } ], "products": [ { "def": "Longsword", "count": 1 } ] },
     { "name": "ForgeSteelMace", "label": "flanged mace", "station": "Forge", "skill": "Crafting", "minSkill": 6, "work": 1800, "minTemp": 950,
       "tools": [ "Hammer" ], "toolTier": "Iron", "unlock": { "discover": "handle:SteelBar" },
-      "ingredients": [ { "def": "SteelBar", "count": 2 }, { "def": "Wood", "count": 1 } ], "products": [ { "def": "SteelMace", "count": 1 } ] },
+      "ingredients": [ { "def": "SteelBar", "count": 2 }, { "def": "Planks", "count": 1 } ], "products": [ { "def": "SteelMace", "count": 1 } ] },
     { "name": "ForgeSteelSallet", "label": "steel sallet", "station": "Forge", "skill": "Crafting", "minSkill": 7, "work": 2400, "minTemp": 950,
       "tools": [ "Hammer" ], "toolTier": "Steel", "unlock": { "discover": "handle:SteelBar" },
       "ingredients": [ { "def": "SteelBar", "count": 3 } ], "products": [ { "def": "SteelSallet", "count": 1 } ] },

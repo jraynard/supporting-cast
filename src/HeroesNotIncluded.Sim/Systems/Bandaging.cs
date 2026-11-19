@@ -17,6 +17,9 @@ public static class Bandaging
 {
     public const string BandageDef = "Bandage";
 
+    /// <summary>What bandages are torn from (<c>TearBandages</c>): the carter brings it to the shrine.</summary>
+    public const string ClothDef = "Cloth";
+
     /// <summary>Ticks of work per wound, out of a fight.</summary>
     public const int TicksPerWound = 90;
 

@@ -114,6 +114,12 @@ public sealed class TradeDef : Def
     /// </summary>
     public List<string> Supplies { get; set; } = [];
 
+    /// <summary>
+    /// What an AI holder makes at its workplace without a bill, to keep it in (<c>Crafting.Kept</c>): the smith's
+    /// charcoal, baked at the smithy's kiln while there's little left. A player keeps their own.
+    /// </summary>
+    public List<TradeKeep> Keeps { get; set; } = [];
+
     /// <summary>The holder mends what crises break in town (<c>Tinkering.Repairs</c>): the tinker, the bridge.</summary>
     public bool MendsTown { get; set; }
 
@@ -158,6 +164,12 @@ public sealed class TradeDef : Def
             want.ThingDef = db.Thing(want.Thing);
             if (want.ThingDef.Category != ThingCategory.Item || want.Below < 1 || want.Count < 1 || want.Price < 0 || want.Hours <= 0)
                 throw new Exception($"Trade '{Name}': a want of {want.Thing} needs an item, below and count of 1 or more, a price and hours");
+        }
+        foreach (var keep in Keeps)
+        {
+            keep.RecipeDef = db.Recipe(keep.Recipe);
+            if (keep.RecipeDef.Station.Length == 0 || keep.RecipeDef.Products.Count == 0 || keep.Below < 1)
+                throw new Exception($"Trade '{Name}': a keep of {keep.Recipe} needs a recipe made at a station, with a product, and below of 1 or more");
         }
         KnownStations.Clear();
         foreach (var station in Knows)
@@ -277,6 +289,17 @@ public sealed class LessonStepDef
 
     /// <summary>A fuller hint, shown when the player's been on the step a while.</summary>
     public string? More { get; set; }
+}
+
+/// <summary>Something a trade makes itself to keep in, as a standing bill would (<see cref="TradeDef.Keeps"/>).</summary>
+public sealed class TradeKeep
+{
+    public string Recipe { get; set; } = "";
+
+    /// <summary>Fewer of its product than this at the workplace, or free about the town, and it's made.</summary>
+    public int Below { get; set; } = 10;
+
+    [JsonIgnore] public RecipeDef RecipeDef { get; set; } = null!;
 }
 
 /// <summary>Something a trade's workplace wants kept in, and what it'll pay a labourer to fetch it (<see cref="TradeDef.Wants"/>).</summary>

@@ -26,6 +26,7 @@ run along. Edit this script, not the JSON.
   python3 tools/lake_map.py --preview OUT   # also draw it
 """
 import argparse
+import glob
 import json
 import math
 import os
@@ -53,13 +54,14 @@ FEATURE_LEGEND = {
     "R": f"StonePier@{DECK}+WeaponRack@{DECK}", "U": f"Boardwalk@{DECK}+Barrel@{DECK}", "K": f"Boardwalk@{DECK}+Crate@{DECK}",
     "L": f"Boardwalk@{DECK}+QuayLantern@{DECK}", "Y": f"Boardwalk@{DECK}+DryingRack@{DECK}", "T": f"Boardwalk@{DECK}+NetFrame@{DECK}",
     "Q": f"StonePier@{DECK}+GreatBow@{DECK}", "l": f"StonePier@{DECK}+QuayLantern@{DECK}",
+    "k": f"StonePier@{DECK}+Kiln@{DECK}",
     # The festival's boats in the harbour, lashed into a deck round the mast, the bonfire's barge among them.
     "a": f"BoatDeck@{DECK}", "A": f"BoatDeck@{DECK}+FestivalMast@{DECK}", "F": f"FireBarge@{DECK}",
     # In the water itself.
     "v": "Rowboat", "j": "Reeds",
 }
 del FEATURE_LEGEND["=b"]
-DECKS = "=#SDNRUKLYTQlaAF"     # a floor at the deck's level, maybe with something on it
+DECKS = "=#SDNRUKLYTQlaAFk"     # a floor at the deck's level, maybe with something on it
 PLAIN = "=S"                   # deck with nothing on it: a building's plot or a prop's place
 FLOATING = "vj"                # stands in the water
 
@@ -70,14 +72,16 @@ ground, level, feature, reserved = M.ground, M.level, M.feature, M.reserved
 # ---------------- Building plans, read from the defs (for doors and lines) ----------------
 
 def _load(name):
-    text = open(os.path.join(DEFS, name)).read()
+    text = open(name if os.path.isabs(name) else os.path.join(DEFS, name)).read()
     text = re.sub(r'(?m)^\s*//.*$', "", text)                      # whole-line comments
     text = re.sub(r'(?<=[,\[{\]}"\d])\s*//[^\n"]*$', "", text, flags=re.M)  # trailing ones
     text = re.sub(r",(\s*[\]}])", r"\1", text)                     # trailing commas
     return json.loads(text)
 
 
-LAYOUTS = {b["name"]: b for f in ("buildings.json", "village.json") for b in _load(f).get("buildings", [])}
+# The core's plans, and the mods' (the woodshop is the carpenter mod's).
+_MOD_DEFS = sorted(glob.glob(os.path.join(os.path.dirname(DEFS), "..", "mods", "*", "defs", "*.json")))
+LAYOUTS = {b["name"]: b for f in ("buildings.json", "village.json", *map(os.path.abspath, _MOD_DEFS)) for b in _load(f).get("buildings", [])}
 
 
 def turn(dx, dy, facing):
@@ -265,6 +269,7 @@ put("R", 63, 21, "the muster rack")
 put("Q", 54, 21, "the great bow")
 put("l", 52, 23, "a lantern")
 put("l", 68, 23, "a lantern")
+put("k", 66, 56, "the smithy's kiln")  # out on the forge's pier by its south wall, its fire clear of the smithy
 # Buckets: at the harbour's corners, the gate, and the town's outer edges.
 for x, y in [(49, 24), (71, 24), (49, 42), (71, 42), (58, 58), (31, 30), (89, 46), (45, 6)]:
     put("D", x, y, "a dipping post")
@@ -420,7 +425,7 @@ def build_def():
 FEATURE_COLORS = dict(mapkit.FEATURE_COLORS, **{"=": (150, 110, 70), "#": (120, 85, 50), "S": (150, 150, 150), "D": (60, 60, 200),
                                                 "N": (150, 110, 60), "R": (180, 60, 60), "U": (120, 80, 40), "K": (160, 120, 70),
                                                 "M": (90, 70, 40), "L": (250, 210, 90), "l": (250, 210, 90), "Y": (200, 190, 170),
-                                                "T": (190, 170, 120), "Q": (90, 40, 30), "a": (100, 70, 45), "A": (255, 255, 255),
+                                                "T": (190, 170, 120), "Q": (90, 40, 30), "k": (120, 60, 40), "a": (100, 70, 45), "A": (255, 255, 255),
                                                 "F": (110, 110, 110), "v": (120, 80, 50), "j": (110, 140, 70)})
 
 

@@ -422,7 +422,7 @@
       "name": "ArrowBarrel", "label": "barrel of arrows", "category": "Building", "solid": true, "sprite": "buildings/barrel",
       "description": "An old cask with its head knocked out, full of arrows standing fletching-up.",
       "maxHp": 60, "flammability": 1.0,
-      "building": { "work": 60, "surfaceHeight": 0.7, "cost": [ { "def": "Wood", "count": 3 } ] },
+      "building": { "work": 60, "surfaceHeight": 0.7, "cost": [ { "def": "Planks", "count": 3 } ] },
       "model": [
         { "min": [0.20, 0.20, 0.00], "max": [0.80, 0.80, 0.62], "top": "props/arrows_top", "side": "furniture/staves" },
         { "min": [0.24, 0.24, 0.62], "max": [0.76, 0.76, 0.78], "top": "props/arrows_top", "side": "props/arrows_top" }
@@ -448,7 +448,7 @@
       "name": "ButcherSpot", "label": "butcher spot", "category": "Building", "sprite": "buildings/butcher_spot", "size": [2, 1],
       "description": "A chopping block on a plank board. Hunters carry their kills here to cut them up: faster, with less waste, and the meat ends up close to home.",
       "maxHp": 60, "flammability": 1.0, "pathCost": 2,
-      "building": { "outdoor": true, "work": 80, "butcherSpot": { "speed": 1.5, "yield": 0.1 }, "cost": [ { "def": "Wood", "count": 6 } ] },
+      "building": { "outdoor": true, "work": 80, "butcherSpot": { "speed": 1.5, "yield": 0.1 }, "cost": [ { "def": "Planks", "count": 6 } ] },
       "model": [
         { "min": [0.04, 0.10, 0.00], "max": [1.96, 0.90, 0.08], "top": "props/planks", "side": "props/planks" },
         { "min": [1.22, 0.26, 0.08], "max": [1.74, 0.74, 0.56], "top": "props/log_end", "side": "props/log_side" },
@@ -460,7 +460,7 @@
       "name": "TanningRack", "label": "tanning rack", "category": "Building", "sprite": "buildings/tanning_rack", "size": [2, 1],
       "description": "A frame two cells wide for stretching and tanning hides, and for cutting and stitching leather.",
       "maxHp": 80, "flammability": 1.0, "pathCost": 2,
-      "building": { "outdoor": true, "work": 120, "workbench": { "bills": 6 }, "cost": [ { "def": "Wood", "count": 10 } ] },
+      "building": { "outdoor": true, "work": 120, "workbench": { "bills": 6 }, "cost": [ { "def": "Planks", "count": 10 } ] },
       "model": [
         { "min": [0.08, 0.44, 0.00], "max": [0.16, 0.56, 0.90], "top": "props/log_side", "side": "props/log_side" },
         { "min": [1.84, 0.44, 0.00], "max": [1.92, 0.56, 0.90], "top": "props/log_side", "side": "props/log_side" },
@@ -475,7 +475,7 @@
       "name": "MasonBench", "label": "mason's bench", "category": "Building", "solid": true, "sprite": "buildings/mason_bench", "size": [2, 1],
       "description": "A heavy bench two cells wide for squaring stone into blocks.",
       "maxHp": 200, "flammability": 0.3, 
-      "building": { "outdoor": true, "work": 220, "surfaceHeight": 0.66, "workbench": { "bills": 6 }, "cost": [ { "def": "Stone", "count": 10 }, { "def": "Wood", "count": 4 } ] },
+      "building": { "outdoor": true, "work": 220, "surfaceHeight": 0.66, "workbench": { "bills": 6 }, "cost": [ { "def": "Stone", "count": 10 }, { "def": "Planks", "count": 4 } ] },
       "model": [
         { "min": [0.04, 0.14, 0.48], "max": [1.96, 0.86, 0.66], "top": "props/stone_block", "side": "props/stone_block" },
         { "min": [0.10, 0.20, 0.00], "max": [0.30, 0.80, 0.48], "top": "props/stone_block", "side": "props/stone_block" },
@@ -486,7 +486,7 @@
     },
     {
       "name": "Kiln", "category": "Building", "sprite": "buildings/kiln",
-      "description": "A domed oven of stone. Fired only while there's work for it: bake charcoal from wood, and bricks from clay once it's hot.",
+      "description": "A domed oven of stone. Fired only while there's work for it: bake charcoal from firewood, and bricks from clay once it's hot.",
       "maxHp": 300, "flammability": 0,
       "building": { "outdoor": true,
         "isWall": true, "insulation": 0.98, "work": 300, "workbench": { "bills": 6 },
@@ -595,8 +595,8 @@
     },
     {
       "name": "BakeCharcoal", "label": "charcoal", "station": "Kiln", "skill": "Crafting", "work": 600, "minTemp": 300,
-      "description": "Bake 6 logs into 5 charcoal.",
-      "ingredients": [ { "def": "Wood", "count": 6 } ],
+      "description": "Bake 6 billets of firewood into 5 charcoal.",
+      "ingredients": [ { "def": "Firewood", "count": 6 } ],
       "products": [ { "def": "Charcoal", "count": 5 } ]
     },
     {

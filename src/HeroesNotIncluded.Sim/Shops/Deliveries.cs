@@ -72,9 +72,7 @@ public sealed class OreCarterSystem : ISimSystem, ISaveState
             if (chest.IsNull)
                 continue;
             var cell = w.Get<Thing>(chest).Cell;
-            // With the road cut, a smithy the carter can't reach from the road waits (a lake town's, over the causeway).
-            if (sim.Repairs.RoadCut && sim.SpiralFrom(cell, 2).FirstOrDefault(c => sim.Map.InBounds(c) && sim.Map.Passable(c), new int3(-1, -1, -1)) is var by
-                && by.X >= 0 && !Enumerable.Range(0, 4).Any(side => Combat.Raids.EdgeEntry(sim, side, by) != null))
+            if (CutOff(sim, cell))
             {
                 sim.Messages.Add(MessageKind.Warning, $"The carter couldn't get the ore through to the smithy, the {sim.Repairs.Breaches[0].Label} down.", cell);
                 continue;
@@ -93,6 +91,37 @@ public sealed class OreCarterSystem : ISimSystem, ISaveState
         }
         DeliverWood(sim);
         DeliverToWoodshop(sim);
+        DeliverToShrine(sim);
+    }
+
+    /// <summary>With the road cut, a place the carter can't reach from the road waits (a lake town's, over the causeway).</summary>
+    public static bool CutOff(Simulation sim, int3 cell) =>
+        sim.Repairs.RoadCut && sim.SpiralFrom(cell, 2).FirstOrDefault(c => sim.Map.InBounds(c) && sim.Map.Passable(c), new int3(-1, -1, -1)) is var by
+        && by.X >= 0 && !Enumerable.Range(0, 4).Any(side => Combat.Raids.EdgeEntry(sim, side, by) != null);
+
+    /// <summary>
+    /// The carter's load for the shrine (<see cref="Defs.SeasonDef.ShrineDelivery"/>): cloth for the empath to tear
+    /// into bandages, which nobody in town weaves. Into the linen basket, like the deal's; not with the road cut.
+    /// </summary>
+    public static void DeliverToShrine(Simulation sim)
+    {
+        var load = sim.Defs.Season.ShrineDelivery;
+        var store = Scenarios.VillageRound.ShrineStore(sim, ShopSystem.BuildingFor(sim, Defs.TownRole.Shrine));
+        if (load.Count == 0 || store.IsNull)
+            return;
+        var cell = sim.World.Get<Thing>(store).Cell;
+        if (CutOff(sim, cell))
+        {
+            sim.Messages.Add(MessageKind.Warning, $"The carter couldn't get the cloth through to the shrine, the {sim.Repairs.Breaches[0].Label} down.", cell);
+            return;
+        }
+        foreach (var t in load)
+        {
+            var rest = sim.Store(store, sim.CreateItem(t.ThingDef, t.Count, t.MaterialDef));
+            if (!rest.IsNull)
+                sim.PlaceItemNear(rest, cell);
+        }
+        sim.Messages.Add(MessageKind.Info, "The carter's left a bolt of cloth at the shrine.", cell);
     }
 
     /// <summary>The carter's load for the woodshop (<see cref="Defs.SeasonDef.WoodshopDelivery"/>): feathers, which nobody in town grows.</summary>

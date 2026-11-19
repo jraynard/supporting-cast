@@ -32,7 +32,8 @@ public class TinkerTradeTests
         sim.GiveStartingPack(me);
         sim.World.Get<Skills>(me).Level[(int)Skill.Crafting] = 6;
         Inventory.Stow(sim, me, sim.CreateItem(sim.Thing("IronBar"), 6));
-        Inventory.Stow(sim, me, sim.CreateItem(sim.Thing("Wood"), 6));
+        Inventory.Stow(sim, me, sim.CreateItem(sim.Thing("Planks"), 6)); // contraptions
+        Inventory.Stow(sim, me, sim.CreateItem(sim.Thing("Wood"), 6)); // axles
         var bench = sim.SpawnStructure(sim.Thing(Tinkers.BenchDef), C(10, 11));
         sim.RebuildDerivedIfNeeded();
         return (sim, me, bench);
@@ -231,16 +232,16 @@ public class TinkerTradeTests
         var w = sim.World;
         var shop = sim.World.Query<PresetBuilding>().Single(e => w.Get<PresetBuilding>(e).Def.Name == "TinkerShop");
         var chest = w.Query<PartOf>().Single(e => w.Get<PartOf>(e).Building == shop && w.Get<Thing>(e).Def.Name == "Chest");
-        int Wood() => sim.StoredIn(chest).Where(e => w.Get<Thing>(e).Def.Name == "Wood").Sum(e => w.Get<Stack>(e).Count);
+        int Wood() => sim.StoredIn(chest).Where(e => w.Get<Thing>(e).Def.Name == "Planks").Sum(e => w.Get<Stack>(e).Count);
         var stocked = Wood(); // the shop's own, and the AI tinker's kit put by (RoundSystem.Assign)
-        Assert.True(stocked >= 16, $"{stocked} wood");
+        Assert.True(stocked >= VillageRound.TinkerPlanks, $"{stocked} planks");
         Assert.DoesNotContain(sim.AvailableItems(), e => w.TryGet<Stored>(e, out var st) && st.In == chest);
-        // Half a day of the town fetching wood and feeding fires: none of it from here.
+        // Half a day of the town fetching planks and feeding fires: none of it from here.
         sim.TickMany(SimClock.TicksPerHour * 12);
         Assert.Equal(stocked, Wood());
 
         // By hand it's there for the taking.
-        var wood = sim.StoredIn(chest).First(e => w.Get<Thing>(e).Def.Name == "Wood");
+        var wood = sim.StoredIn(chest).First(e => w.Get<Thing>(e).Def.Name == "Planks");
         var at = w.Get<Thing>(chest).Cell;
         var cell = sim.SpiralFrom(at, 2).First(c => c != at && sim.Map.Passable(c) && AvatarSystem.InReach(sim, c, chest));
         w.Get<Position>(me).Cell = cell;

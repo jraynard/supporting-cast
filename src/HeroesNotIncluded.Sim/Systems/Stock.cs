@@ -11,6 +11,12 @@ public static class Stock
     /// <summary>What wood-burning fires burn (never timber): split by the carpenter, brought by the carter.</summary>
     public const string FirewoodDef = "Firewood";
 
+    /// <summary>What crafted things are made of (tools' hafts, contraptions, furniture): sawn by the carpenter. Timber (<c>Wood</c>) is for building and mending.</summary>
+    public const string PlanksDef = "Planks";
+
+    /// <summary>Raw timber: walls, roofs, the bridge and a wagon's axle, and what planks are sawn from at a pinch.</summary>
+    public const string TimberDef = "Wood";
+
     private static bool Is(Simulation sim, Entity e, string def) =>
         sim.World.IsAlive(e) && sim.World.TryGet<Thing>(e, out var t) && t.Def.Name == def;
 

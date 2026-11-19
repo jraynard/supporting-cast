@@ -50,7 +50,9 @@ public static class VillageRound
         StockTinkerShop(sim, Role(TownRole.TinkerShop));
         Modding.Trades.StockTown(sim); // each trade's own workplace (the woodshop's logs)
         if (sim.Defs.Season.BarnWood > 0)
-            sim.PlaceItemNear(sim.CreateItem(sim.Defs.Thing("Wood"), sim.Defs.Season.BarnWood, sim.Defs.Material("Pine")), StockpileMiddle(sim));
+            sim.PlaceItemNear(sim.CreateItem(sim.Defs.Thing(Systems.Stock.TimberDef), sim.Defs.Season.BarnWood, sim.Defs.Material("Pine")), StockpileMiddle(sim));
+        if (sim.Defs.Season.BarnPlanks > 0)
+            sim.PlaceItemNear(sim.CreateItem(sim.Defs.Thing(Systems.Stock.PlanksDef), sim.Defs.Season.BarnPlanks, sim.Defs.Material("Pine")), StockpileMiddle(sim));
         if (sim.Defs.Season.BarnFirewood > 0)
             sim.PlaceItemNear(sim.CreateItem(sim.Defs.Thing(Systems.Stock.FirewoodDef), sim.Defs.Season.BarnFirewood, sim.Defs.Material("Pine")), StockpileMiddle(sim));
         Environment.Buckets.HangAtWells(sim); // for fighting fire
@@ -126,7 +128,7 @@ public static class VillageRound
     /// <summary>Pins in the storeroom's lock.</summary>
     public const int StoreroomPins = 4;
 
-    /// <summary>Stock in the tinker's chest: iron for locks and clockwork, wood for contraptions and wagon axles, charcoal for rockets.</summary>
+    /// <summary>Stock in the tinker's chest: iron for locks and clockwork, planks for contraptions, timber for wagon axles and the bridge, charcoal for rockets.</summary>
     private static void StockTinkerShop(Simulation sim, Entity shop)
     {
         if (shop.IsNull)
@@ -135,14 +137,18 @@ public static class VillageRound
             if (sim.World.Get<PartOf>(e).Building == shop && sim.World.Get<Thing>(e).Def.Name == "Chest")
             {
                 sim.Store(e, sim.CreateItem(sim.Defs.Thing("IronBar"), 6));
-                sim.Store(e, sim.CreateItem(sim.Defs.Thing("Wood"), 16)); // contraptions, and new axles for parties' wagons (2 each)
+                sim.Store(e, sim.CreateItem(sim.Defs.Thing(Systems.Stock.PlanksDef), TinkerPlanks)); // contraptions
+                sim.Store(e, sim.CreateItem(sim.Defs.Thing(Systems.Stock.TimberDef), TinkerTimber)); // new axles for parties' wagons, the bridge
                 sim.Store(e, sim.CreateItem(sim.Defs.Thing("Charcoal"), 6));
                 return;
             }
     }
 
-    /// <summary>Iron ore and wood in the smithy's chest at the start: a few blooms' worth, and hafts for spears. The carter brings more (<see cref="Shops.OreCarterSystem"/>).</summary>
-    public const int SmithyOre = 12, SmithyWood = 6;
+    /// <summary>Planks and timber in the tinker's chest at the start.</summary>
+    public const int TinkerPlanks = 10, TinkerTimber = 6;
+
+    /// <summary>Iron ore and planks in the smithy's chest at the start: a few blooms' worth, and hafts for spears. The carter brings more (<see cref="Shops.OreCarterSystem"/>).</summary>
+    public const int SmithyOre = 12, SmithyPlanks = 6;
 
     private static void StockSmithy(Simulation sim, Entity smithy)
     {
@@ -159,7 +165,7 @@ public static class VillageRound
                     break;
                 case "Chest":
                     sim.Store(e, sim.CreateItem(sim.Defs.Thing("IronOre"), SmithyOre));
-                    sim.Store(e, sim.CreateItem(sim.Defs.Thing("Wood"), SmithyWood));
+                    sim.Store(e, sim.CreateItem(sim.Defs.Thing(Systems.Stock.PlanksDef), SmithyPlanks));
                     break;
             }
         }
@@ -217,16 +223,26 @@ public static class VillageRound
     /// <summary>Bandages in the shrine's chest: the healer's backup for when the mana runs dry.</summary>
     public const int ShrineBandages = 12;
 
-    private static void StockShrine(Simulation sim, Entity shrine)
+    /// <summary>Cloth in the shrine's chest at the start, to tear into bandages (<c>TearBandages</c>). The carter brings more (<see cref="Defs.SeasonDef.ShrineDelivery"/>).</summary>
+    public const int ShrineCloth = 4;
+
+    /// <summary>Where the shrine keeps its dressings: the linen basket, else its first chest (Entity.Null if neither).</summary>
+    public static Entity ShrineStore(Simulation sim, Entity shrine)
     {
         if (shrine.IsNull)
-            return;
-        // Into the linen basket, else the first chest.
-        var boxes = sim.World.Query<PartOf>()
+            return Entity.Null;
+        return sim.World.Query<PartOf>()
             .Where(e => sim.World.Get<PartOf>(e).Building == shrine && sim.World.Get<Thing>(e).Def.Building is { StorageStacks: > 0 })
-            .OrderBy(e => sim.World.Get<Thing>(e).Def.Name == "LinenBasket" ? 0 : 1).ToList();
-        if (boxes.Count > 0)
-            sim.Store(boxes[0], sim.CreateItem(sim.Defs.Thing(Systems.Bandaging.BandageDef), ShrineBandages));
+            .OrderBy(e => sim.World.Get<Thing>(e).Def.Name == "LinenBasket" ? 0 : 1).ThenBy(e => e.Index).FirstOrDefault(Entity.Null);
+    }
+
+    private static void StockShrine(Simulation sim, Entity shrine)
+    {
+        var store = ShrineStore(sim, shrine);
+        if (store.IsNull)
+            return;
+        sim.Store(store, sim.CreateItem(sim.Defs.Thing(Systems.Bandaging.BandageDef), ShrineBandages));
+        sim.Store(store, sim.CreateItem(sim.Defs.Thing(Systems.Bandaging.ClothDef), ShrineCloth));
     }
 
     /// <summary>A player's character walking into town near <paramref name="near"/>. Co-op's host claims it on joining (<see cref="Players.Join"/>).</summary>

@@ -224,13 +224,13 @@ public class MilitiaTests
 
     /// <summary>A shop that keeps its stock (<see cref="Defs.BuildingDef.KeepsStock"/>): the smithy's chest is the smith's.</summary>
     [Fact]
-    public void TheSmithysWoodIsTheSmithsNotTheTownsFirewood()
+    public void TheSmithysPlanksAreTheSmithsNotTheTowns()
     {
         var sim = Round(director: false);
         var w = sim.World;
         var chest = w.Query<Thing>().First(e => w.Get<Thing>(e).Def.Name == "Chest" && Buildings.Of(sim, e) is { IsNull: false } b
             && w.Get<PresetBuilding>(b).Def.Name == "Smithy");
-        var wood = sim.StoredIn(chest).First(e => w.Get<Thing>(e).Def.Name == "Wood");
+        var wood = sim.StoredIn(chest).First(e => w.Get<Thing>(e).Def.Name == "Planks");
         var smith = sim.Creatures().First(e => w.TryGet<Trade>(e, out var t) && t.Def.Role == Sim.Defs.TownRole.Forge);
         var other = sim.Creatures().First(e => w.TryGet<Trade>(e, out var t) && t.Def.Role != Sim.Defs.TownRole.Forge);
         Assert.False(sim.IsAvailable(wood), "no job of the town's takes it");
@@ -264,8 +264,10 @@ public class MilitiaTests
         Assert.True(at.Y <= 8, $"raiders gathered at {at}, not by the north edge");
         Assert.Contains(raid.Raiders, e => sim.Map.GroundUnder(sim.Map.Idx(w.Get<Position>(e).Cell)) is { Name: "Road" });
 
-        // The town arms itself from the rack (within the hour; by then someone's walked to it and put a spear on).
-        bool FromTheRack() => sim.Creatures().Any(e => e != me && Armed(sim, e) && w.Has<TownArms>(w.Get<Equipment>(e).Weapon));
+        // The town arms itself from the rack (within the hour; by then someone's walked to it and put a spear on, or is
+        // on their way for one: who's caught on the road by the raiders before they get there is down to where they stood).
+        bool FromTheRack() => sim.Creatures().Any(e => e != me && (Armed(sim, e) && w.Has<TownArms>(w.Get<Equipment>(e).Weapon)
+            || w.Get<Mind>(e).Job is Ai.EquipJob { Focus: var spear } && w.IsAlive(spear) && w.Has<TownArms>(spear)));
         for (var t = 0; t < SimClock.TicksPerHour && !FromTheRack(); t += 60)
             sim.TickMany(60);
         Assert.True(FromTheRack(), "nobody took up arms from the rack");

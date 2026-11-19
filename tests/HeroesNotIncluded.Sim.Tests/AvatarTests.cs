@@ -898,7 +898,7 @@ public class WagonTests
             sim.Tick();
         Assert.False(sim.World.IsAlive(bed));
         // Half its cost back, like any deconstruction.
-        var refund = sim.SpawnedItems().Where(e => sim.World.Get<Thing>(e).Cell == C(10, 10) && sim.World.Get<Thing>(e).Def.Name == "Wood");
+        var refund = sim.SpawnedItems().Where(e => sim.World.Get<Thing>(e).Cell == C(10, 10) && sim.World.Get<Thing>(e).Def.Name == "Planks");
         Assert.Equal(5, refund.Sum(e => sim.World.Get<Stack>(e).Count));
     }
 

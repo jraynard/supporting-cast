@@ -84,6 +84,41 @@ public sealed partial class BotPlayer
     /// <summary>The share of its mana it keeps for the hurt: it weaves a charm only with more than this to hand.</summary>
     public const float CharmsFrom = 0.8f;
 
+    /// <summary>
+    /// None left in the shrine's stores: bandages made by hand from what they're made of there (cloth the carter
+    /// brings, torn into strips), the makings fetched from the shrine first. True while at it.
+    /// </summary>
+    private bool TearBandages(Simulation sim, Entity me, PerceptionView view, long now)
+    {
+        var w = sim.World;
+        if (w.Get<Mind>(me).Job is Ai.HandCraftJob)
+        {
+            Doing = "tearing bandages";
+            return true;
+        }
+        var linen = sim.Defs.Thing(Bandaging.BandageDef);
+        foreach (var recipe in sim.Defs.AllRecipes)
+        {
+            if (!recipe.IsHandRecipe || !recipe.Products.Exists(p => p.ThingDef == linen) || !Crafting.CanMake(sim, me, recipe))
+                continue;
+            var missing = recipe.Ingredients.FirstOrDefault(x => OnMe(sim, me, x.Def) < x.Count);
+            if (missing == null)
+            {
+                Doing = $"making {recipe.Label}";
+                Send(new HandCraftCommand(me, recipe));
+                return true;
+            }
+            // Only what the shrine has (its cloth), not the makings of every way there is (flax from the fields). Its own
+            // workplace's stores are common knowledge to it (as Fetch).
+            var shop = MyShop(sim, me) ?? Entity.Null;
+            if (!shop.IsNull && Buildings.Parts(sim, shop).Any(e => w.Get<Thing>(e).Def.Building?.StorageStacks > 0
+                    && sim.StoredIn(e).Any(i => w.Get<Thing>(i).Def == missing.ThingDef))
+                && Fetch(sim, me, view, now, missing, missing.ThingDef.Label))
+                return true;
+        }
+        return false;
+    }
+
     /// <summary>Bandages it keeps for binding: a charm takes a strip only past these.</summary>
     public const int KeepBandages = 1;
 
@@ -113,7 +148,7 @@ public sealed partial class BotPlayer
         // Linen on it, not just in the chest beside it: it walks off to the altar.
         if (OnMe(sim, me, Bandaging.BandageDef) <= KeepBandages)
             return sim.Defs.Thing(Bandaging.BandageDef) is { } linen
-                && Fetch(sim, me, view, now, new ThingCount { Def = linen.Name, Count = 2, ThingDef = linen }, "linen");
+                && (Fetch(sim, me, view, now, new ThingCount { Def = linen.Name, Count = 2, ThingDef = linen }, "linen") || TearBandages(sim, me, view, now));
         // A healing mending in its book, not one already in stock (nobody carries two the same),
         // leaving a Calling's worth: whoever dies next mustn't wait on a charm for sale.
         var stocked = OnSale(sim, me).Concat(Loose(sim, me)).Select(view.Charm).OfType<KnownCharm>().Select(c => c.Mending).ToHashSet();

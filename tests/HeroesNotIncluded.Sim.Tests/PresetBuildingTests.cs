@@ -277,6 +277,7 @@ public class PresetBuildingTests
         var sim = World();
         for (var k = 0; k < 4; k++)
             sim.SpawnItem(sim.Thing("Wood"), 50, C(4 + k, 4));
+        sim.SpawnItem(sim.Thing("Planks"), 30, C(5, 6)); // the bed's
         sim.SpawnItem(sim.Thing("Stone"), 40, C(4, 6));
         for (var n = 0; n < builders; n++)
         {
@@ -318,6 +319,7 @@ public class PresetBuildingTests
         sim.SpawnItem(sim.Thing("Wood"), 50, C(4, 4));
         sim.SpawnItem(sim.Thing("Wood"), 50, C(4, 5));
         sim.SpawnItem(sim.Thing("Wood"), 50, C(5, 5));
+        sim.SpawnItem(sim.Thing("Planks"), 30, C(6, 4)); // the bed's
         sim.SpawnItem(sim.Thing("Stone"), 40, C(5, 4));
         foreach (var name in (string[])["Astrid", "Bjorn"])
         {

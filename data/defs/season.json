@@ -53,14 +53,18 @@
       "townPurse": 40,
       "armsPrice": 6,
       "armsWanted": 6,
-      // What the carter leaves at the smithy each morning from the second day (Shops/Deliveries.cs).
-      "oreDelivery": [ { "def": "IronOre", "count": 12 }, { "def": "Charcoal", "count": 10 }, { "def": "Wood", "count": 4 } ],
+      // What the carter leaves at the smithy each morning from the second day (Shops/Deliveries.cs): ore, and
+      // planks for hafts. No charcoal: the smith bakes it from firewood at the kiln.
+      "oreDelivery": [ { "def": "IronOre", "count": 12 }, { "def": "Planks", "material": "Pine", "count": 4 } ],
       // Of anything a player's trade brings the town itself (a trade's "supplies": the miner's ore), the
       // carter brings only this share while they're in the round.
       "suppliedShare": 0.25,
       // Timber for building and mending: barnWood in the barn's stockpile at the deal, woodDelivery
       // left there each morning from the second day. The carpenter's logs come from felling.
       "barnWood": 100,
+      // Planks in the barn at the deal, for what the town makes (hafts, contraptions, furniture) till the
+      // carpenter saws more: timber is for building and mending.
+      "barnPlanks": 40,
       "woodDelivery": [ { "def": "Wood", "material": "Pine", "count": 30 } ],
       // Firewood for the town's fires (about ten of them, a dozen billets a day each): barnFirewood at
       // the deal, firewoodDelivery each morning from the second day (none in a shortage). A little
@@ -69,6 +73,8 @@
       "firewoodDelivery": [ { "def": "Firewood", "material": "Pine", "count": 100 } ],
       // Goose feathers for the carpenter's arrows, left in the woodshop's chest with the ore.
       "woodshopDelivery": [ { "def": "Feathers", "count": 6 } ],
+      // Cloth at the shrine each morning, for the empath to tear into bandages: nobody in town weaves.
+      "shrineDelivery": [ { "def": "Cloth", "count": 2 } ],
       // How the Director paces it (Director/Tension.cs, Director/RuleMind.cs): it eases off a town
       // that's struggling and pushes one that's coasting, against where a town on course would be
       // (renownAtFestival of the target by the festival; the rest comes at its end). A beat waits in

@@ -223,7 +223,7 @@ public class SaveLoadTests
     }
 
     private const string BedCost = """
-        "isBed": true, "work": 150, "cost": [ { "def": "Wood", "count": 10 } ]
+        "isBed": true, "work": 150, "cost": [ { "def": "Planks", "count": 10 } ]
         """;
 
     [Fact]
@@ -231,14 +231,14 @@ public class SaveLoadTests
     {
         var sim = TestWorld.Create(20, 20);
         var site = sim.PlaceBlueprint(sim.Defs.Thing("Bed"), TestWorld.C(5, 5));
-        sim.World.Get<Construction>(site).Delivered[0] = 5; // 5 of the 10 wood
+        sim.World.Get<Construction>(site).Delivered[0] = 5; // 5 of the 10 planks
 
-        // Stone goes in front of the wood: the delivered wood must follow the wood entry.
+        // Stone goes in front of the planks: the delivered planks must follow the planks entry.
         var defs = EditedDefs(text =>
         {
             Assert.Contains(BedCost, text);
             return text.Replace(BedCost, """
-                "isBed": true, "work": 150, "cost": [ { "def": "Stone", "count": 3 }, { "def": "Wood", "count": 10 } ]
+                "isBed": true, "work": 150, "cost": [ { "def": "Stone", "count": 3 }, { "def": "Planks", "count": 10 } ]
                 """);
         });
         var rebound = SaveGame.Rebind(sim, defs);

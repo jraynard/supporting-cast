@@ -13,13 +13,13 @@
         { "min": [0.2, 0.08, 0.12], "max": [0.8, 0.3, 0.2], "top": "props/linen", "side": "props/linen" }
       ],
       "maxHp": 40, "flammability": 1.0,
-      "building": { "isBed": true, "work": 40, "cost": [ { "def": "Wood", "count": 2 } ] }
+      "building": { "isBed": true, "work": 40, "cost": [ { "def": "Planks", "count": 2 } ] }
     },
     {
       "name": "Table", "category": "Building", "joinery": { "planks": 2, "joints": 4 }, "solid": true, "climbable": true, "sprite": "buildings/table",
       "description": "A sturdy plank table for one. Pick a longer or a square one from the table's shapes.",
       "maxHp": 100, "flammability": 1.0, 
-      "building": { "work": 120, "surfaceHeight": 0.66, "cost": [ { "def": "Wood", "count": 8 } ] },
+      "building": { "work": 120, "surfaceHeight": 0.66, "cost": [ { "def": "Planks", "count": 8 } ] },
       "model": [
         { "min": [0.02, 0.02, 0.56], "max": [0.98, 0.98, 0.66], "top": "furniture/oak_planks", "side": "furniture/oak_leg" },
         { "min": [0.12, 0.12, 0.48], "max": [0.88, 0.18, 0.56], "top": "furniture/oak_leg", "side": "furniture/oak_leg" },
@@ -35,7 +35,7 @@
       "name": "LongTable", "label": "long table", "shapeOf": "Table", "size": [1, 2], "category": "Building", "joinery": { "planks": 3, "joints": 4 }, "solid": true, "climbable": true, "sprite": "buildings/table",
       "description": "A plank table two cells long: room for a meal and the bread.",
       "maxHp": 140, "flammability": 1.0, 
-      "building": { "work": 180, "surfaceHeight": 0.66, "cost": [ { "def": "Wood", "count": 12 } ] },
+      "building": { "work": 180, "surfaceHeight": 0.66, "cost": [ { "def": "Planks", "count": 12 } ] },
       "model": [
         { "min": [0.02, 0.02, 0.56], "max": [0.98, 1.98, 0.66], "top": "furniture/oak_planks", "side": "furniture/oak_leg" },
         { "min": [0.02, 0.02, 0.56], "max": [0.98, 0.1, 0.665], "top": "furniture/oak_end", "side": "furniture/oak_leg" },
@@ -56,7 +56,7 @@
       "description": "A long counter three cells wide, where the drinks are poured and the talk is heard.",
       "maxHp": 200, "flammability": 1.0, 
       // Under it, the innkeeper's stash (trades.json "stash"): Lucky Lou, and nothing else.
-      "building": { "work": 260, "surfaceHeight": 0.86, "bar": true, "storageStacks": 1, "stash": true, "cost": [ { "def": "Wood", "count": 18 } ] },
+      "building": { "work": 260, "surfaceHeight": 0.86, "bar": true, "storageStacks": 1, "stash": true, "cost": [ { "def": "Planks", "count": 18 } ] },
       "model": [
         { "min": [0.04, 0.3, 0], "max": [2.96, 0.8, 0.08], "top": "props/timber_dark", "side": "props/timber_dark" },
         { "min": [0.06, 0.34, 0.08], "max": [2.94, 0.76, 0.8], "top": "furniture/oak_planks", "side": "furniture/oak_leg", "front": "furniture/counter_panel", "back": "furniture/oak_leg" },
@@ -72,7 +72,7 @@
       "name": "SquareTable", "label": "square table", "shapeOf": "Table", "size": [2, 2], "category": "Building", "joinery": { "planks": 3, "joints": 4 }, "solid": true, "climbable": true, "sprite": "buildings/table",
       "description": "A broad table two cells square, for the whole household.",
       "maxHp": 180, "flammability": 1.0, 
-      "building": { "work": 240, "surfaceHeight": 0.66, "cost": [ { "def": "Wood", "count": 16 } ] },
+      "building": { "work": 240, "surfaceHeight": 0.66, "cost": [ { "def": "Planks", "count": 16 } ] },
       "model": [
         { "min": [0.02, 0.02, 0.56], "max": [1.98, 1.98, 0.66], "top": "furniture/oak_planks", "side": "furniture/oak_leg" },
         { "min": [0.14, 0.14, 0.48], "max": [1.86, 0.2, 0.56], "top": "furniture/oak_leg", "side": "furniture/oak_leg" },
@@ -111,7 +111,7 @@
       "name": "AleCask", "label": "ale cask", "category": "Building", "solid": true, "sprite": "buildings/ale_cask", "spoutAt": [0.5, 1.0, 0.27],
       "description": "A great oak cask on a cradle, with a tap. F at it to pour.",
       "maxHp": 120, "flammability": 0.8,
-      "building": { "work": 200, "surfaceHeight": 0.7, "cost": [ { "def": "Wood", "count": 14 } ], "cask": { "pours": "Ale", "servings": 24 } },
+      "building": { "work": 200, "surfaceHeight": 0.7, "cost": [ { "def": "Planks", "count": 14 } ], "cask": { "pours": "Ale", "servings": 24 } },
       "model": [
         { "min": [0.12, 0.2, 0], "max": [0.88, 0.3, 0.2], "top": "furniture/oak_end", "side": "furniture/oak_leg" },
         { "min": [0.12, 0.7, 0], "max": [0.88, 0.8, 0.2], "top": "furniture/oak_end", "side": "furniture/oak_leg" },
@@ -131,7 +131,7 @@
       "name": "Stool", "category": "Building", "joinery": { "planks": 1, "joints": 3 }, "sprite": "buildings/stool",
       "description": "Somewhere to sit by the fire.",
       "maxHp": 60, "flammability": 1.0,
-      "building": { "work": 60, "surfaceHeight": 0.42, "seat": true, "cost": [ { "def": "Wood", "count": 3 } ] },
+      "building": { "work": 60, "surfaceHeight": 0.42, "seat": true, "cost": [ { "def": "Planks", "count": 3 } ] },
       "model": [
         { "min": [0.28, 0.28, 0.36], "max": [0.72, 0.72, 0.46], "top": "furniture/oak_planks", "side": "furniture/oak_leg" },
         { "min": [0.32, 0.32, 0.14], "max": [0.4, 0.4, 0.36], "top": "furniture/oak_end", "side": "furniture/oak_leg" },
@@ -153,7 +153,7 @@
       "description": "Holds 8 stacks. F at it to store what you carry or to open it.",
       "maxHp": 120, "flammability": 1.0,
       // Chill work cools it to keep food from rotting: °C an hour, down to minTemp.
-      "building": { "work": 150, "storageStacks": 8, "surfaceHeight": 0.46, "cost": [ { "def": "Wood", "count": 12 } ], "chill": { "cold": 900, "minTemp": -4 } },
+      "building": { "work": 150, "storageStacks": 8, "surfaceHeight": 0.46, "cost": [ { "def": "Planks", "count": 12 } ], "chill": { "cold": 900, "minTemp": -4 } },
       "model": [
         { "min": [0.14, 0.24, 0], "max": [0.86, 0.76, 0.46], "top": "props/chest_top", "side": "props/planks", "front": "props/chest_front" }
       ]
@@ -165,7 +165,7 @@
       "name": "StewPot", "label": "stew pot", "category": "Building", "solid": true, "sprite": "buildings/stew_pot",
       "description": "A black iron pot on a trivet by the fire. Whatever goes in comes out as stew, if it's watched.",
       "maxHp": 150, "flammability": 0,
-      "building": { "staffOnly": true, "work": 120, "surfaceHeight": 0.55, "cost": [ { "def": "Stone", "count": 4 }, { "def": "Wood", "count": 2 } ],
+      "building": { "staffOnly": true, "work": 120, "surfaceHeight": 0.55, "cost": [ { "def": "Stone", "count": 4 }, { "def": "Planks", "count": 2 } ],
                     "stewPot": { "serves": "Stew", "grains": "Porridge", "yield": 1.5, "holds": 6 } },
       "model": [
         // A cauldron on a stone hearth-step: a round belly (stepped in at the foot and the shoulder),
@@ -231,7 +231,7 @@
       "name": "PrepTable", "label": "prep table", "category": "Building", "solid": true, "sprite": "buildings/prep_table",
       "description": "A scrubbed board on trestles, a knife, a roll of cloth and a ball of cord. F here with raw food in hand chops it; with three portions of food on you, packs rations for the road.",
       "maxHp": 100, "flammability": 1.0,
-      "building": { "staffOnly": true, "work": 100, "surfaceHeight": 0.66, "prepTable": true, "cost": [ { "def": "Wood", "count": 8 } ] },
+      "building": { "staffOnly": true, "work": 100, "surfaceHeight": 0.66, "prepTable": true, "cost": [ { "def": "Planks", "count": 8 } ] },
       "model": [
         { "min": [0.04, 0.12, 0.56], "max": [0.96, 0.88, 0.66], "top": "props/cutting_board", "side": "props/planks" },
         { "min": [0.10, 0.18, 0], "max": [0.18, 0.82, 0.56], "top": "props/planks", "side": "props/log_side" },
@@ -246,7 +246,7 @@
       "name": "ButcherBlock", "label": "butcher block", "category": "Building", "solid": true, "sprite": "buildings/butcher_block",
       "description": "A thick end of oak scarred by the cleaver. F here with a side of pork joints it; with a bird, plucks it.",
       "maxHp": 120, "flammability": 0.8,
-      "building": { "staffOnly": true, "work": 100, "surfaceHeight": 0.62, "butcherBlock": true, "cost": [ { "def": "Wood", "count": 10 } ] },
+      "building": { "staffOnly": true, "work": 100, "surfaceHeight": 0.62, "butcherBlock": true, "cost": [ { "def": "Planks", "count": 10 } ] },
       "model": [
         { "min": [0.14, 0.14, 0], "max": [0.86, 0.86, 0.56], "top": "props/log_end", "side": "props/log_side" },
         { "min": [0.10, 0.10, 0.56], "max": [0.90, 0.90, 0.62], "top": "props/block_top", "side": "props/timber_dark" },
@@ -260,7 +260,7 @@
       "name": "LogBasket", "label": "log basket", "category": "Building", "solid": true, "sprite": "buildings/log_basket",
       "description": "A wicker basket of split logs for the kitchen's fires. Holds 2 stacks.",
       "maxHp": 60, "flammability": 1.0,
-      "building": { "staffOnly": true, "work": 60, "storageStacks": 2, "surfaceHeight": 0.5, "cost": [ { "def": "Wood", "count": 4 } ] },
+      "building": { "staffOnly": true, "work": 60, "storageStacks": 2, "surfaceHeight": 0.5, "cost": [ { "def": "Planks", "count": 4 } ] },
       "model": [
         { "min": [0.14, 0.14, 0], "max": [0.86, 0.86, 0.42], "top": "props/woodpile_top", "side": "props/wicker" },
         { "min": [0.22, 0.22, 0.42], "max": [0.78, 0.78, 0.56], "top": "props/woodpile_top", "side": "props/woodpile_side" }
@@ -272,7 +272,7 @@
       "name": "SmokingRack", "label": "smoking rack", "category": "Building", "solid": true, "sprite": "buildings/smoking_rack",
       "description": "Rails and hooks by the oven's fire. Hang raw meat or fish on it and the smoke cures it in a few hours. Holds 2 stacks.",
       "maxHp": 80, "flammability": 0.8,
-      "building": { "staffOnly": true, "work": 80, "storageStacks": 2, "smokingRack": true, "surfaceHeight": 0.9, "cost": [ { "def": "Wood", "count": 6 } ] },
+      "building": { "staffOnly": true, "work": 80, "storageStacks": 2, "smokingRack": true, "surfaceHeight": 0.9, "cost": [ { "def": "Planks", "count": 6 } ] },
       "model": [
         { "min": [0.10, 0.40, 0], "max": [0.18, 0.60, 1.0], "top": "props/timber_dark", "side": "props/timber_dark" },
         { "min": [0.82, 0.40, 0], "max": [0.90, 0.60, 1.0], "top": "props/timber_dark", "side": "props/timber_dark" },
@@ -285,7 +285,7 @@
       "name": "HerbRack", "label": "herb rack", "category": "Building", "solid": true, "sprite": "buildings/herb_rack",
       "description": "Yarrow, sage and feverfew hung to dry. Bind a wound within reach of it and a poultice of them goes under the cloth: a better dressing, and it heals sooner.",
       "maxHp": 60, "flammability": 1.0,
-      "building": { "work": 80, "surfaceHeight": 0.46, "poultice": 0.2, "cost": [ { "def": "Wood", "count": 4 } ] },
+      "building": { "work": 80, "surfaceHeight": 0.46, "poultice": 0.2, "cost": [ { "def": "Planks", "count": 4 } ] },
       "model": [
         { "min": [0.08, 0.06, 0], "max": [0.16, 0.18, 1.3], "top": "props/timber_dark", "side": "props/timber_dark" },
         { "min": [0.84, 0.06, 0], "max": [0.92, 0.18, 1.3], "top": "props/timber_dark", "side": "props/timber_dark" },
@@ -315,7 +315,7 @@
       "name": "LinenBasket", "label": "linen basket", "category": "Building", "solid": true, "sprite": "buildings/linen_basket",
       "description": "Rolled linen: the shrine's bandages. Binding someone (or weaving a charm) within reach of it takes a strip from here when you've none on you. Holds 3 stacks.",
       "maxHp": 40, "flammability": 1.0,
-      "building": { "work": 60, "storageStacks": 3, "surfaceHeight": 0.42, "cost": [ { "def": "Wood", "count": 2 } ] },
+      "building": { "work": 60, "storageStacks": 3, "surfaceHeight": 0.42, "cost": [ { "def": "Planks", "count": 2 } ] },
       "model": [
         { "min": [0.2, 0.2, 0], "max": [0.8, 0.8, 0.38], "top": "props/linen_rolls", "side": "props/basket" },
         { "min": [0.17, 0.17, 0.34], "max": [0.83, 0.83, 0.42], "top": "props/linen_rolls", "side": "props/basket" }
@@ -337,7 +337,7 @@
       "name": "WallCandles", "label": "wall candles", "category": "Building", "sprite": "buildings/wall_candles",
       "description": "Three candles on a shelf on the wall: the shrine's light, day and night.",
       "maxHp": 20, "flammability": 0.4,
-      "building": { "partOnly": true, "work": 20, "lightRadius": 3, "cost": [ { "def": "Wood", "count": 1 } ] },
+      "building": { "partOnly": true, "work": 20, "lightRadius": 3, "cost": [ { "def": "Planks", "count": 1 } ] },
       "fireAt": [0.5, 0.11, 1.12], "fireSize": 0.22,
       "model": [
         { "min": [0.22, 0, 0.92], "max": [0.78, 0.2, 0.96], "top": "props/timber_dark", "side": "props/timber_dark" },
@@ -366,7 +366,7 @@
       "name": "Larder", "label": "larder", "category": "Building", "solid": true, "sprite": "buildings/larder",
       "description": "Slatted bins and a crock or two, kept cool: what's in it keeps longer than what's left out in a warm kitchen. Holds 12 stacks.",
       "maxHp": 120, "flammability": 1.0,
-      "building": { "staffOnly": true, "work": 150, "storageStacks": 12, "keepsAt": 6, "surfaceHeight": 0.6, "cost": [ { "def": "Wood", "count": 12 } ] },
+      "building": { "staffOnly": true, "work": 150, "storageStacks": 12, "keepsAt": 6, "surfaceHeight": 0.6, "cost": [ { "def": "Planks", "count": 12 } ] },
       "model": [
         { "min": [0.1, 0.18, 0], "max": [0.9, 0.82, 0.6], "top": "props/basket", "side": "props/planks", "front": "props/chest_front" }
       ]
@@ -377,7 +377,7 @@
       "name": "KeyBoard", "label": "key board", "category": "Building", "solid": true, "sprite": "buildings/key_board",
       "description": "A board of hooks behind the bar, one for each room's key. F at it to take a key down or hang one up.",
       "maxHp": 60, "flammability": 0.8,
-      "building": { "work": 60, "storageStacks": 8, "storageOnly": [ "Key" ], "cost": [ { "def": "Wood", "count": 3 } ] },
+      "building": { "work": 60, "storageStacks": 8, "storageOnly": [ "Key" ], "cost": [ { "def": "Planks", "count": 3 } ] },
       "model": [
         { "min": [0.1, 0.00, 0.7], "max": [0.9, 0.08, 1.4], "top": "props/planks", "side": "props/planks", "front": "props/key_fobs" },
         { "min": [0.2, 0.08, 1.2], "max": [0.26, 0.14, 1.26], "top": "props/iron", "side": "props/iron" },
@@ -405,7 +405,7 @@
       "name": "Washstand", "label": "washstand", "category": "Building", "solid": true, "sprite": "buildings/washstand",
       "description": "A basin and a jug on a little stand. Fill the jug from a bucket of water for the next guest.",
       "maxHp": 50, "flammability": 0.8,
-      "building": { "partOnly": true, "work": 40, "surfaceHeight": 0.7, "cost": [ { "def": "Wood", "count": 2 } ] },
+      "building": { "partOnly": true, "work": 40, "surfaceHeight": 0.7, "cost": [ { "def": "Planks", "count": 2 } ] },
       "model": [
         { "min": [0.22, 0.22, 0], "max": [0.78, 0.78, 0.66], "top": "props/planks", "side": "props/planks" },
         { "min": [0.28, 0.28, 0.66], "max": [0.72, 0.72, 0.74], "top": "props/glaze", "side": "props/glaze" },
@@ -428,7 +428,7 @@
       "name": "LostProperty", "label": "lost property box", "category": "Building", "solid": true, "sprite": "buildings/lost_property",
       "description": "A box behind the bar for what guests leave in their rooms. Hand it back if they come asking.",
       "maxHp": 80, "flammability": 1.0,
-      "building": { "work": 60, "storageStacks": 6, "surfaceHeight": 0.4, "cost": [ { "def": "Wood", "count": 4 } ] },
+      "building": { "work": 60, "storageStacks": 6, "surfaceHeight": 0.4, "cost": [ { "def": "Planks", "count": 4 } ] },
       "model": [
         { "min": [0.2, 0.25, 0], "max": [0.8, 0.75, 0.4], "top": "props/chest_top", "side": "props/planks", "front": "props/chest_front" }
       ]
@@ -438,7 +438,7 @@
       "name": "KeyBox", "label": "key box", "category": "Building", "solid": true, "sprite": "buildings/key_box",
       "description": "A small iron-bound box of spare room keys. Lose a room's key and the spare goes up on the board, or to the tinker to be copied.",
       "maxHp": 80, "flammability": 0.5,
-      "building": { "work": 60, "storageStacks": 8, "storageOnly": [ "Key" ], "surfaceHeight": 0.32, "cost": [ { "def": "Wood", "count": 2 }, { "def": "IronBar", "count": 1 } ] },
+      "building": { "work": 60, "storageStacks": 8, "storageOnly": [ "Key" ], "surfaceHeight": 0.32, "cost": [ { "def": "Planks", "count": 2 }, { "def": "IronBar", "count": 1 } ] },
       "model": [
         { "min": [0.26, 0.3, 0], "max": [0.74, 0.7, 0.32], "top": "props/chest_top", "side": "props/planks", "front": "props/chest_front" },
         { "min": [0.24, 0.28, 0.12], "max": [0.76, 0.72, 0.16], "top": "props/iron", "side": "props/iron" }
@@ -450,7 +450,7 @@
       "name": "WaresShelf", "label": "wares shelf", "category": "Building", "joinery": { "planks": 2, "joints": 3 }, "solid": true, "sprite": "buildings/shelf",
       "description": "Plank shelves out front where the customers can see them. Holds 4 pieces: put your wares on it and price them, and the parties buy from it.",
       "maxHp": 80, "flammability": 1.0,
-      "building": { "work": 80, "storageStacks": 4, "kept": true, "show": true, "display": true, "surfaceHeight": 0.9, "cost": [ { "def": "Wood", "count": 6 } ] },
+      "building": { "work": 80, "storageStacks": 4, "kept": true, "show": true, "display": true, "surfaceHeight": 0.9, "cost": [ { "def": "Planks", "count": 6 } ] },
       "model": [
         { "min": [0.08, 0.6, 0], "max": [0.92, 0.7, 0.92], "top": "furniture/oak_leg", "side": "furniture/oak_leg" },
         { "min": [0.08, 0.28, 0], "max": [0.92, 0.7, 0.08], "top": "furniture/oak_planks", "side": "furniture/oak_leg" },
@@ -466,7 +466,7 @@
       "name": "MerchandiseShelf", "label": "merchandise shelf", "category": "Building", "joinery": { "planks": 2, "joints": 3 }, "solid": true, "sprite": "buildings/shelf",
       "description": "Plank shelves behind the bar. Holds 6 stacks: what the innkeeper sells for the road, rations from the cook's hampers first. Priced by the innkeeper.",
       "maxHp": 80, "flammability": 1.0,
-      "building": { "work": 80, "storageStacks": 6, "kept": true, "show": true, "display": true, "displayFor": "Tavern", "surfaceHeight": 0.9, "cost": [ { "def": "Wood", "count": 6 } ] },
+      "building": { "work": 80, "storageStacks": 6, "kept": true, "show": true, "display": true, "displayFor": "Tavern", "surfaceHeight": 0.9, "cost": [ { "def": "Planks", "count": 6 } ] },
       "model": [
         { "min": [0.08, 0.6, 0], "max": [0.92, 0.7, 0.92], "top": "furniture/oak_leg", "side": "furniture/oak_leg" },
         { "min": [0.08, 0.28, 0], "max": [0.92, 0.7, 0.08], "top": "furniture/oak_planks", "side": "furniture/oak_leg" },
@@ -481,7 +481,7 @@
       "name": "Shelf", "label": "shelf", "category": "Building", "joinery": { "planks": 2, "joints": 3 }, "solid": true, "sprite": "buildings/shelf",
       "description": "Plank shelves on brackets. Holds 6 stacks: the clean crockery lives here, and behind the bar what goes into a mix.",
       "maxHp": 80, "flammability": 1.0,
-      "building": { "work": 80, "storageStacks": 6, "surfaceHeight": 0.9, "cost": [ { "def": "Wood", "count": 6 } ] },
+      "building": { "work": 80, "storageStacks": 6, "surfaceHeight": 0.9, "cost": [ { "def": "Planks", "count": 6 } ] },
       "model": [
         { "min": [0.08, 0.6, 0], "max": [0.92, 0.7, 0.92], "top": "furniture/oak_leg", "side": "furniture/oak_leg" },
         { "min": [0.08, 0.28, 0], "max": [0.92, 0.7, 0.08], "top": "furniture/oak_planks", "side": "furniture/oak_leg" },
@@ -496,7 +496,7 @@
       "name": "BarShelf", "label": "bar shelf", "category": "Building", "joinery": { "planks": 2, "joints": 3 }, "solid": true, "sprite": "buildings/shelf",
       "description": "Plank shelves behind the bar. Holds 6 stacks: the clean tankards, and the spirits, honey, herbs and berries that go into a mix. The bar's stock: nobody else helps themselves.",
       "maxHp": 80, "flammability": 1.0,
-      "building": { "work": 80, "storageStacks": 6, "kept": true, "surfaceHeight": 0.9, "cost": [ { "def": "Wood", "count": 6 } ] },
+      "building": { "work": 80, "storageStacks": 6, "kept": true, "surfaceHeight": 0.9, "cost": [ { "def": "Planks", "count": 6 } ] },
       "model": [
         { "min": [0.08, 0.6, 0], "max": [0.92, 0.7, 0.92], "top": "furniture/oak_leg", "side": "furniture/oak_leg" },
         { "min": [0.08, 0.28, 0], "max": [0.92, 0.7, 0.08], "top": "furniture/oak_planks", "side": "furniture/oak_leg" },
@@ -519,7 +519,7 @@
       "name": "WarmingShelf", "label": "warming shelf", "category": "Building", "solid": true, "sprite": "buildings/shelf",
       "description": "Plank shelves behind the bar over a pan of coals. Holds 6 stacks: what the cookhouse sends over, for the lodgers' board and the road.",
       "maxHp": 80, "flammability": 1.0,
-      "building": { "work": 80, "storageStacks": 6, "kept": true, "warming": true, "surfaceHeight": 0.9, "cost": [ { "def": "Wood", "count": 6 } ] },
+      "building": { "work": 80, "storageStacks": 6, "kept": true, "warming": true, "surfaceHeight": 0.9, "cost": [ { "def": "Planks", "count": 6 } ] },
       "model": [
         { "min": [0.08, 0.6, 0], "max": [0.92, 0.7, 0.92], "top": "furniture/oak_leg", "side": "furniture/oak_leg" },
         { "min": [0.08, 0.28, 0.42], "max": [0.92, 0.7, 0.5], "top": "furniture/oak_planks", "side": "furniture/oak_leg" },
@@ -538,7 +538,7 @@
       "name": "ServingHatch", "label": "serving hatch", "category": "Building", "solid": true, "sprite": "buildings/serving_hatch",
       "description": "A window through the kitchen wall with a counter across it. Order here; your bowl comes up on the counter.",
       "maxHp": 120, "flammability": 1.0,
-      "building": { "work": 120, "storageStacks": 4, "surfaceHeight": 0.86, "hatch": true, "cost": [ { "def": "Wood", "count": 8 } ] },
+      "building": { "work": 120, "storageStacks": 4, "surfaceHeight": 0.86, "hatch": true, "cost": [ { "def": "Planks", "count": 8 } ] },
       "modelCutAt": 0.86,
       "model": [
         { "min": [0.04, 0.06, 0], "max": [0.96, 0.94, 0.78], "top": "props/planks", "side": "props/planks" },
@@ -554,7 +554,7 @@
       "name": "WallTorch", "label": "wall torch", "category": "Building", "sprite": "buildings/wall_torch",
       "description": "A pitch-wrapped torch in an iron bracket on the wall.",
       "maxHp": 30, "flammability": 0.4,
-      "building": { "partOnly": true, "work": 20, "lightRadius": 4, "cost": [ { "def": "Wood", "count": 1 } ] },
+      "building": { "partOnly": true, "work": 20, "lightRadius": 4, "cost": [ { "def": "Planks", "count": 1 } ] },
       "fireAt": [0.5, 0.23, 1.26], "fireSize": 0.5,
       "model": [
         { "min": [0.43, 0, 0.8], "max": [0.57, 0.04, 1.04], "top": "props/iron", "side": "props/iron" },
@@ -570,7 +570,7 @@
       "name": "Lantern", "label": "hanging lantern", "category": "Building", "sprite": "buildings/lantern",
       "description": "An iron lantern hung from the beams, a candle burning in it. Keeps a room from gloom.",
       "maxHp": 40, "flammability": 0.2,
-      "building": { "partOnly": true, "work": 30, "lightRadius": 5, "cost": [ { "def": "Wood", "count": 1 } ] },
+      "building": { "partOnly": true, "work": 30, "lightRadius": 5, "cost": [ { "def": "Planks", "count": 1 } ] },
       "fireAt": [0.5, 0.5, 0.92], "fireSize": 0.55,
       "model": [
         { "min": [0.485, 0.485, 1.2], "max": [0.515, 0.515, 1.54], "top": "props/timber_dark", "side": "props/timber_dark" },
@@ -588,7 +588,7 @@
       "name": "WashTub", "label": "wash tub", "category": "Building", "solid": true, "sprite": "buildings/wash_tub",
       "description": "A half-barrel of hot water and a scrubbing brush. F at it with dirty tankards or bowls to wash them.",
       "maxHp": 80, "flammability": 0.6,
-      "building": { "staffOnly": true, "work": 90, "surfaceHeight": 0.5, "washTub": true, "cost": [ { "def": "Wood", "count": 6 } ] },
+      "building": { "staffOnly": true, "work": 90, "surfaceHeight": 0.5, "washTub": true, "cost": [ { "def": "Planks", "count": 6 } ] },
       "model": [
         // A half-barrel up on a low stand at working height (the quench tub's staves around sunken
         // water, in pale pine): soapy water well below the rim, a washboard stood in it.
@@ -610,7 +610,7 @@
       "name": "BarTub", "label": "bar tub", "category": "Building", "solid": true, "sprite": "buildings/wash_tub",
       "description": "A half-barrel of hot water behind the bar. F at it with dirty tankards to wash them.",
       "maxHp": 80, "flammability": 0.6,
-      "building": { "work": 90, "surfaceHeight": 0.5, "washTub": true, "cost": [ { "def": "Wood", "count": 6 } ] },
+      "building": { "work": 90, "surfaceHeight": 0.5, "washTub": true, "cost": [ { "def": "Planks", "count": 6 } ] },
       "model": [
         // A half-barrel up on a low stand at working height (the quench tub's staves around sunken
         // water, in pale pine): soapy water well below the rim, a washboard stood in it.

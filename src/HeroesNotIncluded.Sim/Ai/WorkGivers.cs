@@ -529,10 +529,11 @@ public sealed class WorkGivers
         RecipeDef? bestRecipe = null;
         var bestDist = int.MaxValue;
         Job? fetchTool = null;
+        var keeps = w.TryGet<Trade>(pawn, out var trade) && trade.Def.Keeps.Count > 0; // makes things without a bill (TradeDef.Keeps)
         foreach (var station in w.Query<Workbench>())
         {
             var bench = w.Get<Workbench>(station);
-            if (bench.Bills.Count == 0 || !Crafting.IsStation(sim, station) || sim.Reservations.IsReservedByOther(station, pawn))
+            if ((bench.Bills.Count == 0 && bench.Active == null && !keeps) || !Crafting.IsStation(sim, station) || sim.Reservations.IsReservedByOther(station, pawn))
                 continue;
             var cell = w.Get<Thing>(station).Cell;
             var d = Dist(from, cell);

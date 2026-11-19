@@ -172,7 +172,7 @@
         { "min": [0.04, 1.9, 0], "max": [0.96, 2.0, 0.38], "top": "props/planks", "side": "props/planks" }
       ],
       "maxHp": 100, "flammability": 1.0,
-      "building": { "isBed": true, "work": 150, "cost": [ { "def": "Wood", "count": 10 } ] }
+      "building": { "isBed": true, "work": 150, "cost": [ { "def": "Planks", "count": 10 } ] }
     },
 
     {

@@ -270,7 +270,7 @@ public sealed class TripBellJob(Entity bench, Entity chest, int3 spot) : Job
         Inventory.CarriedOf(sim, pawn, sim.Defs.Thing(def)).Sum(e => sim.World.Get<Stack>(e).Count) + Systems.Stock.CountIn(sim, chest, def);
 
     private static bool HasMakings(Simulation sim, Entity pawn, Entity chest) =>
-        Count(sim, pawn, chest, Tinkers.BarDef) >= 1 && Count(sim, pawn, chest, "Wood") >= 1;
+        Count(sim, pawn, chest, Tinkers.BarDef) >= 1 && Count(sim, pawn, chest, Systems.Stock.PlanksDef) >= 1;
 
     /// <summary>Use up one of a thing, from on the pawn first, then the chest.</summary>
     private static bool UseOne(Simulation sim, Entity pawn, Entity chest, string def)
@@ -299,7 +299,7 @@ public sealed class TripBellJob(Entity bench, Entity chest, int3 spot) : Job
                 yield break;
             }
             UseOne(Sim, Pawn, chest, Tinkers.BarDef);
-            UseOne(Sim, Pawn, chest, "Wood");
+            UseOne(Sim, Pawn, chest, Systems.Stock.PlanksDef);
             SkillRules.Learn(Sim, Pawn, Skill.Crafting, SkillRules.XpPerWorkTick * Ticks);
             bell = Sim.CreateItem(Sim.Defs.Thing(TripBells.Def), 1);
             Tinkers.Made(Sim, [bell], Pawn);

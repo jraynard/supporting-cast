@@ -274,13 +274,109 @@ public static class Crafting
             if (active.WorkType != type || active.TwoHanded || !CanMake(sim, worker, active))
                 return null;
             var bill = bench.BillFor(active);
-            return bill != null && WantsMore(sim, bill) ? active : null;
+            if (bill != null)
+                return WantsMore(sim, bill) ? active : null;
+            // Something kept in, begun without a bill: whoever keeps it finishes it, short or not.
+            return KeepOf(sim, worker, station, active) != null ? active : null;
         }
         // Work for two (a great blade) is a player's, with a striker: no villager makes it alone.
         foreach (var bill in bench.Bills)
             if (bill.Recipe.WorkType == type && !bill.Recipe.TwoHanded && WantsMore(sim, bill) && CanMake(sim, worker, bill.Recipe) && Fitted(sim, station, bill.Recipe))
                 return bill.Recipe;
+        if (w.TryGet<Trade>(worker, out var trade))
+            foreach (var keep in trade.Def.Keeps)
+                if (keep.RecipeDef.WorkType == type && !keep.RecipeDef.TwoHanded && KeepOf(sim, worker, station, keep.RecipeDef) != null
+                    && Short(sim, station, keep) && CanMake(sim, worker, keep.RecipeDef) && Fitted(sim, station, keep.RecipeDef))
+                    return keep.RecipeDef;
         return null;
+    }
+
+    // ---------------- Kept in (TradeDef.Keeps) ----------------
+
+    /// <summary>
+    /// The keep of <paramref name="recipe"/> that <paramref name="worker"/>'s trade has at this station: theirs to make
+    /// without a bill, at their own workplace, while they're the AI's (a player keeps their own). Null if none.
+    /// </summary>
+    public static TradeKeep? KeepOf(Simulation sim, Entity worker, Entity station, RecipeDef recipe)
+    {
+        var w = sim.World;
+        if (!w.TryGet<Trade>(worker, out var trade) || trade.Def.Keeps.Count == 0 || Players.Steered(sim, worker)
+            || KeptAt(sim, station) is not { IsNull: false } building || !trade.Def.WorksAt(w.Get<PresetBuilding>(building).Def))
+            return null;
+        foreach (var keep in trade.Def.Keeps)
+            if (keep.RecipeDef == recipe && keep.RecipeDef.StationDef == w.Get<Thing>(station).Def)
+                return keep;
+        return null;
+    }
+
+    /// <summary>How far out of doors a station may stand from a building and still be its yard's (the smithy's kiln).</summary>
+    public const int YardReach = 3;
+
+    /// <summary>
+    /// The building a station is worked for: the one it's part of, or for one standing on its own out of doors (a kiln,
+    /// whose fire would roast a room), the nearest building within <see cref="YardReach"/> of it. Entity.Null if neither.
+    /// </summary>
+    public static Entity KeptAt(Simulation sim, Entity station)
+    {
+        var w = sim.World;
+        if (w.TryGet<PartOf>(station, out var part))
+            return w.Has<PresetBuilding>(part.Building) ? part.Building : Entity.Null;
+        if (!w.TryGet<Thing>(station, out var t) || !t.Spawned)
+            return Entity.Null;
+        var best = Entity.Null;
+        var bestD = YardReach + 1;
+        for (var dy = -YardReach; dy <= YardReach; dy++)
+        for (var dx = -YardReach; dx <= YardReach; dx++)
+        {
+            var c = t.Cell + new int3(dx, dy, 0);
+            var d = Math.Max(Math.Abs(dx), Math.Abs(dy));
+            if (d == 0 || d >= bestD || !sim.Map.InBounds(c))
+                continue;
+            var at = Buildings.At(sim, c);
+            if (!at.IsNull)
+                (best, bestD) = (at, d);
+        }
+        return best;
+    }
+
+    /// <summary>
+    /// The keep wants making: fewer of its product than its <see cref="TradeKeep.Below"/> kept at the station's building
+    /// (in its chests and bins, or lying in it) or lying free about the town (what's made is set down by the station,
+    /// and may be hauled off).
+    /// </summary>
+    public static bool Short(Simulation sim, Entity station, TradeKeep keep)
+    {
+        var w = sim.World;
+        var building = KeptAt(sim, station);
+        var product = keep.RecipeDef.Products[0].ThingDef;
+        var have = building.IsNull ? 0 : Favours.Wants.Stock(sim, building, product);
+        if (have >= keep.Below)
+            return false;
+        foreach (var item in sim.AvailableItems())
+            if (w.Get<Thing>(item).Def == product && (building.IsNull || !w.Get<Thing>(item).Spawned || Buildings.At(sim, w.Get<Thing>(item).Cell) != building)
+                && (have += w.Get<Stack>(item).Count) >= keep.Below)
+                return false;
+        return true;
+    }
+
+    /// <summary>
+    /// What's kept in at this station that wants making now (<see cref="TradeDef.Keeps"/>), by any AI holder of a trade
+    /// that works here and is fit to: what lights an on-demand kiln, as a bill would.
+    /// </summary>
+    public static IEnumerable<RecipeDef> Kept(Simulation sim, Entity station)
+    {
+        var w = sim.World;
+        var def = w.Get<Thing>(station).Def;
+        if (!sim.Defs.AllTrades.Any(t => t.Keeps.Any(k => k.RecipeDef.StationDef == def)))
+            yield break;
+        foreach (var e in w.Query<Trade>())
+        {
+            if (w.Get<Creature>(e) is not { Dead: false, Downed: false } || w.Has<Components.Adventurer>(e))
+                continue;
+            foreach (var keep in w.Get<Trade>(e).Def.Keeps)
+                if (KeepOf(sim, e, station, keep.RecipeDef) != null && Short(sim, station, keep))
+                    yield return keep.RecipeDef;
+        }
     }
 
     /// <summary>The station has what the recipe needs fitted to it (<see cref="RecipeDef.Upgrade"/>: a hearth's cooking pot).</summary>
@@ -563,7 +659,7 @@ public static class Crafting
         foreach (var bill in bench.Bills)
             if (WantsMore(sim, bill))
                 return true;
-        return false;
+        return Kept(sim, station).Any();
     }
 
     /// <summary>The heat the next thing to make here needs (0 if none): what a dragon stokes it for.</summary>
@@ -575,6 +671,8 @@ public static class Crafting
         foreach (var bill in bench.Bills)
             if (WantsMore(sim, bill))
                 return bill.Recipe.MinTemp;
+        foreach (var recipe in Kept(sim, station))
+            return recipe.MinTemp;
         return 0;
     }
 
@@ -591,6 +689,9 @@ public static class Crafting
         foreach (var bill in bench.Bills)
             if (WantsMore(sim, bill) && HasIngredients(sim, worker, station, bill.Recipe))
                 return bill.Recipe.MinTemp;
+        foreach (var recipe in Kept(sim, station))
+            if (HasIngredients(sim, worker, station, recipe))
+                return recipe.MinTemp;
         return 0;
     }
 

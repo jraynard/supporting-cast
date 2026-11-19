@@ -172,7 +172,13 @@ public sealed partial class BotPlayer(Func<Simulation> world, Guid player, Actio
         }
         if (_task == 0 && MendTown(sim, me, view, now))
             return;
+        // What its trade keeps in (the smith's charcoal): made before the rest once it's running out, but never with a
+        // piece in the tongs; whenever it's short, with nothing else to do.
+        if (_task == 0 && view.Piece(me) == null && KeepIn(sim, me, view, now, urgent: true))
+            return;
         if (_task == 0 && Smith(sim, me, view, now))
+            return;
+        if (_task == 0 && view.Piece(me) == null && KeepIn(sim, me, view, now, urgent: false))
             return;
         // Each trade's work between orders, in its own file.
         if (_task == 0 && SendForHamper(sim, me, now))

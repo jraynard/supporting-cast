@@ -2592,3 +2592,24 @@ Trees felled, bucked and split by hand; the town's fires burn firewood, not timb
 - **The coin stance's coin** has its own sheet (`person_<body>_coin`, front views only), drawn over
   everything: a halfling's braided beard hid it, and from behind it showed on the back of the head.
 - Bench hashes unchanged for seeds 1234 and 99. Window moving and folding: ROADMAP, From testers.
+
+### Planks for what's made, charcoal from the kiln, cloth for bandages (2026-11-19)
+The town keeps itself in the makings the carter used to bring.
+- **Planks** (`Stock.PlanksDef`) are what's crafted from: every forge, tinker and carpenter recipe that took
+  timber, and furniture, stations and the festival's tables. Timber (`Stock.TimberDef`) is for building and
+  mending only (walls, roofs, the bridge, a wagon's axle), and stone tools knapped by hand. The settlers'
+  pile is half planks; the barn starts with `barnPlanks`; the smithy's chest, the tinker's, both kits and
+  the carter's morning load carry planks where they carried timber. The AI's trip-bell takes a plank.
+- **Charcoal** is baked from firewood (`BakeCharcoal`: 6 billets to 5) at a kiln standing out of doors by
+  each smithy (Millbrook's south wall, Reedmere's pier: a map feature, its fire kept out of the smithy). The
+  carter brings no more. `TradeDef.Keeps` is the door: an AI holder makes a kept recipe without a bill while
+  it's short (`Crafting.KeepOf`, `Short`, `Kept`, which also lights an on-demand fire); the smith keeps 20.
+  A bot smith bakes it once the bin's half that, or with nothing else to do (`BotPlayer.KeepIn`).
+- **Cloth** for the empath: 4 in the shrine's basket at the deal and 2 each morning (season `shrineDelivery`,
+  `OreCarterSystem.DeliverToShrine`; not where a cut road keeps the carter off). Torn into bandages by hand
+  (`TearBandages`); a bot empath out of them does (`BotPlayer.TearBandages`).
+- `tools/lake_map.py` reads the mods' building plans too (the woodshop had moved into the carpenter mod).
+- Tests: `MaterialSupplyTests`. The raid drill passes once someone's on their way to the rack (who's caught
+  on the road is down to where they stood); the party loop plays seed 1234 (99's dice moved with the kilns).
+- Bench: seed 1234 state `5B644617887619E8`, full `D019E1AAC033B504`; seed 99 state `82049F2FF8ABCE34`,
+  full `CC486CC08DBF190A`. Over 64 bot seasons, as before (won 36 to 35, dread 20 to 18).

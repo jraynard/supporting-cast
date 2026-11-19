@@ -111,7 +111,9 @@
     { "name": "Blacksmith", "label": "blacksmith", "pace": "Easygoing", "description": "Works the forge: blades, tools and repairs.",
       "workplace": "Forge", "workPriorities": { "Craft": 1 },
       "knows": [ "Forge" ], "skills": { "Crafting": 6 },
-      "stations": [ "Forge", "Anvil", "Grindstone", "QuenchTub" ],
+      "stations": [ "Forge", "Anvil", "Grindstone", "QuenchTub", "Kiln" ],
+      // Charcoal baked from firewood at the smithy's kiln while there's little left (an AI smith; a player bakes their own).
+      "keeps": [ { "recipe": "BakeCharcoal", "below": 20 } ],
       "tutorialIntro": "You work the forge. Adventurers bring blades that have seen better days: you take the order, mend or sharpen the blade, hand it back and get paid. A dull edge goes to the grindstone; a chipped one to the forge and anvil first.",
       "lessons": [
         { "id": "sharpen", "title": "Sharpen a dull blade", "customers": "Dull", "core": true,
@@ -156,13 +158,14 @@
           "blurb": "Smelt iron ore into bars, then change your prices on the sign.",
           "steps": [
             { "id": "ore", "text": "Take four iron ore from the chest (~F~). The carter keeps it filled." },
-            { "id": "charcoal", "text": "Take two charcoal from the fuel bin." },
+            { "id": "charcoal", "text": "Take two charcoal from the fuel bin.",
+              "more": "Nobody brings charcoal. When the bin runs low, bake more at the kiln by the forge: six firewood from the barn makes five." },
             { "id": "smelt", "text": "Open the forge (~F~) and press Smelt a bloom." },
             { "id": "fuel", "text": "The forge is out. Take charcoal from the fuel bin, then press ~F~ at the forge.", "aside": true },
             { "id": "fire", "text": "Hold ~F~ to work the bellows and keep the fire orange; yellow turns the iron to slag. Press ~Space~ to take the bloom out once it's large." },
             { "id": "beat", "text": "At the anvil, hold ~F~ to raise the hammer to the mark and let go, over the marker (~A~ ~D~), to beat out the slag and shape the bars." },
             { "id": "prices", "text": "Now open your shop (~J~) and change what a repair costs on the sign.", "ui": "shop" } ] } ],
-      "kit": [ { "def": "Hammer" }, { "def": "Whetstone" }, { "def": "IronBar", "count": 2 }, { "def": "Leather", "count": 2 }, { "def": "Wood", "count": 4 } ] },
+      "kit": [ { "def": "Hammer" }, { "def": "Whetstone" }, { "def": "IronBar", "count": 2 }, { "def": "Leather", "count": 2 }, { "def": "Planks", "count": 4 } ] },
     { "name": "Empath", "label": "empath", "pace": "Steady", "formerly": [ "Healer" ],
       "description": "Lays on hands to take others' wounds into themselves, feels them as their own, then mends them with the gift.",
       "workplace": "Shrine", "workPriorities": { "Doctor": 1 }, "skills": { "Medicine": 6 }, "mana": 100,
@@ -211,7 +214,7 @@
 
     { "name": "Tinker", "label": "tinker", "pace": "Easygoing", "description": "Locks and clockwork: opens what adventurers drag home, fits locks and cuts keys, builds contraptions for the road, mends wagons and crossbows and knows what a curio's worth.",
       "workplace": "TinkerShop", "workPriorities": { "Craft": 1 }, "skills": { "Crafting": 6, "Construction": 4 }, "mendsTown": true,
-      "wants": [ { "thing": "Wood", "below": 4, "count": 8, "price": 5 } ],
+      "wants": [ { "thing": "Planks", "below": 4, "count": 8, "price": 5 } ],
       "knows": [ "TinkerBench" ],
       "stations": [ "TinkerBench" ],
       "tutorialIntro": "You're the tinker. Strongboxes, curios and wagons that adventurers drag home end up with you: you open them, appraise them and mend them, for a fee. Your bench makes locks, keys and contraptions.",
@@ -245,13 +248,13 @@
             { "id": "pin", "text": "Hold ~F~ at the bench and choose a lock. Set each pin as it comes up; a key is cut to match." },
             { "id": "fit", "text": "Press ~F~ at the shop's door to fit the lock." },
             { "id": "turn", "text": "Press ~F~ at the door again to lock it with your key." } ] },
-        { "id": "crossbow", "title": "Build a crossbow", "supply": [ { "def": "Wood", "count": 3 } ],
+        { "id": "crossbow", "title": "Build a crossbow", "supply": [ { "def": "Planks", "count": 3 } ],
           "blurb": "Fit a stock, a steel bow and a trigger together. A better weapon than a dagger.",
           "steps": [
             { "id": "choose", "text": "Hold ~F~ at the bench and choose the crossbow." },
             { "id": "fit", "text": "Fit each part when it lines up, then wind the string back to the catch." } ],
           "notes": [ "A dagger won't hold off a raid. A crossbow from your bench might: two iron bars and some wood." ] } ],
-      "kit": [ { "def": "Dagger" }, { "def": "Lockpicks" }, { "def": "IronBar", "count": 4 }, { "def": "Wood", "count": 2 } ] },
+      "kit": [ { "def": "Dagger" }, { "def": "Lockpicks" }, { "def": "IronBar", "count": 4 }, { "def": "Planks", "count": 2 } ] },
     { "name": "Labourer", "label": "labourer", "description": "Hauls, chops and digs for anyone who'll pay.", "unlimited": true, "gathers": true }
   ]
 }

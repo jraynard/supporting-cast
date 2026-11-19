@@ -111,7 +111,8 @@ public class DefTests
             var building = Shops.ShopSystem.WorkplaceOf(sim, trade);
             Assert.False(building.IsNull, $"{trade.Name}: no {trade.Workplace} in town");
             foreach (var station in trade.StationDefs)
-                Assert.True(w.Query<Components.Thing>().Any(e => w.Get<Components.Thing>(e).Def == station && Systems.Buildings.Of(sim, e) == building),
+                Assert.True(w.Query<Components.Thing>().Any(e => w.Get<Components.Thing>(e).Def == station
+                        && (Systems.Buildings.Of(sim, e) == building || Systems.Crafting.KeptAt(sim, e) == building)), // or in its yard (the smithy's kiln)
                     $"{trade.Name}: no {station.Name} in the {trade.Workplace}");
         }
     }

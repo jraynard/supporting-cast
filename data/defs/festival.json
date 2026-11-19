@@ -55,7 +55,7 @@
       "description": "A lantern hung from a pole in the square, bunting strung from its top to the next. Up for the festival.",
       "maxHp": 40, "flammability": 0.3,
       "building": { "buildable": false, "outdoor": true, "work": 30, "lightRadius": 5, "heatOutput": 0,
-        "fuel": { "def": "Firewood", "capacity": 4, "burnPerDay": 4, "refuelAt": 0 }, "cost": [ { "def": "Wood", "count": 2 } ] },
+        "fuel": { "def": "Firewood", "capacity": 4, "burnPerDay": 4, "refuelAt": 0 }, "cost": [ { "def": "Planks", "count": 2 } ] },
       "fireAt": [0.5, 0.5, 1.34], "fireSize": 0.42,
       "model": [
         { "min": [0.45, 0.45, 0], "max": [0.55, 0.55, 1.9], "top": "props/timber_dark", "side": "props/timber_dark" },
@@ -96,7 +96,7 @@
       "description": "A long trestle under a cloth, laid with roasts, bread and pies for the festival. Help yourself.",
       "maxHp": 140, "flammability": 1.0,
       "building": { "buildable": false, "outdoor": true, "show": true, "storageStacks": 4, "surfaceHeight": 0.66, "work": 180,
-        "cost": [ { "def": "Wood", "count": 12 } ] },
+        "cost": [ { "def": "Planks", "count": 12 } ] },
       "model": [
         { "min": [0.02, 0.02, 0.56], "max": [0.98, 1.98, 0.66], "top": "props/linen", "side": "props/cloth_madder" },
         { "min": [0.08, 0.08, 0], "max": [0.18, 0.18, 0.56], "top": "props/planks", "side": "props/log_side" },
@@ -111,7 +111,7 @@
       "description": "A long table under a dyed cloth. Lay your best work on it: the visitors look over what the town can make.",
       "maxHp": 140, "flammability": 1.0,
       "building": { "buildable": false, "outdoor": true, "show": true, "storageStacks": 6, "surfaceHeight": 0.7, "work": 120,
-        "cost": [ { "def": "Wood", "count": 12 } ] },
+        "cost": [ { "def": "Planks", "count": 12 } ] },
       "model": [
         { "min": [0.02, 0.02, 0.6], "max": [0.98, 1.98, 0.7], "top": "props/cloth_woad", "side": "props/cloth_ochre" },
         { "min": [0.08, 0.08, 0], "max": [0.18, 0.18, 0.6], "top": "props/planks", "side": "props/log_side" },
@@ -125,7 +125,7 @@
       "name": "HighStriker", "label": "striker", "category": "Building", "solid": true, "sprite": "props/sign_board",
       "description": "A tall post with a bell at its top and a pad at its foot. Swing the mallet: ring the bell.",
       "maxHp": 120, "flammability": 0.6,
-      "building": { "buildable": false, "outdoor": true, "work": 120, "cost": [ { "def": "Wood", "count": 8 } ] },
+      "building": { "buildable": false, "outdoor": true, "work": 120, "cost": [ { "def": "Planks", "count": 8 } ] },
       "model": [
         { "min": [0.2, 0.3, 0], "max": [0.8, 0.7, 0.08], "top": "props/planks", "side": "props/planks" },
         { "min": [0.42, 0.36, 0.08], "max": [0.58, 0.5, 2.3], "top": "props/timber_dark", "side": "props/sign_board" },
@@ -140,7 +140,7 @@
       "name": "ArcheryButt", "label": "archery butt", "category": "Building", "solid": true, "sprite": "props/sign_board",
       "description": "A straw boss on legs with rings painted on its face. Shoot at the butts: three arrows, nearest the gold.",
       "maxHp": 100, "flammability": 1.0,
-      "building": { "buildable": false, "outdoor": true, "target": true, "work": 100, "cost": [ { "def": "Wood", "count": 4 } ] },
+      "building": { "buildable": false, "outdoor": true, "target": true, "work": 100, "cost": [ { "def": "Planks", "count": 4 } ] },
       "model": [
         { "min": [0.12, 0.42, 0.25], "max": [0.88, 0.58, 1.15], "top": "props/straw", "side": "props/straw", "front": "props/target_face" },
         { "min": [0.18, 0.36, 0], "max": [0.26, 0.44, 0.95], "top": "props/timber_dark", "side": "props/timber_dark" },
