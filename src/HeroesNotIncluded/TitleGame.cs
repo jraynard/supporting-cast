@@ -290,8 +290,9 @@ public sealed class TitleGame : Game
     private static string PaceNote(Sim.Defs.TradeDef t) => t.Pace is { } pace ? Sim.Defs.TradePaces.About(pace) + " " : "";
 
     /// <summary>
-    /// The tutorial's trades: those with a workplace and games of their own, each with how far this
-    /// character has got in it. It runs in the practice yard: no bots, no season.
+    /// The tutorial's trades: those with lessons of their own (a core chapter), each with how far this
+    /// character has got in it. It runs in the practice yard: no bots, no season. Not only those with a
+    /// workplace: the musician has none, and plays wherever it stands.
     /// </summary>
     private MenuItem[] PracticeItems(SavedCharacter c)
     {
@@ -307,7 +308,7 @@ public sealed class TitleGame : Game
             return "";
         }
         return _defs.AllTrades
-            .Where(t => t.HasWorkplace)
+            .Where(t => t.Lessons.Any(l => l.Core))
             .Select(t => new MenuItem(TradeTitle(t), Progress(t) + PaceNote(t) + t.Description, () => Start(t.Name)))
             .Append(new MenuItem("Back", "Back to the main menu.", null, MenuAction.Back))
             .ToArray();

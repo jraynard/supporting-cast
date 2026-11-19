@@ -33,7 +33,8 @@ public static class BasicsLesson
             return new LessonStage("workplace", run.Workplace);
         if (!run.Passed.Contains("pack"))
             return new LessonStage("pack", Entity.Null);
-        if (!run.Passed.Contains("shop"))
+        // The shop's sign and prices: a trade with no workplace (the musician) has none to learn.
+        if (!run.Workplace.IsNull && !run.Passed.Contains("shop"))
             return new LessonStage("shop", Entity.Null);
         if (!run.Passed.Contains("controls"))
             return new LessonStage("controls", Entity.Null);

@@ -104,6 +104,31 @@ public class TutorialTests
     }
 
     [Fact]
+    public void WithNoWorkplaceTheBasicsSkipTheWorkplaceAndTheShop()
+    {
+        // The musician plays anywhere: no building to walk to, no sign to price.
+        var sim = VillageRound.NewSimulation(LoadDefs(), 1234);
+        sim.Presets.PresetMode = true;
+        VillageRound.Setup(sim);
+        sim.Round.OpenLobby();
+        sim.ApplyNow(new JoinLobbyCommand(Ana, "Ana", default));
+        sim.ApplyNow(new SetTradePreferencesCommand(Ana, [sim.Defs.Trade("Musician")], []));
+        sim.ApplyNow(new StartRoundCommand());
+        sim.Round.Practice = true;
+        var me = Players.CharacterOf(sim, Ana);
+        var trade = sim.Defs.Trade("Musician");
+        Assert.False(trade.HasWorkplace);
+        Assert.Contains(trade.Lessons, l => l.Core); // so the tutorial lists it
+        var run = new LessonRun(sim, me, trade, sim.Defs.Basics);
+        run.Passed.Add("moved");
+        Assert.Equal("pack", Lessons.Stage(sim, me, run).Step);
+        run.Passed.Add("pack");
+        Assert.Equal("controls", Lessons.Stage(sim, me, run).Step);
+        run.Passed.Add("controls");
+        Assert.True(Lessons.Stage(sim, me, run).Done);
+    }
+
+    [Fact]
     public void ATradesLessonCantTakeTheBasicsId()
     {
         const string json = """

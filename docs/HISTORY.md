@@ -2709,3 +2709,5 @@ From the user's playing on a Deck:
 - **The opening's guide on a pad:** each key cap is at least as wide as its button's name (the jig's quick notes
   were caps too narrow to read).
 - **The musician carries a dagger** (its kit): something to defend themselves with in a raid, R to draw it.
+- **The tutorial lists the musician** (and every trade with a core chapter, not only those with a workplace); the
+  basics skip the shop step, as they skip the workplace, for a trade with neither.
