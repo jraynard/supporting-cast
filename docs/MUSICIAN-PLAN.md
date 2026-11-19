@@ -69,10 +69,10 @@ Each with its tests in `tests/HeroesNotIncluded.Sim.Tests/MusicianModTests.cs`.
 
 ### §2. The tune book and the lead-in
 - **Where tunes come from:** our own, or public-domain tunes (traditional, pre-1900) written out in our own notation,
-  never copied from a modern arrangement. No game or film music, however it's renamed. In the book, a traditional tune for each instrument
-  (`for`: first in its book, playable on any): "The Kesh Jig" for the pipe, "Greensleeves" for the lute, "Scarborough Fair"
-  for the fiddle (Drunken Sailor taken out, 2026-11-19: a shanty didn't suit the town);
-  and three of our own ("The Miller's Wheel", "Lantern Home", "Hay in the Loft").
+  never copied from a modern arrangement. No game or film music, however it's renamed. In the book, a tune of our own for each instrument
+  (`for`: first in its book, playable on any), each 40 to 50 seconds: "The Miller's Wheel" (a jig, the pipe), "Lantern
+  Home" (an air, the lute), "Hay in the Loft" (a reel, the fiddle). Traditional tunes were tried and taken out
+  (2026-11-19): a ballad's length (Scarborough Fair, 90 s) is long for a round; ours, lengthened, land between.
 - **A tune** (`songs` in `musician.json`, `SongDef`): its parts by name, each a list of notes `[step, beats,
   accidental]` (step −1 a rest, `[-2]` a breath mark); its `form`; its `opening` (5 notes unless it says) and `call`
   (the part it's called up by: Greensleeves by its chorus); its tempo, kind (jig, reel, air, march, ballad) and mood.

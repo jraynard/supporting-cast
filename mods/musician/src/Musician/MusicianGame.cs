@@ -851,14 +851,15 @@ public sealed class MusicianGame : IGameMod
         var n = tune.Call.Count;
         for (var i = 0; i < n; i++)
         {
-            var w = tune.Call[i].Beats * beat;
+            // The key that plays it; in the octave above, a bar over the cap (hold the octave key). Every cap is wide
+            // enough for its key's name (a pad's button reads longer than a number key): quick notes stretch the guide.
+            var step = tune.Call[i].Step;
+            var label = WorkView.Glyph(_notes[step <= 7 ? step : step - 7]) + (tune.Call[i].Accidental > 0 ? "#" : "");
+            var w = Math.Max(tune.Call[i].Beats * beat, ImGui.CalcTextSize(label).X + Gui.S(11));
             var a = new float2(x, min.Y);
             var b = new float2(x + w - Gui.S(3), min.Y + h);
             dl.AddRectFilled(in a, in b, Theme.U8(Theme.Inset), Gui.S(3), ImDrawFlags.None);
             dl.AddRect(in a, in b, Theme.U8(Theme.OakLight), Gui.S(3), ImDrawFlags.None, Gui.S(1));
-            // The key that plays it; in the octave above, a bar over the cap (hold the octave key).
-            var step = tune.Call[i].Step;
-            var label = WorkView.Glyph(_notes[step <= 7 ? step : step - 7]) + (tune.Call[i].Accidental > 0 ? "#" : "");
             var at = new float2(a.X + Gui.S(4), a.Y + (h - ImGui.GetTextLineHeight()) * 0.5f);
             dl.AddText(in at, Theme.U8(Theme.Parchment), label);
             if (step > 7)

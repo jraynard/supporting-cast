@@ -541,6 +541,9 @@ public sealed class PlaySession : WorkSession
 
     public const float StartConcentration = 1f, Faltering = 0.5f;
 
+    /// <summary>Below <see cref="Faltering"/>, what firms concentration firms it this many times as much.</summary>
+    public const float RallyFactor = 2f;
+
     /// <summary>Beats at the start of a carried tune when a miss costs nothing: a bar to find the beat.</summary>
     public const int WarmUpBeats = 4;
 
@@ -677,7 +680,9 @@ public sealed class PlaySession : WorkSession
                 if (Held)
                     BeatsKept++; // held through: the long note's own beats, kept by the hold
             }
-            else if (!BeatKept && BeatsGone >= WarmUpBeats)
+            // A beat in a breath's gap goes to the breath: one hand can't tap the beat while the other takes the air
+            // (a Deck playtest: missed beats at every mark, where the tune says breathe).
+            else if (!BeatKept && BeatsGone >= WarmUpBeats && !(Def.Air != null && Beat >= GapFrom && Beat <= GapTo))
             {
                 BeatsMissed++;
                 Judge(false, BeatLoss, "a beat missed");
@@ -763,6 +768,9 @@ public sealed class PlaySession : WorkSession
     private void Judge(bool kept, float change, string why)
     {
         (LastJudged, LastJudgedKept, LastWhy) = (StepsDone, kept, why);
+        // Faltering, what's done well steadies the mind twice as fast: a slip mustn't snowball past saving.
+        if (kept && Concentration < Faltering)
+            change *= RallyFactor;
         Concentration = Math.Clamp(Concentration + (kept ? change : -change), 0f, 1f);
         if (Concentration <= 0f)
         {
@@ -929,9 +937,12 @@ public sealed class PlaySession : WorkSession
             var played = Notes.GetRange(Notes.Count - n, n);
             if (played[0].Step < BookSince)
                 continue; // played free, before the book was opened
+            // Close enough together: no longer between two notes than the first of them lasts, give or take (a long note in an
+            // opening is held its length; Greensleeves' call began on one, and played in time it never struck up).
+            var beat = SimClock.TicksPerSecond * 60f / Math.Max(20f, tune.Tempo);
             var close = true;
             for (var i = 1; i < n && close; i++)
-                close = played[i].Step - played[i - 1].Step <= MostPause;
+                close = played[i].Step - played[i - 1].Step <= Math.Max(MostPause, tune.Call[i - 1].Beats * beat * 1.5f);
             // The opening begins a phrase: a quiet before it, so playing on from a phrase of your own never strikes one up.
             if (!close || Notes.Count > n && Notes[^(n + 1)].Step >= BookSince && played[0].Step - Notes[^(n + 1)].Step < MostPause)
                 continue;

@@ -25,7 +25,7 @@
               "more": "Start after a moment's quiet, and keep the notes' shape: it's matched by the steps between them, so you can start on any key." },
             { "id": "carry", "text": "Now keep the tune going: press ~F~ on each beat as the ring closes, and hold ~@musician:breathe~ for a breath at each mark. Hold ~F~ through a long note to shape it. Play it to the end.",
               "more": "Miss beats, take a breath mid-phrase or run out of air, and your mind wanders: notes go missing, and in the end the tune slips away. ~AD~ nudges the pace if it runs away from you." } ],
-          "notes": [ "Each instrument's own tune comes first in its book: the pipe's jig, the lute's Greensleeves, the fiddle's Scarborough Fair.",
+          "notes": [ "Each instrument's own tune comes first in its book: the pipe's jig, The Miller's Wheel; the lute's air, Lantern Home; the fiddle's reel, Hay in the Loft.",
                      "A lively, steady tune gets people dancing; a slow one, listening; a ragged or out-of-tune one drives them off." ] },
         { "id": "strings", "title": "Tune the lute", "core": true,
           "blurb": "A lute left a while goes out of tune: bring each string back to its note by ear.",
@@ -123,58 +123,38 @@
   // pause, and the musician's hands play the tune: from the top, or from the call on if it's the first part
   // while you keep the beat, the breath and the long notes (PlaySession): the openings must differ in shape.
   "songs": [
-    // Traditional tunes, public domain, written out in our own notation from the tunes as they're played in sessions,
-    // never from a recording or a modern arrangement. Each has the instrument it's written for ("for"): it comes first
-    // in that instrument's book. Any tune can be played on any instrument but the drum.
+    // Our own tunes, each written for an instrument ("for": it comes first in that one's book; any tune plays on any
+    // instrument but the drum). About 40 to 50 seconds each: long enough to settle into, short enough for a round.
 
-    // "The Kesh Jig" (Irish, traditional), for the pipe: a jig in G, every note a natural key. A beat is a dotted
-    // crotchet, so each quaver is a third of one. The A part, round four times.
-    { "name": "KeshJig", "label": "The Kesh Jig", "for": "Pipe", "kind": "Jig", "mood": "Lively", "tempo": 100,
+    // "The Miller's Wheel", for the pipe: a jig. Its two phrases, a turn higher as the wheel comes round, home again,
+    // and the first phrases once more.
+    { "name": "MillersWheel", "label": "The Miller's Wheel", "for": "Pipe", "kind": "Jig", "mood": "Lively", "tempo": 116,
+      "notes": [ [0,1], [2,1], [4,1], [4,1], [5,1], [4,2], [-2], [2,1], [3,1], [1,1], [2,2], [0,2], [-2],
+                 [4,1], [5,1], [7,1], [5,1], [4,1], [2,2], [3,1], [1,1], [0,3], [-2],
+                 [7,1], [8,1], [9,1], [9,1], [8,1], [7,2], [5,1], [6,1], [7,1], [8,2], [-2],
+                 [9,1], [8,1], [7,1], [5,1], [4,1], [5,2], [3,1], [2,1], [1,1], [0,3], [-2],
+                 [0,1], [2,1], [4,1], [4,1], [5,1], [4,2], [-2], [2,1], [3,1], [1,1], [2,2], [0,2], [-2],
+                 [4,1], [5,1], [7,1], [5,1], [4,1], [2,2], [3,1], [1,1], [0,3], [-2] ] },
+    // "Lantern Home", for the lute: a slow air. Its two lines, a rise and a fall home, then its first line and the close.
+    { "name": "LanternHome", "label": "Lantern Home", "for": "Lute", "kind": "Air", "mood": "Tender", "tempo": 80,
+      "notes": [ [4,2], [3,1], [2,1], [1,2], [2,1], [4,1], [5,3], [-2],
+                 [4,1], [2,2], [1,1], [0,1], [1,2], [2,4], [-2],
+                 [5,2], [7,1], [8,1], [7,2], [5,1], [4,1], [5,3], [-2],
+                 [7,1], [5,2], [4,1], [2,1], [1,2], [0,4], [-2],
+                 [4,2], [3,1], [2,1], [1,2], [2,1], [4,1], [5,3], [-2],
+                 [7,1], [5,2], [4,1], [2,1], [1,2], [0,4], [-2] ] },
+    // "Hay in the Loft", for the fiddle: a reel. An A part running up and down, a B part higher, A again; long notes at
+    // the phrases' ends for the bow to swell.
+    { "name": "HayInTheLoft", "label": "Hay in the Loft", "for": "Fiddle", "kind": "Reel", "mood": "Lively", "tempo": 144,
       "parts": {
-        "A": [ [3,1], [3,0.33333], [4,0.33333], [5,0.33333],
-               [4,1], [4,0.33333], [5,0.33333], [7,0.33333],
-               [8,0.33333], [7,0.33333], [7,0.33333], [10,0.33333], [7,0.33333], [7,0.33333],
-               [8,0.33333], [7,0.33333], [5,0.33333], [7,0.33333], [5,0.33333], [4,0.33333], [-2],
-               [3,0.33333], [2,0.33333], [3,0.33333], [3,0.33333], [4,0.33333], [5,0.33333],
-               [4,0.33333], [5,0.33333], [4,0.33333], [4,0.33333], [5,0.33333], [7,0.33333],
-               [8,0.33333], [7,0.33333], [7,0.33333], [10,0.33333], [7,0.33333], [5,0.33333],
-               [4,0.33333], [3,0.33333], [2,0.33333], [3,1], [-2] ] },
-      "form": [ "A", "A", "A", "A" ] },
-    // "Greensleeves" (English, 16th century), for the lute: in E minor, its sharps marked (C# the minor's raised sixth,
-    // D# leading home). Verse "Alas, my love, you do me wrong"; called up by its chorus, "Greensleeves was all my joy".
-    { "name": "Greensleeves", "label": "Greensleeves", "for": "Lute", "kind": "Ballad", "mood": "Tender", "tempo": 104,
-      "call": "Chorus", "opening": 7,
-      "parts": {
-        "Verse": [ [8,1], [10,2], [11,1], [12,1.5], [13,0.5], [12,1], [11,2], [9,1], [-2],
-                   [7,1.5], [8,0.5], [9,1], [10,2], [8,1], [8,1.5], [7,0.5,1], [8,1], [-2],
-                   [9,2], [7,1,1], [5,2], [-2],
-                   [8,1], [10,2], [11,1], [12,1.5], [13,0.5], [12,1], [11,2], [9,1], [-2],
-                   [7,1.5], [8,0.5], [9,1], [10,1.5], [9,0.5], [8,1], [7,1.5,1], [6,0.5], [7,1,1], [-2],
-                   [8,3], [-2] ],
-        "Chorus": [ [14,3], [14,1.5], [13,0.5], [12,1], [11,2], [9,1], [-2],
-                    [7,1.5], [8,0.5], [9,1], [10,2], [8,1], [8,1.5], [7,0.5,1], [8,1], [-2],
-                    [9,2], [7,1,1], [5,3], [-2],
-                    [14,3], [14,1.5], [13,0.5], [12,1], [11,2], [9,1], [-2],
-                    [7,1.5], [8,0.5], [9,1], [10,1.5], [9,0.5], [8,1], [7,1.5,1], [6,0.5], [7,1,1], [-2],
-                    [8,3], [-2] ] },
-      "form": [ "Verse", "Chorus", "Verse", "Chorus" ] },
-    // "Scarborough Fair" (English ballad, traditional), for the fiddle: in E dorian, every note a natural key, its long
-    // notes for the bow. "Are you going to Scarborough Fair? Parsley, sage, rosemary and thyme", three verses.
-    { "name": "ScarboroughFair", "label": "Scarborough Fair", "for": "Fiddle", "kind": "Ballad", "mood": "Sombre", "tempo": 96,
-      "parts": {
-        "Verse": [ [1,2], [1,1], [5,2], [5,1], [2,1.5], [3,0.5], [2,1], [1,3], [-2],
-                   [-1,1], [5,1], [7,1], [8,2], [7,1], [5,1], [6,1], [4,1], [5,3], [-2],
-                   [8,2], [8,1], [7,2], [5,1], [5,1], [4,1], [3,1], [2,1], [0,2], [-2],
-                   [1,2], [5,1], [4,2], [3,1], [2,1], [1,1], [0,1], [1,3], [-2] ] },
-      "form": [ "Verse", "Verse", "Verse" ] },
-    // Our own.
-    { "name": "MillersWheel", "label": "The Miller's Wheel", "kind": "Jig", "mood": "Lively", "tempo": 116,
-      "notes": [ [0,1], [2,1], [4,1], [4,1], [5,1], [4,2], [2,1], [3,1], [1,1], [2,2], [0,2], [-2],
-                 [4,1], [5,1], [7,1], [5,1], [4,1], [2,2], [3,1], [1,1], [0,3] ] },
-    { "name": "LanternHome", "label": "Lantern Home", "kind": "Air", "mood": "Tender", "tempo": 76,
-      "notes": [ [4,2], [3,1], [2,1], [1,2], [2,1], [4,1], [5,3], [-2], [4,1], [2,2], [1,1], [0,1], [1,2], [2,4] ] },
-    { "name": "HayInTheLoft", "label": "Hay in the Loft", "kind": "Reel", "mood": "Lively", "tempo": 132,
-      "notes": [ [7,1], [7,1], [4,1], [7,1], [9,1], [7,1], [6,1], [4,1], [5,1], [6,1], [7,2], [-2],
-                 [4,1], [2,1], [4,1], [5,1], [4,1], [2,1], [1,1], [0,2] ] }
+        "A": [ [7,1], [7,1], [4,1], [7,1], [9,1], [7,1], [6,1], [4,1], [5,1], [6,1], [7,2], [-2],
+               [4,1], [2,1], [4,1], [5,1], [4,1], [2,1], [1,1], [0,2], [-2],
+               [7,1], [7,1], [4,1], [7,1], [9,1], [10,1], [9,1], [7,1], [8,1], [6,1], [7,2], [-2],
+               [5,1], [4,1], [2,1], [4,1], [1,1], [2,1], [0,3], [-2] ],
+        "B": [ [9,1], [10,1], [11,1], [9,1], [10,1], [8,1], [9,2], [-2],
+               [7,1], [8,1], [9,1], [7,1], [8,1], [6,1], [7,2], [-2],
+               [9,1], [10,1], [11,1], [12,1], [11,1], [9,1], [10,2], [-2],
+               [9,1], [7,1], [8,1], [6,1], [7,1], [5,1], [4,1], [2,1], [0,3], [-2] ] },
+      "form": [ "A", "B", "A" ] }
   ]
 }

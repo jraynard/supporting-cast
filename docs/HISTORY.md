@@ -2696,3 +2696,15 @@ The town keeps itself in the makings the carter used to bring.
 - **Fixed, from a co-op try:** F at a lead waiting for a hand (the smith at the anvil) lends it when the work's in
   your reach; it offered "Trade with" them, the striker's sledge only from F aimed at the anvil itself.
 - Tests: `PairsLeadTests`, each of the four led by a bot, waited on, and done with a hand; F at the smith lends it.
+
+### The tune book from play: our own tunes, fairer time (2026-11-19)
+From the user's playing on a Deck:
+- **Our own tunes, longer** (the traditional three out): "The Miller's Wheel" for the pipe (a jig, about 40 s),
+  "Lantern Home" for the lute (an air, about 50 s), "Hay in the Loft" for the fiddle (a reel in A, B, A, about 50 s):
+  between their old length and a ballad's, which suits a round.
+- **An opening with a long note strikes up** played in its time or a little slow (`StrikeUp`: the gap allowed after
+  a note grows with its length). Greensleeves' call began on a long note, and played in time it never struck up.
+- **A beat in a breath's gap is the breath's**: no miss while one hand takes the air at a mark.
+- **Faltering, a beat kept steadies the mind twice as fast** (`PlaySession.RallyFactor`), so a slip doesn't snowball.
+- **The opening's guide on a pad:** each key cap is at least as wide as its button's name (the jig's quick notes
+  were caps too narrow to read).
