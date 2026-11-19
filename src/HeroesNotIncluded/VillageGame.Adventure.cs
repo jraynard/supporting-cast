@@ -333,7 +333,8 @@ public sealed partial class VillageGame
         if (!HasAvatar || _tool != ToolKind.Select)
             return false;
         UpdateHandsFor(dt);
-        if (HandleFreeMouse(input))
+        // At a mini-game the buttons are the mini-game's: a musician's triggers are notes, not blows.
+        if (!Working && HandleFreeMouse(input))
             return true; // weapon drawn, the buttons fight
         if (HandleHandsAim(input))
             return true; // the next click lays hands on someone

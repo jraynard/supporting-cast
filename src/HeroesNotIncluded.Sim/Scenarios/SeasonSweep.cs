@@ -152,8 +152,13 @@ public sealed class StoreWatch
 {
     public int Low = int.MaxValue, Last, HoursOut, Hours;
 
+    /// <summary>The hour of the season it first ran out (-1: never).</summary>
+    public int FirstOut = -1;
+
     public void Sample(int count)
     {
+        if (count == 0 && FirstOut < 0)
+            FirstOut = Hours;
         Low = Math.Min(Low, count);
         Last = count;
         Hours++;

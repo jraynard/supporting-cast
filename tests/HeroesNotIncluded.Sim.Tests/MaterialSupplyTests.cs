@@ -61,7 +61,7 @@ public class MaterialSupplyTests
         Assert.True(Crafting.IsStation(sim, kiln));
         Assert.Equal(VillageRound.SmithyPlanks, Stock.CountIn(sim, Stock.ChestOf(sim, smithy), Stock.PlanksDef));
         var store = VillageRound.ShrineStore(sim, ShopSystem.BuildingFor(sim, Defs.TownRole.Shrine));
-        Assert.Equal(VillageRound.ShrineCloth, Stock.CountIn(sim, store, Bandaging.ClothDef));
+        Assert.Equal(sim.Defs.Season.ShrineCloth, Stock.CountIn(sim, store, Bandaging.ClothDef));
         Assert.Contains(sim.AvailableItems(), e => w.Get<Thing>(e).Def.Name == Stock.PlanksDef); // the barn's
     }
 
@@ -72,7 +72,7 @@ public class MaterialSupplyTests
         var w = sim.World;
         var smithy = ShopSystem.BuildingFor(sim, Defs.TownRole.Forge);
         var bin = Part(sim, smithy, "FuelBin");
-        Assert.True(Stock.TakeFrom(sim, bin, "Charcoal", VillageRound.SmithyCharcoal));
+        Assert.True(Stock.TakeFrom(sim, bin, "Charcoal", sim.Defs.Season.SmithyCharcoal));
         var keep = sim.Defs.Trade("Blacksmith").Keeps.Single();
         var kiln = w.Query<Thing>().Single(e => w.Get<Thing>(e).Def.Name == "Kiln");
         Assert.True(Crafting.Short(sim, kiln, keep));
@@ -98,7 +98,7 @@ public class MaterialSupplyTests
         var (sim, me) = Round("Blacksmith");
         var smithy = ShopSystem.BuildingFor(sim, Defs.TownRole.Forge);
         var bin = Part(sim, smithy, "FuelBin");
-        Stock.TakeFrom(sim, bin, "Charcoal", VillageRound.SmithyCharcoal);
+        Stock.TakeFrom(sim, bin, "Charcoal", sim.Defs.Season.SmithyCharcoal);
         var kiln = sim.World.Query<Thing>().Single(e => sim.World.Get<Thing>(e).Def.Name == "Kiln");
         Assert.False(Crafting.WantsFiring(sim, kiln), "no AI smith to keep it in");
         Assert.Null(Crafting.KeepOf(sim, me, kiln, sim.Defs.Recipe("BakeCharcoal")));
@@ -111,7 +111,7 @@ public class MaterialSupplyTests
         var bot = new BotPlayer(() => sim, Ana, c => sim.ApplyNow(c), 7) { Temper = BotTemperament.Steady };
         var smithy = ShopSystem.BuildingFor(sim, Defs.TownRole.Forge);
         var bin = Part(sim, smithy, "FuelBin");
-        Stock.TakeFrom(sim, bin, "Charcoal", VillageRound.SmithyCharcoal - 2);
+        Stock.TakeFrom(sim, bin, "Charcoal", sim.Defs.Season.SmithyCharcoal - 2);
         for (var t = 0; t < SimClock.TicksPerHour * 4 && Charcoal(sim, bin) <= 2; t++)
         {
             sim.Tick();
@@ -127,14 +127,14 @@ public class MaterialSupplyTests
         var store = VillageRound.ShrineStore(sim, ShopSystem.BuildingFor(sim, Defs.TownRole.Shrine));
         var cloth = sim.Defs.Season.ShrineDelivery.Single(t => t.Def == Bandaging.ClothDef).Count;
         OreCarterSystem.Deliver(sim);
-        Assert.Equal(VillageRound.ShrineCloth + cloth, Stock.CountIn(sim, store, Bandaging.ClothDef));
+        Assert.Equal(sim.Defs.Season.ShrineCloth + cloth, Stock.CountIn(sim, store, Bandaging.ClothDef));
 
         // With the bridge down, it's left only where the carter can still get to from the road (as the ore is).
         Assert.NotNull(sim.Repairs.BreakBridge(sim, new SimRandom(3)));
         sim.RebuildDerivedIfNeeded();
         var cut = OreCarterSystem.CutOff(sim, sim.World.Get<Thing>(store).Cell);
         OreCarterSystem.DeliverToShrine(sim);
-        Assert.Equal(VillageRound.ShrineCloth + cloth * (cut ? 1 : 2), Stock.CountIn(sim, store, Bandaging.ClothDef));
+        Assert.Equal(sim.Defs.Season.ShrineCloth + cloth * (cut ? 1 : 2), Stock.CountIn(sim, store, Bandaging.ClothDef));
         Assert.Equal(cut, sim.Messages.Messages.Any(m => m.Text.StartsWith("The carter couldn't get the cloth through to the shrine")));
     }
 
@@ -156,6 +156,6 @@ public class MaterialSupplyTests
             bot.Tick();
         }
         Assert.True(BotPlayer.OnMe(sim, me, Bandaging.BandageDef) > 0, $"bot: {bot.Doing} at {sim.Clock.HourOfDay} small={ShopSystem.SmallHours(sim)} job={w.Get<Mind>(me).Job?.GetType().Name} cloth={Stock.CountIn(sim, store, Bandaging.ClothDef)} mana={w.Get<Mana>(me).Current} live={sim.Round.Live}");
-        Assert.True(Stock.CountIn(sim, store, Bandaging.ClothDef) < VillageRound.ShrineCloth, "torn from the shrine's cloth");
+        Assert.True(Stock.CountIn(sim, store, Bandaging.ClothDef) < sim.Defs.Season.ShrineCloth, "torn from the shrine's cloth");
     }
 }

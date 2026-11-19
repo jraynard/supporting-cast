@@ -37,7 +37,8 @@ public static class SeasonSweepRun
                     + $" | crises {string.Join(",", r.Crises)} met {r.Met}/{r.Crises.Count}"
                     + $" | served {s2.AdventurersServed}, quests {s2.QuestsCleared}+/{s2.QuestsFailed}-, lost {s2.AdventurersLost}"
                     + $" | dead {s2.People.Count(p => !p.Alive)}, back {s2.People.Count(p => p.CameBack)}"
-                    + $" | drawn {r.Drawn}, kegs {r.KegsTapped}");
+                    + $" | drawn {r.Drawn}, kegs {r.KegsTapped}"
+                    + string.Concat(r.Stores.Where(k => k.Value.HoursOut > 0).Select(k => $" | {k.Key} out {k.Value.HoursOut}h from h{k.Value.FirstOut}")));
         }
 
         var ended = results.Where(r => r.Summary != null).Select(r => r.Summary!).ToList();

@@ -65,6 +65,10 @@
       // Planks in the barn at the deal, for what the town makes (hafts, contraptions, furniture) till the
       // carpenter saws more: timber is for building and mending.
       "barnPlanks": 40,
+      // Charcoal in the smithy's fuel bin at the deal: a day and a half's firing, so a smith new to the trade
+      // finds the kiln before the forge goes cold. Cloth in the shrine's basket, for bandages.
+      "smithyCharcoal": 45,
+      "shrineCloth": 6,
       "woodDelivery": [ { "def": "Wood", "material": "Pine", "count": 30 } ],
       // Firewood for the town's fires (about ten of them, a dozen billets a day each): barnFirewood at
       // the deal, firewoodDelivery each morning from the second day (none in a shortage). A little

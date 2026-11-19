@@ -61,7 +61,8 @@ public sealed record AttackCommand(Entity Avatar, bool Heavy, float Aim, float A
     public void Apply(Simulation sim)
     {
         var w = sim.World;
-        if (!FreeMoveSystem.Ensure(sim, Avatar))
+        // At hands-on work the buttons are the work's (a musician's triggers are notes): no blow is swung from it.
+        if (w.Has<Work.WorkSession>(Avatar) || !FreeMoveSystem.Ensure(sim, Avatar))
             return;
         // Struck from where you were on your screen (co-op), if that's near.
         FreeMoveSystem.Claim(sim, Avatar, AtX, AtY, AtZ, stopped: false);
@@ -139,7 +140,7 @@ public sealed record BowCommand(Entity Avatar, bool Draw, bool Loose, float Aim,
 
     public void Apply(Simulation sim)
     {
-        if (!FreeMoveSystem.Ensure(sim, Avatar) || !sim.World.Get<Creature>(Avatar).Able)
+        if (sim.World.Has<Work.WorkSession>(Avatar) || !FreeMoveSystem.Ensure(sim, Avatar) || !sim.World.Get<Creature>(Avatar).Able)
             return;
         var at = Blows.Stamp(sim, At);
         if (!Loose)

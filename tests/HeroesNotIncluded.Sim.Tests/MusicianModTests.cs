@@ -78,6 +78,31 @@ public class MusicianModTests
     });
 
     [Fact]
+    public void TheTriggersPlayingMusicSwingNoBlowWithAWeaponDrawn() => WithMusician(() =>
+    {
+        // A Deck playtest: RT and LT are notes in the musician's game, and Strike and Heavy too; with a blade drawn
+        // they swung it as the musician played, and spent their wind.
+        var sim = Round(MusicianDefs(), (Arin, "Musician"));
+        var me = Players.CharacterOf(sim, Arin);
+        sim.EquipItem(me, sim.CreateItem(sim.Defs.Thing("ShortSword"), 1));
+        sim.ApplyNow(new Core.DrawWeaponCommand(me, true));
+        Assert.True(sim.World.Get<Combat.FreeMover>(me).Drawn);
+        var pipe = MusicianModule.InstrumentOf(sim, me);
+        WorkSystem.Start(sim, me, new PlaySession { Instrument = pipe, InstrumentName = "Pipe" });
+        float Wind() => sim.World.TryGet<Combat.Guard>(me, out var g) ? g.Stamina : 1f; // no guard yet is full wind
+        var wind = Wind();
+
+        sim.ApplyNow(new Core.AttackCommand(me, false, 0f));
+        sim.ApplyNow(new Core.AttackCommand(me, true, 0f));
+        sim.ApplyNow(new Core.BowCommand(me, true, false, 0f, sim.Clock.Tick));
+
+        Assert.False(sim.World.Has<Combat.Windup>(me), "no blow wound up from the music");
+        Assert.Equal(wind, Wind());
+        Assert.IsType<PlaySession>(sim.World.Get<WorkSession>(me));
+        return 0;
+    });
+
+    [Fact]
     public void AMusicianWhosePlayerLeftStopsPlayingAndKeepsTheInstrument() => WithMusician(() =>
     {
         var sim = Round(MusicianDefs(), (Arin, "Musician"));

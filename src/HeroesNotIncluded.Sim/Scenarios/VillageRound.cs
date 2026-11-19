@@ -100,8 +100,6 @@ public static class VillageRound
     /// <summary>Clean linen in the inn's storeroom: a change for every room, and a few over.</summary>
     public const int RoomLinen = 8;
 
-    /// <summary>Charcoal in the smithy's fuel bin: a working day's firing, for whoever keeps the forge fed.</summary>
-    public const int SmithyCharcoal = 30;
 
     /// <summary>
     /// The inn's storeroom door has a lock fitted, and starts locked: the innkeeper holds the key
@@ -161,7 +159,7 @@ public static class VillageRound
             switch (sim.World.Get<Thing>(e).Def.Name)
             {
                 case "FuelBin":
-                    sim.Store(e, sim.CreateItem(sim.Defs.Thing("Charcoal"), SmithyCharcoal));
+                    sim.Store(e, sim.CreateItem(sim.Defs.Thing("Charcoal"), sim.Defs.Season.SmithyCharcoal));
                     break;
                 case "Chest":
                     sim.Store(e, sim.CreateItem(sim.Defs.Thing("IronOre"), SmithyOre));
@@ -223,8 +221,6 @@ public static class VillageRound
     /// <summary>Bandages in the shrine's chest: the healer's backup for when the mana runs dry.</summary>
     public const int ShrineBandages = 12;
 
-    /// <summary>Cloth in the shrine's chest at the start, to tear into bandages (<c>TearBandages</c>). The carter brings more (<see cref="Defs.SeasonDef.ShrineDelivery"/>).</summary>
-    public const int ShrineCloth = 4;
 
     /// <summary>Where the shrine keeps its dressings: the linen basket, else its first chest (Entity.Null if neither).</summary>
     public static Entity ShrineStore(Simulation sim, Entity shrine)
@@ -242,7 +238,7 @@ public static class VillageRound
         if (store.IsNull)
             return;
         sim.Store(store, sim.CreateItem(sim.Defs.Thing(Systems.Bandaging.BandageDef), ShrineBandages));
-        sim.Store(store, sim.CreateItem(sim.Defs.Thing(Systems.Bandaging.ClothDef), ShrineCloth));
+        sim.Store(store, sim.CreateItem(sim.Defs.Thing(Systems.Bandaging.ClothDef), sim.Defs.Season.ShrineCloth));
     }
 
     /// <summary>A player's character walking into town near <paramref name="near"/>. Co-op's host claims it on joining (<see cref="Players.Join"/>).</summary>

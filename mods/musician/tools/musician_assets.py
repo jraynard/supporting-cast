@@ -167,7 +167,13 @@ def drum_stroke(kind, seed=10):
         f = 82 + 40 * np.exp(-t / 0.03)
         phase = 2 * math.pi * np.cumsum(f) / RATE
         body = np.sin(phase) + 0.3 * np.sin(1.59 * phase)
-        out = body * np.exp(-t / 0.22) + rng.normal(0, 1, t.size) * np.exp(-t / 0.006) * 0.4
+        # Its harmonics, dying a little sooner than the body: small speakers (a Steam Deck's, a laptop's) can't
+        # sound 82 Hz at all, and from these the ear hears the low note that isn't there. A little drive rounds
+        # them into one thump; on big speakers and headphones the body's still underneath.
+        over = 0.55 * np.sin(2 * phase) + 0.4 * np.sin(3 * phase) + 0.22 * np.sin(4 * phase) + 0.1 * np.sin(5 * phase)
+        tone = body * np.exp(-t / 0.22) + over * np.exp(-t / 0.13)
+        tone = np.tanh(1.6 * tone) / np.tanh(1.6)
+        out = tone + rng.normal(0, 1, t.size) * np.exp(-t / 0.006) * 0.4
     elif kind == "tek":
         f = 330 + 60 * np.exp(-t / 0.01)
         phase = 2 * math.pi * np.cumsum(f) / RATE

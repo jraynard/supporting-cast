@@ -113,6 +113,15 @@ public sealed class SeasonDef : Def
     /// </summary>
     public int BarnWood { get; set; }
 
+    /// <summary>
+    /// Charcoal in the smithy's fuel bin at the deal: a day and a half's firing, so a smith new to the trade has time
+    /// to find the kiln before the forge goes cold (nobody brings charcoal).
+    /// </summary>
+    public int SmithyCharcoal { get; set; } = 30;
+
+    /// <summary>Cloth in the shrine's basket at the deal, to tear into bandages; <see cref="ShrineDelivery"/> brings more.</summary>
+    public int ShrineCloth { get; set; } = 4;
+
     /// <summary>Planks laid in the barn's stockpile at the deal: for what the town makes (hafts, contraptions, furniture), till the carpenter saws more.</summary>
     public int BarnPlanks { get; set; }
 

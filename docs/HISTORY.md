@@ -2636,3 +2636,20 @@ The town keeps itself in the makings the carter used to bring.
   season (charcoal, planks, timber, firewood, cloth, bandages, iron ore).
 - Bench: unchanged with the new mods off (`--mods -musician,-miner`); with the miner's shed standing, seed 1234
   state `4053A2BDB5210BF2`, full `CBF62B88FA85A9C4`; seed 99 state `FD8F333AB780C411`, full `5B4A1B9322768C1A`.
+
+### The makings, from the sweep; the triggers at work; the drum on small speakers (2026-11-19)
+- **Charcoal at the deal** (`season.json` `smithyCharcoal`, was a constant of 30): 45, a day and a half's firing, so
+  a smith new to the trade finds the kiln before the forge goes cold. Over 16 bot seasons the bin never ran out (it
+  had, 0.8 hours a season; mean low 19 to 32). **Cloth at the deal** (`shrineCloth`): 6, was 4.
+- **Cloth and bandages running out** (about 4 hours a season) didn't move with more cloth coming: each time it began
+  with a crisis late in the season (the dragon or a raid at about hour 48, a fire once) and lasted to the end, past
+  the next morning's delivery: the shrine's store burned. Left as a crisis's cost. Planks, timber and iron ore never
+  ran short; firewood once, after a fire.
+- **The sweep** shows per seed what ran out, for how long, and from what hour.
+- **Fixed, from a Deck playtest:** RT and LT are the musician's notes (the sharp, a chord, the fifth note), and
+  Strike and Heavy too: with a blade drawn, playing swung it (a swish, and wind spent). No blow is swung or bow drawn
+  from hands-on work now (`AttackCommand`, `BowCommand`; and the game doesn't send them while `Working`).
+- **The drum's doum** has its harmonics (2x to 5x, a little drive): a Deck's speakers can't sound its 82 Hz, and from
+  these the ear hears the low note. About 12 dB more between 150 and 400 Hz; the body's still under it for headphones.
+- Bench: seed 1234 state `B0538FAED4A548A7`, full `C86F4C60F6685905`; seed 99 state `4B5E9182A811FD84`, full
+  `13FC3F3C779163C9` (the bin's charcoal). Over 16 bot seasons: won 8, fell short 2, Dread 6, as before.
