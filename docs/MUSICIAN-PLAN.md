@@ -69,11 +69,13 @@ Each with its tests in `tests/HeroesNotIncluded.Sim.Tests/MusicianModTests.cs`.
 
 ### §2. The tune book and the lead-in
 - **Where tunes come from:** our own, or public-domain tunes (traditional, pre-1900) written out in our own notation,
-  never copied from a modern arrangement. No game or film music, however it's renamed. In the book: "Drunken Sailor",
+  never copied from a modern arrangement. No game or film music, however it's renamed. In the book, a traditional tune for each instrument
+  (`for`: first in its book, playable on any): "The Kesh Jig" for the pipe, "Greensleeves" for the lute, "Scarborough Fair"
+  for the fiddle (Drunken Sailor taken out, 2026-11-19: a shanty didn't suit the town);
   and three of our own ("The Miller's Wheel", "Lantern Home", "Hay in the Loft").
 - **A tune** (`songs` in `musician.json`, `SongDef`): its parts by name, each a list of notes `[step, beats,
   accidental]` (step −1 a rest, `[-2]` a breath mark); its `form`; its `opening` (5 notes unless it says) and `call`
-  (the part it's called up by: Drunken Sailor by its chorus); its tempo, kind (jig, reel, air, march, ballad) and mood.
+  (the part it's called up by: Greensleeves by its chorus); its tempo, kind (jig, reel, air, march, ballad) and mood.
 - **Two modes, switched with Space:**
   1. **Free play.** Anything at all; no opening is listened for.
   2. **The book.** W/S picks out a tune, its opening drawn as a guide. Play its opening from any note, after a pause,
@@ -89,7 +91,9 @@ Each with its tests in `tests/HeroesNotIncluded.Sim.Tests/MusicianModTests.cs`.
   - A/D nudges the pace; Space lets the tune go.
 - **Quality** comes from what's kept on the session (`BeatsKept`, `BeatsMissed`, `Breaths`, `Flourishes`) and the
   instrument's tuning.
-- **Left:** listeners recognising a known tune ("they know this one!"), a small bonus (step 11).
+- **Left:** listeners recognising a known tune ("they know this one!"), a small bonus (step 11). Later, originals of our
+  own in place of the traditional tunes (the user's wish, 2026-11-19), and the lute sampled from a real acoustic guitar
+  (the user has one to record).
 
 ### §3. How a performance reads
 Read from the session as it stands (`Audience.cs`), not kept as a component: lively or tender, steady or ragged, its

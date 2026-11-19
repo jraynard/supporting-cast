@@ -2653,3 +2653,15 @@ The town keeps itself in the makings the carter used to bring.
   these the ear hears the low note. About 12 dB more between 150 and 400 Hz; the body's still under it for headphones.
 - Bench: seed 1234 state `B0538FAED4A548A7`, full `C86F4C60F6685905`; seed 99 state `4B5E9182A811FD84`, full
   `13FC3F3C779163C9` (the bin's charcoal). Over 16 bot seasons: won 8, fell short 2, Dread 6, as before.
+
+### The tune book: a tune for each instrument (2026-11-19)
+- **Drunken Sailor is out** (a sea shanty didn't suit the town). In: three traditional tunes, public domain,
+  written out in our own notation: **"The Kesh Jig"** for the pipe (a jig in G, a third of a beat to a quaver),
+  **"Greensleeves"** for the lute (E minor, called up by its chorus), **"Scarborough Fair"** for the fiddle (E dorian,
+  its long notes for the bow). Our own three stay.
+- **`for` on a tune** (`SongDef.For`): the instrument it's written for comes first in that instrument's book
+  (`PlaySession.BookFor`); any tune still plays on any instrument with a book (the drum has none).
+- `--drill sailor` is `--drill carry`: the pipe's own tune, the hands already carrying it.
+- Tests: each instrument's own tune plays through minded (`EachInstrumentsOwnTunePlaysThroughMinded`); Greensleeves takes
+  the shanty's place in the book tests (its form, call, breaths and long notes); the dance and the draw use the jig,
+  the ring a reel.

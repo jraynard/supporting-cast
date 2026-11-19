@@ -57,7 +57,6 @@ public sealed class MusicianMod : ISimMod
                 Play(sim, me, name);
                 return Entity.Null;
             });
-        // --drill sailor: the same, the hands already carrying Drunken Sailor, for keeping time at once.
         // --drill tune: the fiddle in your lap to tune, its strings well out and the E snapped (a spare to fit).
         registry.Drill("tune", (sim, me) =>
         {
@@ -73,9 +72,10 @@ public sealed class MusicianMod : ISimMod
             WorkSystem.Start(sim, me, TuneSession.For(sim, me, fiddle));
             return Entity.Null;
         });
-        registry.Drill("sailor", (sim, me) =>
+        // --drill carry: the pipe's own tune (the first in its book), the hands already carrying it, for keeping time at once.
+        registry.Drill("carry", (sim, me) =>
         {
-            if (Play(sim, me, "Pipe") is { } s && s.Book.Find(t => t.Name == "DrunkenSailor") is { } tune)
+            if (Play(sim, me, "Pipe") is { } s && s.Book.FirstOrDefault() is { } tune)
                 s.Carry(tune, 0, 2 * SimClock.TicksPerSecond);
             return Entity.Null;
         });
@@ -224,6 +224,9 @@ public sealed class SongDef : Def, IModDef
 {
     /// <summary>Jig, Reel, Air, March or Ballad: the dance it calls for (to come).</summary>
     public string Kind { get; set; } = "Air";
+
+    /// <summary>The instrument it's written for (an instrument def's name): first in that instrument's book. Any tune plays on any instrument with a book.</summary>
+    public string? For { get; set; }
 
     /// <summary>Lively, Tender, Stirring or Sombre.</summary>
     public string Mood { get; set; } = "Lively";
@@ -1114,6 +1117,10 @@ public sealed class PlaySession : WorkSession
             LongAt = -1;
     }
 
+    /// <summary>Every tune, those written for this instrument first (<see cref="SongDef.For"/>), the rest in def order.</summary>
+    public static List<SongDef> BookFor(Simulation sim, InstrumentDef def) =>
+        [.. sim.Defs.ModDefs<SongDef>(SongDef.Kind_).OrderBy(t => t.For == def.Name ? 0 : 1)];
+
     /// <summary>A playing session with the tunes the defs have (every tune is known, for now: a book of one's own is to come).</summary>
     public static PlaySession For(Simulation sim, Entity instrument)
     {
@@ -1124,7 +1131,7 @@ public sealed class PlaySession : WorkSession
             Instrument = instrument,
             InstrumentName = sim.World.Get<Thing>(instrument).Def.Name,
             Def = def,
-            Book = [.. sim.Defs.ModDefs<SongDef>(SongDef.Kind_)],
+            Book = BookFor(sim, def),
             Cents = tuning == null ? [] : [.. tuning.Cents],
             Broken = tuning?.Broken ?? 0,
         };

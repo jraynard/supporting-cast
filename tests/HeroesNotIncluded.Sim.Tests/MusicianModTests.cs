@@ -222,10 +222,10 @@ public class MusicianModTests
     public void TheHandsHoldEachNoteForItsLengthAndLiftBeforeABreath() => WithMusician(() =>
     {
         var defs = MusicianDefs();
-        var sailor = defs.ModDef<SongDef>(SongDef.Kind_, "DrunkenSailor")!;
-        var s = new PlaySession { InstrumentName = "Pipe", Book = [sailor] };
-        s.Advance([new WorkInput(0, WorkInputKind.Act), .. Opening(sailor, from: 1)], 150);
-        Assert.Same(sailor, s.Carrying);
+        var tune = defs.ModDef<SongDef>(SongDef.Kind_, "Greensleeves")!;
+        var s = new PlaySession { InstrumentName = "Pipe", Book = [tune] };
+        s.Advance([new WorkInput(0, WorkInputKind.Act), .. Opening(tune, from: 1)], 150);
+        Assert.Same(tune, s.Carrying);
         var perBeat = s.StepsPerBeat;
         // From the first carried note on: it rings most of its beat, then lifts just before the next.
         KeepTime(s, (int)MathF.Ceiling(s.Due) + 1);
@@ -302,10 +302,10 @@ public class MusicianModTests
     public void LosingTheBeatLosesConcentrationTillTheTuneSlipsAway() => WithMusician(() =>
     {
         var defs = MusicianDefs();
-        var sailor = defs.ModDef<SongDef>(SongDef.Kind_, "DrunkenSailor")!;
-        var s = new PlaySession { InstrumentName = "Pipe", Book = [sailor] };
-        s.Advance([new WorkInput(0, WorkInputKind.Act), .. Opening(sailor, from: 1)], 200);
-        Assert.Same(sailor, s.Carrying);
+        var tune = defs.ModDef<SongDef>(SongDef.Kind_, "Greensleeves")!;
+        var s = new PlaySession { InstrumentName = "Pipe", Book = [tune] };
+        s.Advance([new WorkInput(0, WorkInputKind.Act), .. Opening(tune, from: 1)], 200);
+        Assert.Same(tune, s.Carrying);
         KeepTime(s, 200 + 60 * 60, Minding.Breath | Minding.Swell); // breathing and shaping, but not a beat kept
         Assert.Null(s.Carrying);
         Assert.Equal(1, s.Slipped);
@@ -317,22 +317,22 @@ public class MusicianModTests
     });
 
     [Fact]
-    public void DrunkenSailorPlaysEveryVerseAndChorusMindedThroughout() => WithMusician(() =>
+    public void GreensleevesPlaysEveryVerseAndChorusMindedThroughout() => WithMusician(() =>
     {
         var defs = MusicianDefs();
-        var sailor = defs.ModDef<SongDef>(SongDef.Kind_, "DrunkenSailor")!;
-        Assert.Equal(["Verse", "Chorus", "Verse", "Chorus", "Verse", "Chorus"], sailor.Form);
-        var marks = sailor.Parts.Values.Sum(p => p.Count(n => (int)n[0] == SongDef.BreathMark));
-        Assert.Equal(3 * (sailor.Parts["Verse"].Count + sailor.Parts["Chorus"].Count - marks), sailor.Sequence.Count);
-        Assert.Equal(3 * 8, sailor.Sequence.Count(n => n.BreathAfter)); // every line's end, every time round
-        var beats = sailor.Sequence.Sum(n => n.Beats);
-        Assert.InRange(beats * 60f / sailor.Tempo, 80f, 120f); // a minute and a half or so, sung through
-        // Called by its chorus, from the book; the hands play it from the verse.
-        Assert.Equal((7, 0), (sailor.Call.Count, sailor.CarriesFrom));
-        Assert.Equal([5, 5, 5, 5, 1, 3, 5], sailor.Call.Select(n => n.Step));
+        var tune = defs.ModDef<SongDef>(SongDef.Kind_, "Greensleeves")!;
+        Assert.Equal(["Verse", "Chorus", "Verse", "Chorus"], tune.Form);
+        var marks = tune.Parts.Values.Sum(p => p.Count(n => (int)n[0] == SongDef.BreathMark));
+        Assert.Equal(2 * (tune.Parts["Verse"].Count + tune.Parts["Chorus"].Count - marks), tune.Sequence.Count);
+        Assert.Equal(2 * 12, tune.Sequence.Count(n => n.BreathAfter)); // every phrase's end, every time round
+        var beats = tune.Sequence.Sum(n => n.Beats);
+        Assert.InRange(beats * 60f / tune.Tempo, 80f, 120f); // a minute and a half or so, played through
+        // Called by its chorus ("Greensleeves was all my joy"), from the book; the hands play it from the verse.
+        Assert.Equal((7, 0), (tune.Call.Count, tune.CarriesFrom));
+        Assert.Equal([14, 14, 13, 12, 11, 9, 7], tune.Call.Select(n => n.Step));
         var s = new PlaySession { InstrumentName = "Pipe", Book = [.. defs.ModDefs<SongDef>(SongDef.Kind_)] };
-        s.Advance([new WorkInput(0, WorkInputKind.Act), .. Opening(sailor, from: 1)], 200);
-        Assert.Same(sailor, s.Carrying);
+        s.Advance([new WorkInput(0, WorkInputKind.Act), .. Opening(tune, from: 1)], 200);
+        Assert.Same(tune, s.Carrying);
         var sections = new HashSet<int>();
         while (s.Carrying != null)
         {
@@ -340,12 +340,28 @@ public class MusicianModTests
             KeepTime(s, s.StepsDone + 30);
         }
         Assert.Equal((1, 0), (s.Finished, s.Slipped));
-        Assert.Equal(sailor.Call.Count + sailor.Sequence.Count, s.Played); // the call, then every note of the song from the top
-        Assert.Equal(6, sections.Count);
-        Assert.Equal(("Chorus", 3), sailor.SectionAt(5));
+        Assert.Equal(tune.Call.Count + tune.Sequence.Count, s.Played); // the call, then every note of the song from the top
+        Assert.Equal(4, sections.Count);
+        Assert.Equal(("Chorus", 2), tune.SectionAt(3));
         Assert.Equal(0, s.BreathsMisplaced);
         Assert.True(s.Breaths >= 20, $"{s.Breaths} breaths");
-        Assert.Equal(sailor.Sequence.Count(n => n.IsLong), s.Flourishes); // every long note shaped
+        Assert.Equal(tune.Sequence.Count(n => n.IsLong), s.Flourishes); // every long note shaped
+        return 0;
+    });
+
+    [Fact]
+    public void EachInstrumentsOwnTuneComesFirstInItsBookAndTheDrumHasNone() => WithMusician(() =>
+    {
+        var sim = Round(MusicianDefs(), (Arin, "Musician"));
+        foreach (var (instrument, tune) in new[] { ("Pipe", "KeshJig"), ("Lute", "Greensleeves"), ("Fiddle", "ScarboroughFair") })
+        {
+            var def = sim.Defs.ModDef<InstrumentDef>(InstrumentDef.Kind, instrument)!;
+            var book = PlaySession.BookFor(sim, def);
+            Assert.Equal(tune, book[0].Name);
+            Assert.Equal(sim.Defs.ModDefs<SongDef>(SongDef.Kind_).Count(), book.Count); // every tune, all the same
+        }
+        Assert.DoesNotContain(sim.Defs.ModDefs<SongDef>(SongDef.Kind_), t => t.Name == "DrunkenSailor");
+        Assert.False(sim.Defs.ModDef<InstrumentDef>(InstrumentDef.Kind, "HandDrum")!.Book);
         return 0;
     });
 
@@ -353,9 +369,9 @@ public class MusicianModTests
     public void WithoutABreathTheAirRunsOutAndNotesGoMissing() => WithMusician(() =>
     {
         var defs = MusicianDefs();
-        var sailor = defs.ModDef<SongDef>(SongDef.Kind_, "DrunkenSailor")!;
-        var s = new PlaySession { InstrumentName = "Pipe", Book = [sailor] };
-        s.Advance([new WorkInput(0, WorkInputKind.Act), .. Opening(sailor, from: 1)], 200);
+        var tune = defs.ModDef<SongDef>(SongDef.Kind_, "Greensleeves")!;
+        var s = new PlaySession { InstrumentName = "Pipe", Book = [tune] };
+        s.Advance([new WorkInput(0, WorkInputKind.Act), .. Opening(tune, from: 1)], 200);
         KeepTime(s, 200 + 30 * 60, Minding.Beat | Minding.Swell);
         Assert.Equal(0, s.Breaths);
         Assert.True(s.Dropped > 0, "no air for them");
@@ -367,9 +383,9 @@ public class MusicianModTests
     public void ABreathSnatchedMidPhraseCostsANote() => WithMusician(() =>
     {
         var defs = MusicianDefs();
-        var sailor = defs.ModDef<SongDef>(SongDef.Kind_, "DrunkenSailor")!;
-        var s = new PlaySession { InstrumentName = "Pipe", Book = [sailor] };
-        s.Advance([new WorkInput(0, WorkInputKind.Act), .. Opening(sailor, from: 1)], 200);
+        var tune = defs.ModDef<SongDef>(SongDef.Kind_, "Greensleeves")!;
+        var s = new PlaySession { InstrumentName = "Pipe", Book = [tune] };
+        s.Advance([new WorkInput(0, WorkInputKind.Act), .. Opening(tune, from: 1)], 200);
         KeepTime(s, 300); // into the second line, mid-phrase
         Assert.False(s.InGap);
         var (played, mind) = (s.Played, s.Concentration);
@@ -386,9 +402,9 @@ public class MusicianModTests
     public void TheHandsFindTheNotesSoANoteKeyChangesNothing() => WithMusician(() =>
     {
         var defs = MusicianDefs();
-        var sailor = defs.ModDef<SongDef>(SongDef.Kind_, "DrunkenSailor")!;
-        var s = new PlaySession { InstrumentName = "Pipe", Book = [sailor] };
-        s.Advance([new WorkInput(0, WorkInputKind.Act), .. Opening(sailor, from: 1)], 200);
+        var tune = defs.ModDef<SongDef>(SongDef.Kind_, "Greensleeves")!;
+        var s = new PlaySession { InstrumentName = "Pipe", Book = [tune] };
+        s.Advance([new WorkInput(0, WorkInputKind.Act), .. Opening(tune, from: 1)], 200);
         var (played, mind) = (s.Played, s.Concentration);
         s.Advance([new WorkInput(200, WorkInputKind.Custom, PlaySession.Pack(3, false, true))], 201);
         Assert.NotNull(s.Carrying);
@@ -404,13 +420,13 @@ public class MusicianModTests
     public void ALongNoteSwelledThroughIsShapedAndAShortSwellIsNot() => WithMusician(() =>
     {
         var defs = MusicianDefs();
-        var sailor = defs.ModDef<SongDef>(SongDef.Kind_, "DrunkenSailor")!;
-        var s = new PlaySession { InstrumentName = "Pipe", Book = [sailor] };
-        s.Advance([new WorkInput(0, WorkInputKind.Act), .. Opening(sailor, from: 1)], 200);
+        var tune = defs.ModDef<SongDef>(SongDef.Kind_, "Greensleeves")!;
+        var s = new PlaySession { InstrumentName = "Pipe", Book = [tune] };
+        s.Advance([new WorkInput(0, WorkInputKind.Act), .. Opening(tune, from: 1)], 200);
         KeepTime(s, 200 + 60 * 60, Minding.Beat | Minding.Breath); // no swelling at all
         Assert.Equal(0, s.Flourishes);
-        var shaped = new PlaySession { InstrumentName = "Pipe", Book = [sailor] };
-        shaped.Advance([new WorkInput(0, WorkInputKind.Act), .. Opening(sailor, from: 1)], 200);
+        var shaped = new PlaySession { InstrumentName = "Pipe", Book = [tune] };
+        shaped.Advance([new WorkInput(0, WorkInputKind.Act), .. Opening(tune, from: 1)], 200);
         KeepTime(shaped, 200 + 60 * 60);
         Assert.True(shaped.Flourishes > 5);
         Assert.True(shaped.Concentration >= s.Concentration);
@@ -463,13 +479,13 @@ public class MusicianModTests
         var me = Players.CharacterOf(sim, Arin);
         WorkSystem.Start(sim, me, PlaySession.For(sim, MusicianModule.InstrumentOf(sim, me)));
         var s = (PlaySession)sim.World.Get<WorkSession>(me);
-        var sailor = s.Book.Single(t => t.Name == "DrunkenSailor");
-        s.Advance([new WorkInput(0, WorkInputKind.Act), new(1, WorkInputKind.Axis2, 1), new(2, WorkInputKind.Axis2, 0), .. Opening(sailor, from: 3)], 200);
+        var tune = s.Book.Single(t => t.Name == "Greensleeves"); // the second in the pipe's book, after its own jig
+        s.Advance([new WorkInput(0, WorkInputKind.Act), new(1, WorkInputKind.Axis2, 1), new(2, WorkInputKind.Axis2, 0), .. Opening(tune, from: 3)], 200);
         KeepTime(s, 900);
-        Assert.Same(sailor, s.Carrying);
+        Assert.Same(tune, s.Carrying);
         var (loaded, _) = Saving.SaveGame.Read(Saving.SaveGame.Write(sim), defs);
         var back = Assert.IsType<PlaySession>(loaded.World.Get<WorkSession>(me));
-        Assert.Equal((PlayMode.Book, 1, "DrunkenSailor"), (back.Mode, back.Picked, back.Carrying?.Name));
+        Assert.Equal((PlayMode.Book, 1, "Greensleeves"), (back.Mode, back.Picked, back.Carrying?.Name));
         Assert.Equal((s.Next, s.Concentration, s.Beat, s.BeatsKept, s.Played, s.Breath, s.Breaths, s.Flourishes, s.GapTo, s.Ringing, s.RingingUntil),
             (back.Next, back.Concentration, back.Beat, back.BeatsKept, back.Played, back.Breath, back.Breaths, back.Flourishes, back.GapTo, back.Ringing, back.RingingUntil));
         Assert.Equal(s.Notes, back.Notes);
@@ -492,9 +508,9 @@ public class MusicianModTests
     public void ACopyRunningAheadKeepsTheTuneTheSameAsTheSim() => WithMusician(() =>
     {
         var defs = MusicianDefs();
-        var sailor = defs.ModDef<SongDef>(SongDef.Kind_, "DrunkenSailor")!;
-        var sim = new PlaySession { InstrumentName = "Pipe", Book = [sailor] };
-        sim.Advance([new WorkInput(0, WorkInputKind.Act), .. Opening(sailor, from: 1)], 200);
+        var tune = defs.ModDef<SongDef>(SongDef.Kind_, "Greensleeves")!;
+        var sim = new PlaySession { InstrumentName = "Pipe", Book = [tune] };
+        sim.Advance([new WorkInput(0, WorkInputKind.Act), .. Opening(tune, from: 1)], 200);
         var ahead = (PlaySession)sim.Clone();
         // The same taps, breaths and swells, some well placed and some not, played to the same end by both.
         List<WorkInput> inputs = [];
@@ -523,6 +539,24 @@ public class MusicianModTests
         Book = [.. defs.ModDefs<SongDef>(SongDef.Kind_)],
     };
 
+    [Theory]
+    [InlineData("Pipe", "KeshJig")]
+    [InlineData("Lute", "Greensleeves")]
+    [InlineData("Fiddle", "ScarboroughFair")]
+    public void EachInstrumentsOwnTunePlaysThroughMinded(string instrument, string name) => WithMusician(() =>
+    {
+        var defs = MusicianDefs();
+        var tune = defs.ModDef<SongDef>(SongDef.Kind_, name)!;
+        var s = On(defs, instrument);
+        s.Advance([new WorkInput(0, WorkInputKind.Act), .. Opening(tune, from: 1)], 200);
+        Assert.Same(tune, s.Carrying);
+        KeepTime(s, 200 + 200 * 60);
+        Assert.Equal((1, 0), (s.Finished, s.Slipped));
+        Assert.Equal(0, s.BreathsMisplaced);
+        Assert.Equal(tune.Call.Count + tune.Sequence.Skip(tune.CarriesFrom).Count(n => n.Step >= 0), s.Played); // every note but the rests
+        return 0;
+    });
+
     [Fact]
     public void TheMusicianBringsFourInstrumentsAndPlaysTheOneInHand() => WithMusician(() =>
     {
@@ -548,17 +582,17 @@ public class MusicianModTests
         lute.Advance([new WorkInput(0, WorkInputKind.Custom, PlaySession.Pack(0, false, true)), new(5, WorkInputKind.Custom, PlaySession.Pack(2, false, true))], 10);
         Assert.Equal(2, lute.Played); // both sounding, plucked over each other: nothing held to stop
         Assert.Null(lute.RingingNote);
-        // Drunken Sailor, the beat alone minded: no breath to take, no long note to swell, and it plays through.
-        var sailor = defs.ModDef<SongDef>(SongDef.Kind_, "DrunkenSailor")!;
+        // Greensleeves, the beat alone minded: no breath to take, no long note to swell, and it plays through.
+        var tune = defs.ModDef<SongDef>(SongDef.Kind_, "Greensleeves")!;
         var s = On(defs, "Lute");
-        s.Advance([new WorkInput(0, WorkInputKind.Act), .. Opening(sailor, from: 1)], 200);
-        Assert.Same(sailor, s.Carrying);
+        s.Advance([new WorkInput(0, WorkInputKind.Act), .. Opening(tune, from: 1)], 200);
+        Assert.Same(tune, s.Carrying);
         s.Advance([new WorkInput(200, WorkInputKind.Custom, PlaySession.PackBreath(true))], 260);
         Assert.False(s.Breathing); // a lute has no air to take
         KeepTime(s, 200 + 200 * 60, Minding.Beat);
         Assert.Equal(1, s.Finished);
         Assert.Equal((0, 0, 1f), (s.Slipped, s.Flourishes, s.Breath));
-        Assert.Equal(sailor.Call.Count + sailor.Sequence.Count, s.Played);
+        Assert.Equal(tune.Call.Count + tune.Sequence.Count, s.Played);
         return 0;
     });
 
@@ -566,14 +600,14 @@ public class MusicianModTests
     public void AFiddlesBowRunsOutAsTheBreathDoesAndItsNotesSlide() => WithMusician(() =>
     {
         var defs = MusicianDefs();
-        var sailor = defs.ModDef<SongDef>(SongDef.Kind_, "DrunkenSailor")!;
+        var tune = defs.ModDef<SongDef>(SongDef.Kind_, "Greensleeves")!;
         var minded = On(defs, "Fiddle");
-        minded.Advance([new WorkInput(0, WorkInputKind.Act), .. Opening(sailor, from: 1)], 200);
+        minded.Advance([new WorkInput(0, WorkInputKind.Act), .. Opening(tune, from: 1)], 200);
         KeepTime(minded, 200 + 200 * 60);
         Assert.Equal(1, minded.Finished);
-        Assert.Equal(sailor.Sequence.Count(n => n.IsLong), minded.Flourishes);
+        Assert.Equal(tune.Sequence.Count(n => n.IsLong), minded.Flourishes);
         var unturned = On(defs, "Fiddle");
-        unturned.Advance([new WorkInput(0, WorkInputKind.Act), .. Opening(unturned.Book.First(t => t.Name == "DrunkenSailor"), from: 1)], 200);
+        unturned.Advance([new WorkInput(0, WorkInputKind.Act), .. Opening(unturned.Book.First(t => t.Name == "ScarboroughFair"), from: 1)], 200);
         KeepTime(unturned, 200 + 200 * 60, Minding.Beat | Minding.Swell);
         Assert.Equal(1, unturned.Slipped); // the bow never turned
 
@@ -649,11 +683,11 @@ public class MusicianModTests
         Assert.Contains(sim.Pastimes, p => p is Listening);
         var pastime = new Listening();
         Assert.Null(pastime.JobFor(sim, listener)); // a pipe held, nothing played
-        session.Carry(session.Book.First(t => t.Name == "DrunkenSailor"), 0, 0);
+        session.Carry(session.Book.First(t => t.Name == "KeshJig"), 0, 0);
         var job = Assert.IsType<AudienceJob>(pastime.JobFor(sim, listener));
         Assert.Equal(me, job.Musician);
-        Assert.True(Performance.Of(session).Danceable); // a lively march, the musician's mind on it
-        Assert.Equal(112f, Performance.Of(session).Tempo);
+        Assert.True(Performance.Of(session).Danceable); // a lively jig, the musician's mind on it
+        Assert.Equal(100f, Performance.Of(session).Tempo);
         Assert.Null(pastime.JobFor(sim, me)); // not their own audience
         return 0;
     });
@@ -670,7 +704,7 @@ public class MusicianModTests
     {
         var defs = MusicianDefs();
         var (sim, me, session, listener) = Recital(defs);
-        session.Carry(session.Book.First(t => t.Name == "DrunkenSailor"), 0, 0);
+        session.Carry(session.Book.First(t => t.Name == "KeshJig"), 0, 0);
         var spot = Sim.Ai.AiQueries.RandomReachableNear(sim, listener, sim.World.Get<Position>(me).Cell, 3, reject: c => c == sim.World.Get<Position>(me).Cell)!.Value;
         Array.Fill(sim.World.Get<Mind>(listener).WorkPriority, 0); // a free evening: no work to call them away
         var dance = new AudienceJob(me, spot, dance: true, most: AudienceJob.Remembered + 60);
@@ -678,7 +712,7 @@ public class MusicianModTests
         for (var t = 0; t < 600 && !dance.Dancing; t++)
             Playing(sim, session);
         Assert.True(dance.Dancing);
-        Assert.Equal(112f, dance.DanceTempo); // a hop to the tune's own beat
+        Assert.Equal(100f, dance.DanceTempo); // a hop to the tune's own beat
         Assert.Equal(me, dance.Focus); // facing the musician
         for (var t = 0; t < AudienceJob.Remembered + 120 && sim.World.Get<Mind>(listener).Job == dance; t++)
             Playing(sim, session);
@@ -809,8 +843,8 @@ public class MusicianModTests
         var here = sim.World.Get<Position>(dancer).Cell;
         var module = new MusicianModule();
         Assert.Null(module.EarlyActionAt(sim, dancer, here, here)); // no music yet
-        var sailor = session.Book.First(t => t.Name == "DrunkenSailor");
-        session.Carry(sailor, 0, 0);
+        var tune = session.Book.First(t => t.Name == "KeshJig");
+        session.Carry(tune, 0, 0);
         var action = module.EarlyActionAt(sim, dancer, here, here);
         Assert.Equal("Dance to the music", action?.Label);
         module.Perform(sim, dancer, action!.Value with { By = module });
@@ -836,7 +870,7 @@ public class MusicianModTests
         dance.Settle(sim);
         Assert.Equal((10, 1, 0), (dance.OnBeat, dance.OffBeat, dance.Streak));
         Assert.Equal(10, dance.BestStreak);
-        Assert.Equal(112f, dance.DanceTempo);
+        Assert.Equal(100f, dance.DanceTempo);
         // The music stops: so, after a moment, does the dance, remembered.
         WorkSystem.Stop(sim, me, null);
         for (var t = 0; t < DanceSession.Pause + 10; t++)
@@ -854,7 +888,7 @@ public class MusicianModTests
     {
         var defs = MusicianDefs();
         var (sim, me, session, listener) = Recital(defs);
-        session.Carry(session.Book.First(t => t.Name == "DrunkenSailor"), 0, 0);
+        session.Carry(session.Book.First(t => t.Name == "KeshJig"), 0, 0);
         var spot = Sim.Ai.AiQueries.RandomReachableNear(sim, listener, sim.World.Get<Position>(me).Cell, 3, reject: c => c == sim.World.Get<Position>(me).Cell)!.Value;
         Array.Fill(sim.World.Get<Mind>(listener).WorkPriority, 0);
         var job = new AudienceJob(me, spot, dance: false, most: 5000);
@@ -878,7 +912,7 @@ public class MusicianModTests
     {
         var defs = MusicianDefs();
         var (sim, me, session, listener) = Recital(defs);
-        session.Carry(session.Book.First(t => t.Name == "DrunkenSailor"), 0, 0); // a march
+        session.Carry(session.Book.First(t => t.Name == "HayInTheLoft"), 0, 0); // a reel
         var jobs = Enumerable.Range(0, 20).Select(_ => new Listening().JobFor(sim, listener)).OfType<AudienceJob>().ToList();
         var ring = jobs.FirstOrDefault(j => j.ToDance);
         Assert.NotNull(ring);
@@ -952,12 +986,12 @@ public class MusicianModTests
     {
         var defs = MusicianDefs();
         var (sim, me, session, listener) = Busking(defs);
-        var sailor = session.Book.First(t => t.Name == "DrunkenSailor");
-        Takings.Ask(sim, listener, me, sailor);
-        Assert.Equal("DrunkenSailor", Takings.Wants(sim, listener, me));
+        var tune = session.Book.First(t => t.Name == "KeshJig");
+        Takings.Ask(sim, listener, me, tune);
+        Assert.Equal("KeshJig", Takings.Wants(sim, listener, me));
         Assert.True(sim.World.Get<TuneRequest>(listener).Heard); // said aloud, beside the musician
-        Assert.Contains(sim.Speech.Kept, u => u.Speaker == listener && u.Text.Contains("Drunken Sailor"));
-        session.Carry(sailor, 0, 0);
+        Assert.Contains(sim.Speech.Kept, u => u.Speaker == listener && u.Text.Contains("The Kesh Jig"));
+        session.Carry(tune, 0, 0);
         var spot = Sim.Ai.AiQueries.RandomReachableNear(sim, listener, sim.World.Get<Position>(me).Cell, 2, reject: c => c == sim.World.Get<Position>(me).Cell)!.Value;
         var job = new AudienceJob(me, spot, dance: false, most: AudienceJob.Remembered + 30);
         AiSystem.Order(sim, listener, job);
@@ -981,7 +1015,7 @@ public class MusicianModTests
         var draw = new MusicDraw();
         draw.Update(sim);
         Assert.Equal(now + SimClock.TicksPerHour, sim.World.Get<Adventurer>(visitor).NextDrink); // no music: nothing
-        session.Carry(session.Book.First(t => t.Name == "DrunkenSailor"), 0, 0);
+        session.Carry(session.Book.First(t => t.Name == "KeshJig"), 0, 0);
         for (var i = 0; i < 200; i++)
             draw.Update(sim);
         ref var a = ref sim.World.Get<Adventurer>(visitor);
@@ -1035,7 +1069,7 @@ public class MusicianModTests
         Assert.Equal(tuning.Cents[1], s.CentsOf(new NoteEvent(0, 1, 0))); // E4: on the D string
         // Far enough out, it's sour to anyone listening, however steadily it's played.
         s.Cents = [40f, 40f, 40f, 40f];
-        s.Carry(s.Book.First(t => t.Name == "DrunkenSailor"), 0, s.StepsDone);
+        s.Carry(s.Book.First(t => t.Name == "KeshJig"), 0, s.StepsDone);
         Assert.True(Performance.Of(s).Sour);
         return 0;
     });
