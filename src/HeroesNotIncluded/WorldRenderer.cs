@@ -1047,7 +1047,7 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
             return tongs;
         // A player's weapon's only in hand drawn, in combat mode (Combat.FreeMover).
         if (w.TryGet<Equipment>(e, out var eq) && w.IsAlive(eq.Weapon) && !(w.TryGet<Sim.Combat.FreeMover>(e, out var free) && !free.Drawn)
-            && !Sim.Combat.HouseRules.NoSteel(sim, e) // the inn's rule: it stays sheathed
+            && !Sim.Combat.HouseRules.Sheathed(sim, e) // the inn's rule, or a brawler's fists: it stays sheathed
             && HumanLook.HeldOf(w.Get<Thing>(eq.Weapon).Def) is { } weapon)
             return weapon;
         return null;
@@ -1447,7 +1447,7 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
         foreach (var e in w.Each<Sim.Combat.Windup>())
         {
             if (!w.TryGet<Equipment>(e, out var eq) || !w.IsAlive(eq.Weapon) || w.Get<Thing>(eq.Weapon).Def is not { Weapon.Ranged: false, Held: { } held } def
-                || Sim.Combat.HouseRules.NoSteel(sim, e)) // fists in the inn: no blade to swing
+                || Sim.Combat.HouseRules.Sheathed(sim, e)) // fists in the inn: no blade to swing
                 continue;
             if (!_swings.TryGetValue(e.Index, out var sw) || sw.Landed >= 0 || sw.Blow.Start != w.Get<Sim.Combat.Windup>(e).Start)
                 _swings[e.Index] = sw = new Swing { Who = e, Kind = held, Sprite = S(def.Sprite) };
@@ -1722,6 +1722,14 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
             var from = shot.From + new float3(0, 0, 0.7f);
             var to = shot.To + new float3(0, 0, 0.6f);
             var flight = shot.Ranged ? Math.Min(1f, age * 3f) : 1f;
+            if (shot.Ranged && flight < 1f && shot.Sprite != null)
+            {
+                // Something hurled (a stool in a brawl): it tumbles along a low arc.
+                var at = from + (to - from) * flight + new float3(0, 0, 0.6f * flight * (1f - flight) * 4f * 0.5f);
+                var tumble = 0.4f + 0.12f * MathF.Sin(flight * 18f);
+                Billboard(S(shot.Sprite), at, tumble, 0.4f, Rgba.White, Quad.Always);
+                continue;
+            }
             if (shot.Ranged && flight < 1f)
             {
                 for (var k = 0; k < 4; k++)
@@ -1729,6 +1737,13 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
                     var t = Math.Max(0f, flight - k * 0.03f);
                     Billboard(white, from + (to - from) * t, 0.12f, 0.12f, Rgba.Pack(1f, 0.95f, 0.8f, 0.9f - k * 0.2f), Quad.Unlit | Quad.Always, translucent: true);
                 }
+                continue;
+            }
+            if (shot.Sprite != null)
+            {
+                // It breaks over them: splinters.
+                var burst = 1f - age;
+                Billboard(S("fx/smoke"), to - new float3(0, 0, 0.2f), 0.4f + 0.5f * age, 0.4f + 0.5f * age, Rgba.Pack(0.6f, 0.45f, 0.3f, 0.8f * burst), Quad.Unlit | Quad.Always, translucent: true);
                 continue;
             }
             if (shot.Word != null)

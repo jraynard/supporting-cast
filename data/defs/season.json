@@ -47,6 +47,9 @@
         // From breakAt, each turn a brawler may (smashChance) take it out on a table or a stool
         // ("breaksInBrawls" furniture) instead: blowsToBreak and it's matchwood, the carpenter's to make again.
         "breakAt": 0.4, "smashChance": 0.2, "blowsToBreak": 3,
+        // Past breakAt, too: a stool grabbed and hurled (throwChance a turn; "thrownInBrawls"), and a
+        // punch that sends them into the table behind (shoveChance) hits it twice over.
+        "throwChance": 0.15, "shoveChance": 0.35,
         // Boiling over, a lamp may go over (fireOnBoil): the inn's alight as well, a fire to meet of its own.
         "fireOnBoil": 0.35 },
       // Raid points (storyteller.json's formula) times this: at 0.85 a town of six meets a bandit or

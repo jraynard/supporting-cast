@@ -302,6 +302,12 @@ public sealed class BrawlDef
     /// <summary>Blows a piece takes before it breaks.</summary>
     public int BlowsToBreak { get; set; } = 3;
 
+    /// <summary>The chance, each turn past <see cref="BreakAt"/>, a brawler grabs a stool (<see cref="ThingDef.ThrownInBrawls"/>) and hurls it.</summary>
+    public float ThrowChance { get; set; } = 0.15f;
+
+    /// <summary>The chance a brawler's punch, past <see cref="BreakAt"/>, sends them into the table or stool behind them: it takes two blows' worth.</summary>
+    public float ShoveChance { get; set; } = 0.35f;
+
     /// <summary>The chance a brawl boiling over knocks a lamp over: the inn's alight too (a fire crisis of its own).</summary>
     public float FireOnBoil { get; set; } = 0.35f;
 

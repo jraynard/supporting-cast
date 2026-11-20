@@ -1093,6 +1093,9 @@ public sealed class ThingDef : Def
     /// </summary>
     public bool BreaksInBrawls { get; set; }
 
+    /// <summary>Light enough to be picked up and hurled in a brawl (a stool), breaking over whoever it hits.</summary>
+    public bool ThrownInBrawls { get; set; }
+
     public BuildingProps? Building { get; set; }
 
     /// <summary>

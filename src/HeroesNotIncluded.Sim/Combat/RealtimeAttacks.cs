@@ -9,7 +9,8 @@ namespace HeroesNotIncluded.Sim.Combat;
 /// An attack of the last moments, for the renderer. Not part of the sim state. <paramref name="Word"/>:
 /// an arrow at a game's target (the butts) says how it scored, and isn't a fight.
 /// </summary>
-public sealed record ShotEvent(long Tick, float3 From, float3 To, bool Ranged, bool Hit, string? Word = null);
+/// <param name="Sprite">What flies, if not an arrow (a stool hurled in a brawl): drawn tumbling along the line.</param>
+public sealed record ShotEvent(long Tick, float3 From, float3 To, bool Ranged, bool Hit, string? Word = null, string? Sprite = null);
 
 /// <summary>
 /// Every blow that lands (<see cref="Blows"/>): the wound (<see cref="CombatRules.Strike"/>), the shot for

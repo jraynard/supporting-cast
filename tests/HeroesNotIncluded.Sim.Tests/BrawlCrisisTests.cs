@@ -55,6 +55,8 @@ public class BrawlCrisisTests(ITestOutputHelper output)
         Assert.DoesNotContain(brawl, sim.Director.Active);
         Assert.Equal(unmetBefore + 1, sim.Director.Unmet);
         Assert.Equal(1f, brawl.Heat);
+        var said = sim.Messages.Messages.Select(m => m.Text).ToList();
+        output.WriteLine($"hurled {said.Count(t => t.Contains(" hurls "))}, shoved into {said.Count(t => t.Contains(" goes over "))}, smashed {said.Count(t => t.Contains(" to matchwood"))}");
         // Tables and stools smashed on the way: the carpenter's to make again.
         Assert.True(brawl.Smashed > 0, "nothing was smashed");
         var losses = Carpentry.Refurnishing.Of(sim).Losses;
@@ -193,5 +195,28 @@ public class BrawlCrisisTests(ITestOutputHelper output)
         Assert.Contains(brawl, sim.Director.Active);
         Assert.True(swings >= 20, $"only {swings} swings in an hour");
         Assert.All(brawl.Brawlers, e => Assert.False(sim.World.Get<Creature>(e).Dead));
+    }
+
+    [Fact]
+    public void AHurledStoolFliesBreaksOverThemAndIsTheCarpentersToMakeAgain()
+    {
+        var sim = Round();
+        Scenarios.BrawlDrill.Stage(sim, Player(sim));
+        var brawl = BrawlCrisis.Of(sim)!;
+        sim.TickMany(SimClock.TicksPerHour / 6 + 1);
+        var stool = sim.World.Query<Thing>().First(e => brawl.Breakable(sim, e) && sim.World.Get<Thing>(e).Def.ThrownInBrawls);
+        var cell = sim.World.Get<Thing>(stool).Cell;
+        var (thrower, target) = (brawl.Brawlers[0], brawl.Brawlers[1]);
+        var spots = sim.SpiralFrom(cell, 3).Where(c => c != cell && c.Z == cell.Z && sim.Map.Passable(c) && Buildings.At(sim, c) == brawl.Inn).ToList();
+        Scenarios.FireDrill.MoveTo(sim, thrower, spots[0]);
+        Scenarios.FireDrill.MoveTo(sim, target, spots.Last(c => Combat.CombatRules.LineOfFire(sim, Position.CenterOf(spots[0]) + new float3(0, 0, 0.5f), Position.CenterOf(c) + new float3(0, 0, 0.5f))));
+        var hurtBefore = sim.World.Get<Health>(target).Injuries.Count;
+        Assert.True(brawl.Hurl(sim, thrower, stool, target));
+        Assert.False(sim.World.IsAlive(stool), "it broke over them");
+        Assert.Contains(sim.RecentShots, s => s.Sprite == "buildings/stool");
+        Assert.Contains(Carpentry.Refurnishing.Of(sim).Losses, l => l.Cell == cell && l.Def.Name == "Stool");
+        Assert.Equal(1, brawl.Smashed);
+        Assert.Equal(thrower, sim.World.Get<Provoked>(target).By); // and they know who threw it
+        output.WriteLine($"injuries {hurtBefore} -> {sim.World.Get<Health>(target).Injuries.Count}");
     }
 }

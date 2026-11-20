@@ -128,7 +128,7 @@
       ]
     },
     {
-      "name": "Stool", "category": "Building", "breaksInBrawls": true, "joinery": { "planks": 1, "joints": 3 }, "sprite": "buildings/stool",
+      "name": "Stool", "category": "Building", "breaksInBrawls": true, "thrownInBrawls": true, "joinery": { "planks": 1, "joints": 3 }, "sprite": "buildings/stool",
       "description": "Somewhere to sit by the fire.",
       "maxHp": 60, "flammability": 1.0,
       "building": { "work": 60, "surfaceHeight": 0.42, "seat": true, "cost": [ { "def": "Planks", "count": 3 } ] },

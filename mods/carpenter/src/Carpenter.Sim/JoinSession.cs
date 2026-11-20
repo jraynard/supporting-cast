@@ -258,6 +258,7 @@ public sealed class JoinSession : WorkSession
             return;
         // Let go: the blow, as hard as it was raised, give or take the hand's.
         _raising = false;
+        var raised = Raised;
         var power = Raised * (1f + (Rand.NextFloat() * 2f - 1f) * (0.06f + Hands.Tremor * 0.5f));
         Raised = 0f;
         Blows++;
@@ -266,7 +267,9 @@ public sealed class JoinSession : WorkSession
             Depth += power * DeepestCut;
             return;
         }
-        if (power > SafeAt(Seat))
+        // Split or not is judged on the blow as the gauge showed it (playtest: a split under the mark
+        // read as unfair); the hand's give or take is in how far it drives.
+        if (raised > SafeAt(Seat))
         {
             // Too hard while it's tight: it splits, and goes home cracked.
             Splits++;

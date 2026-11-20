@@ -512,6 +512,7 @@ public static class Blows
         // It reached them, so it lands: no roll. Skill and armour decide how much it hurts.
         RealtimeAttacks.Strike(sim, attacker, target, attack, damage * Reach.SkillDamage(sim, attacker, attack));
         Report(sim, attacker, target, outcome, windup.Heavy);
+        Hospitality.BrawlCrisis.Knocked(sim, attacker, target, windup.Aim); // in the inn's brawl: into the table behind
     }
 
     internal static void Report(Simulation sim, Entity attacker, Entity target, BlowOutcome outcome, bool heavy)

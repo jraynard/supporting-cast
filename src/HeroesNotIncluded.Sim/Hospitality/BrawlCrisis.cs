@@ -336,14 +336,15 @@ public sealed class BrawlCrisis : ICrisis
     public bool Breakable(Simulation sim, Entity thing) =>
         sim.World.TryGet<Thing>(thing, out var t) && t.Def.BreaksInBrawls && Buildings.At(sim, t.Cell) == _inn;
 
-    /// <summary>The nearest piece to smash within <paramref name="reach"/> cells of a brawler, or Entity.Null.</summary>
-    public Entity FurnitureNear(Simulation sim, Entity e, int reach)
+    /// <summary>The nearest piece to smash (or, <paramref name="toThrow"/>, to hurl) within <paramref name="reach"/> cells of a brawler, or Entity.Null.</summary>
+    public Entity FurnitureNear(Simulation sim, Entity e, int reach, bool toThrow = false)
     {
         var w = sim.World;
         if (!w.TryGet<Position>(e, out var p))
             return Entity.Null;
         foreach (var c in sim.SpiralFrom(p.Cell, reach))
-            if (c.Z == p.Cell.Z && sim.Map.InBounds(c) && sim.Map.Structure[sim.Map.Idx(c)] is { IsNull: false } s && Breakable(sim, s))
+            if (c.Z == p.Cell.Z && sim.Map.InBounds(c) && sim.Map.Structure[sim.Map.Idx(c)] is { IsNull: false } s && Breakable(sim, s)
+                && (!toThrow || w.Get<Thing>(s).Def.ThrownInBrawls))
                 return s;
         return Entity.Null;
     }
@@ -361,17 +362,83 @@ public sealed class BrawlCrisis : ICrisis
         var piece = Reach.ThingInSweep(sim, attacker, attack, aim, d => d.BreaksInBrawls);
         if (piece.IsNull || !brawl.Breakable(sim, piece))
             return Entity.Null;
-        ref var t = ref w.Get<Thing>(piece);
-        t.Hp -= t.MaxHp / Math.Max(1, sim.Defs.Season.Brawl.BlowsToBreak) + 0.01f;
+        brawl.Batter(sim, piece, 1, $"{w.Get<Creature>(attacker).Name} smashes a {{0}} to matchwood!");
+        return piece;
+    }
+
+    /// <summary>
+    /// A brawler's punch landed on <paramref name="target"/> (<see cref="Blows"/>): once it's hot, now
+    /// and then it sends them into the table or stool just behind them, which takes it twice over.
+    /// </summary>
+    public static void Knocked(Simulation sim, Entity attacker, Entity target, float aim)
+    {
+        var w = sim.World;
+        if (!w.Has<Brawler>(attacker) || Of(sim) is not { } brawl || !brawl.Smashing(sim) || !w.TryGet<Position>(target, out var at)
+            || sim.Rand.NextFloat() >= sim.Defs.Season.Brawl.ShoveChance)
+            return;
+        var dir = new float2(DetMath.Cos(aim), DetMath.Sin(aim));
+        foreach (var reach in (ReadOnlySpan<float>)[0.7f, 1.3f])
+        {
+            var c = new int3((int)MathF.Floor(at.Pos.X + dir.X * reach), (int)MathF.Floor(at.Pos.Y + dir.Y * reach), at.Cell.Z);
+            if (!sim.Map.InBounds(c) || sim.Map.Structure[sim.Map.Idx(c)] is not { IsNull: false } piece || !brawl.Breakable(sim, piece))
+                continue;
+            brawl.Batter(sim, piece, 2, $"{w.Get<Creature>(target).Name} goes over backwards into a {{0}}, and it gives way!");
+            return;
+        }
+    }
+
+    /// <summary>A stool hurled in a brawl: what it does to whoever it hits (it breaks over them).</summary>
+    public static readonly AttackDef Hurled = new()
+    {
+        Name = "HurledStool", Label = "a hurled stool", Verb = "hurls a stool at", DamageMin = 3f, DamageMax = 7f,
+        DamageType = DamageType.Blunt, Glance = 0f,
+    };
+
+    /// <summary>How far (cells) a stool's hurled.</summary>
+    public const int ThrowRange = 6;
+
+    /// <summary>
+    /// <paramref name="thrower"/> picks up <paramref name="stool"/> and hurls it at <paramref name="at"/>:
+    /// it's gone from where it stood (the carpenter's to make again), flies, and breaks over them.
+    /// False if it can't be thrown at them from here (it's put down again, as it was).
+    /// </summary>
+    public bool Hurl(Simulation sim, Entity thrower, Entity stool, Entity at)
+    {
+        var w = sim.World;
+        if (!Breakable(sim, stool) || !w.IsAlive(at) || !w.Get<Creature>(at).Able || !w.TryGet<Position>(at, out var them))
+            return false;
+        var me = w.Get<Position>(thrower);
+        if (Maps.Map.Distance(me.Cell, them.Cell) > ThrowRange || me.Cell.Z != them.Cell.Z
+            || !CombatRules.LineOfFire(sim, me.Pos + new float3(0, 0, 0.5f), them.Pos + new float3(0, 0, 0.5f)))
+            return false;
+        var def = w.Get<Thing>(stool).Def;
+        Gone(sim, stool);
+        sim.RecentShots.RemoveAll(s => sim.Clock.Tick - s.Tick > SimClock.TicksPerSecond * 5);
+        sim.RecentShots.Add(new ShotEvent(sim.Clock.Tick, me.Pos, them.Pos, Ranged: true, Hit: true, "Crash!", def.Sprite));
+        RealtimeAttacks.Strike(sim, thrower, at, Hurled);
+        sim.Messages.Add(MessageKind.Warning, $"{w.Get<Creature>(thrower).Name} hurls a {def.Label} at {w.Get<Creature>(at).Name}, and it breaks over them!", them.Cell);
+        return true;
+    }
+
+    /// <summary>A piece takes <paramref name="hits"/> blows' worth; broken, it's gone (<paramref name="told"/>, its label at {0}).</summary>
+    private void Batter(Simulation sim, Entity piece, int hits, string told)
+    {
+        ref var t = ref sim.World.Get<Thing>(piece);
+        t.Hp -= hits * t.MaxHp / Math.Max(1, sim.Defs.Season.Brawl.BlowsToBreak) + 0.01f;
         if (t.Hp > 0)
-            return piece;
-        var (def, cell, facing) = (t.Def, t.Cell, t.Facing);
-        sim.Messages.Add(MessageKind.Warning, $"{w.Get<Creature>(attacker).Name} smashes a {def.Label} to matchwood!", cell);
+            return;
+        sim.Messages.Add(MessageKind.Warning, string.Format(System.Globalization.CultureInfo.InvariantCulture, told, t.Def.Label), t.Cell);
+        Gone(sim, piece);
+    }
+
+    /// <summary>A piece gone from the inn: the carpenter's to set back (<see cref="Modding.Trades.Lost"/>).</summary>
+    private void Gone(Simulation sim, Entity piece)
+    {
+        var t = sim.World.Get<Thing>(piece);
         sim.DestroyThing(piece);
         sim.Map.MarkStructureChanged();
-        Modding.Trades.Lost(sim, def, cell, facing); // the carpenter's to set back
-        brawl.Smashed++;
-        return piece;
+        Modding.Trades.Lost(sim, t.Def, t.Cell, t.Facing);
+        Smashed++;
     }
 
     /// <summary>Pieces smashed so far.</summary>
@@ -382,16 +449,24 @@ public sealed class BrawlCrisis : ICrisis
 }
 
 /// <summary>
-/// A brawler in the inn's brawl (<see cref="BrawlCrisis"/>): close on whoever's to be hit
-/// (<see cref="BrawlCrisis.FoeFor"/>) and swing with fists, over and over, till they're settled.
+/// A brawler in the inn's brawl (<see cref="BrawlCrisis"/>): at whoever's to be hit
+/// (<see cref="BrawlCrisis.FoeFor"/>) with fists, stepping in and out and circling as any fight goes
+/// (<see cref="Job.FightFree"/>), a few seconds at a time before looking round again. Once it's hot,
+/// now and then they grab a stool and hurl it, or take it out on a table.
 /// </summary>
 public sealed class BrawlerJob : Job
 {
-    /// <summary>Ticks between swings.</summary>
+    /// <summary>Ticks between swings at the furniture.</summary>
     public const int Between = 80;
 
-    /// <summary>How far (cells) a brawler will go for a table to smash.</summary>
+    /// <summary>How far (cells) a brawler will go for a table to smash or a stool to throw.</summary>
     public const int SmashReach = 8;
+
+    /// <summary>How long (ticks) they go at one foe before looking round again.</summary>
+    public const int Bout = SimClock.TicksPerSecond * 5;
+
+    /// <summary>The share of their swings that are haymakers.</summary>
+    public const float Haymakers = 0.15f;
 
     private Entity _foe;
 
@@ -405,12 +480,32 @@ public sealed class BrawlerJob : Job
             Fail("no fists");
             yield break;
         }
+        var tuning = Sim.Defs.Season.Brawl;
         while (BrawlCrisis.Fighting(Sim, Pawn) && BrawlCrisis.Of(Sim) is { } brawl)
         {
-            // Hot enough, now and then they take it out on the furniture.
-            if (brawl.Smashing(Sim) && Sim.Rand.NextFloat() < Sim.Defs.Season.Brawl.SmashChance
+            // Hot enough, now and then they grab a stool to hurl, or take it out on a table.
+            var roll = Sim.Rand.NextFloat();
+            if (brawl.Smashing(Sim) && roll < tuning.ThrowChance && brawl.FurnitureNear(Sim, Pawn, SmashReach, toThrow: true) is { IsNull: false } stool)
+            {
+                Combat.FreeFight.Leave(Sim, Pawn);
+                Report = $"Grabbing a {Get<Thing>(stool).Def.Label}";
+                foreach (var s in GoTo(Get<Thing>(stool).Cell, PathEnd.Touch)) yield return s;
+                if (HasFailed)
+                    yield break;
+                if (brawl.FoeFor(Sim, Pawn) is { IsNull: false } target && Sim.World.IsAlive(stool))
+                {
+                    _foe = target;
+                    Report = $"Hurling a {Get<Thing>(stool).Def.Label} at {Get<Creature>(target).Name}";
+                    foreach (var s in Wait(SimClock.TicksPerSecond / 2)) yield return s; // heaved up
+                    if (Sim.World.IsAlive(stool))
+                        brawl.Hurl(Sim, Pawn, stool, target);
+                }
+                continue;
+            }
+            if (brawl.Smashing(Sim) && roll < tuning.ThrowChance + tuning.SmashChance
                 && brawl.FurnitureNear(Sim, Pawn, SmashReach) is { IsNull: false } piece)
             {
+                Combat.FreeFight.Leave(Sim, Pawn);
                 var at = Get<Thing>(piece).Cell;
                 Report = $"Smashing a {Get<Thing>(piece).Def.Label}";
                 foreach (var s in GoTo(at, PathEnd.Touch)) yield return s;
@@ -432,18 +527,19 @@ public sealed class BrawlerJob : Job
                 yield break; // think again
             }
             Report = $"Brawling with {Get<Creature>(_foe).Name}";
-            foreach (var s in GoToEntity(_foe, PathEnd.Touch)) yield return s;
+            // A few seconds at them, footwork and all (among themselves the punches are pulled:
+            // HouseRules.Pulled), then a look round for who's next.
+            var until = Sim.Clock.Tick + Bout;
+            var foe = _foe;
+            foreach (var s in FightFree(foe, fists, () => BrawlCrisis.Fighting(Sim, Pawn) && Sim.Clock.Tick < until && BrawlCrisis.Of(Sim) == brawl,
+                Haymakers, giveUp: SmashReach + 4))
+                yield return s;
             if (HasFailed)
                 yield break;
-            if (!Alive(_foe) || !Get<Creature>(_foe).Able)
-                continue;
-            var from = Get<Position>(Pawn).Pos;
-            var to = Get<Position>(_foe).Pos;
-            // Among themselves they pull their punches (HouseRules.Pulled): it looks a fight, and lasts.
-            Blows.Begin(Sim, Pawn, _foe, fists, aim: DetMath.Atan2(to.Y - from.Y, to.X - from.X));
             if (Sim.Rand.NextFloat() < 0.15f)
                 Sim.Mess.Spill(Sim, MessKind.SpilledAle, PawnCell, 0.3f); // a tankard goes over
-            foreach (var s in Wait(Between)) yield return s;
+            if (Sim.Clock.Tick < until)
+                foreach (var s in Wait(SimClock.TicksPerSecond / 2)) yield return s; // they broke off: a breath
         }
     }
 }

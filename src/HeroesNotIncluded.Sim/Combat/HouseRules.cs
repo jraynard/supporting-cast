@@ -23,6 +23,9 @@ public static class HouseRules
         return NoSteelAt(sim, p.Cell);
     }
 
+    /// <summary>Their weapon stays sheathed (for the eye): the inn's rule, or they're in its brawl, which is fists wherever it spills.</summary>
+    public static bool Sheathed(Simulation sim, Entity e) => NoSteel(sim, e) || sim.World.Has<Hospitality.Brawler>(e);
+
     /// <summary>Whether this cell is inside a building with no steel allowed (raids aside).</summary>
     public static bool NoSteelAt(Simulation sim, int3 cell) => !RuledBuilding(sim, cell).IsNull;
 
