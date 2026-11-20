@@ -7,6 +7,47 @@ Write it for testers: what they'll notice, not how it's done.
 Playing together always needs everyone on the same build. Saves and characters carry over
 between builds unless a section's **Compatibility** line says otherwise.
 
+## 0.1.0-playtest.27
+
+The musician joins the town, Millbrook grows a hill to the east, work for two gets proper scenes, and
+raiders now go for your purse.
+
+**The musician** (only if someone plays it)
+- A new trade: wander in from the road with a tin pipe and a dagger, and play the pipe, the lute, the
+  fiddle and the hand drum. Play free on the note keys, or open your tune book: play a tune's opening
+  and your hands carry the rest while you keep the beat (F) and swell the long notes (Shift).
+- Your hat goes down at your feet: listeners tip, call for tunes, and dance. Music at the inn draws
+  custom, and a party sent off with a tune leaves heartened. Strings drift out of tune; tune them by ear.
+- The inn gives you a room on the house. Easygoing: a good trade for a first round. Four tutorial chapters.
+
+**Work for two**
+- Every helper's panel is now a picture of the work: the striker sees the anvil and the smith's
+  hammer winding up ("Here it comes!" then "Now!"); the keeper sees the body on the pallet lifting
+  toward the grave's glow and their own hands holding it down; the pitman looks down on the log and
+  the saw between the two of you; the lifter sees the wagon tipping on its far wheel.
+- Whoever asked for help sees their helper at it, under their own panel.
+- F anywhere near work that wants a hand now lends it (the busy woodshop kept offering everything else).
+- The keeper's pull is slower, the lift steadier, and hanging on a moment after a pit-saw stroke no
+  longer binds the saw.
+
+**The town**
+- Millbrook grows east to a hill with a mine (for a miner trade that's coming; it's switched off for now).
+- The smithy moved off the west road. It now keeps bronze, copper and tin, and the carter brings more,
+  so bronze pieces can be made. A piece is "hot enough" by the colour you see.
+- Planks for what's made, charcoal baked at the smithy's kiln, cloth for the empath's bandages.
+- **Raiders rob the fallen:** a raider who puts you down cuts half your silver and runs for the edge.
+  Catch them before they're away and they drop it.
+- Raids are sized to the players: a solo town meets smaller bands, and each player makes them bigger.
+- The festival is shorter, the crier's tale quicker, and you can cheer every honour as well as every toast.
+- A late joiner can take a trade nobody's playing, the musician included.
+
+**Fixed**
+- No "Raid!" banner when a trip-bell rang out of sight of most of the town.
+- The labourers no longer carry off the musician's hat.
+- A shrine pallet clicked by the musician opened the music instead of the bed.
+- The triggers no longer swing a weapon while you play an instrument on a gamepad.
+- A save that came back different on another player's machine.
+
 ## 0.1.0-playtest.26
 
 The carpenter goes into the woods, the town looks after its fallen, adventurers shop for themselves,
