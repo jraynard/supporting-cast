@@ -373,8 +373,8 @@ def keycap():
 
 
 def coin(img):
-    part(img, ell([3, 3, 21, 21]), GOLD, radius=1.2)
-    part(img, ell([8, 8, 16, 16]), GOLD[1:] + [GOLD[-1]], radius=0.6)
+    part(img, ell([3, 3, 21, 21]), SILVER, radius=1.2)
+    part(img, ell([8, 8, 16, 16]), SILVER[1:] + [SILVER[-1]], radius=0.6)
 
 
 def quest(img):

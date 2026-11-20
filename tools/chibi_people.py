@@ -233,7 +233,7 @@ def coin_layer(F):
     x, y = F.coin
     edge_on = F.pose.k % 2 == 1
     c = ellipse([x - (0.4 if edge_on else 1.1), y - 1.1, x + (0.4 if edge_on else 1.1), y + 1.1])
-    part(img, c, GOLD, INK, radius=0.4, bias=0.2, width=1)
+    part(img, c, SILVER, INK, radius=0.4, bias=0.2, width=1)
     return img
 
 
