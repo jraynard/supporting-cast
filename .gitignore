@@ -29,3 +29,6 @@ data/sounds/music/free/
 
 # Agent worktrees (Claude Code): working copies, never part of the repository.
 /.claude/worktrees/
+
+# The capsule contact sheet (tools/capsules.py): a working file for judging, rebuilt every run.
+/art/steam/contact.png

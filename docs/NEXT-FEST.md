@@ -244,13 +244,18 @@ capsule's size.
   2. Millbrook's square at dusk from above: the inn's windows lit, smoke from the smithy, the
      notice board.
   3. The smithy mid-strike at night, the forge the ember thing, the inn lit behind it.
-- [ ] **`tools/capsules.py`:** composites a key-art image and the brand's logo
+- [x] **`tools/capsules.py`:** composites a key-art image and the brand's logo
       (`art/brand/logo-horizontal.svg`, `logo-stacked.svg`, rasterized the way `tools/brand_logo.py`
       does) into each Steam size, with a crop and a logo position per size, and a "Demo" mark in
       the brand's ember for the demo's set. It writes to `art/steam/` and builds a contact sheet:
       every size at 100%, plus the small capsule at the half size a store list shows it.
-- [ ] **Judge the three together** on the contact sheet, at small size first. Pick one, then tweak
-      the framing and do part 2.
+      *20 Nov. Key art needs `--screenshot-at 15` (the town is still loading at 4) and a 16:9 `--size`
+      that fits the monitor. The ribbon's "Not Included" is lost at half size: decide when picking.*
+- [x] **Judge the three together** on the contact sheet, at small size first. Pick one, then tweak
+      the framing and do part 2. *20 Nov: two kept in `art/steam/` (key art in `keyart/`). The
+      festival square, empty at 20:00 with the inn's windows lit (`--no-people --lit-windows`), and the
+      forge's green. **The square is the main set; the forge is the alternate.** Still to do: move
+      the logo off the square's bonfire.*
 - [ ] Make a new musician video with updated UI and a non license song lol
       to the trailer's footage. Keep the stories that go with them in MARKETING.md.
 

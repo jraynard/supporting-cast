@@ -38,6 +38,12 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
     public bool ShowNames { get; set; } = true;
     public bool ShowDarkness { get; set; } = true;
 
+    /// <summary>Off for key art (<c>--no-people</c>): the town without a soul in it, people and beasts alike.</summary>
+    public bool ShowCreatures { get; set; } = true;
+
+    /// <summary>Key art (<c>--lit-windows</c>): every window of the inn glows after dark, lamps lit or not. Presentation only.</summary>
+    public bool LitWindows { get; set; }
+
     /// <summary>Little speech bubbles over villagers showing what they're doing.</summary>
     public bool ShowBubbles { get; set; } = true;
 
@@ -564,7 +570,7 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
         foreach (var e in w.Each<Creature>())
         {
             var p = w.Get<Position>(e);
-            if (!InViewNow(p.Cell) || !Seen(e))
+            if (!ShowCreatures || !InViewNow(p.Cell) || !Seen(e))
                 continue;
             p.Pos = DrawPos(sim, e, p.Pos); // a copy: the sim's Position is untouched
             var c = w.Get<Creature>(e);
@@ -1784,7 +1790,11 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
                 if (map.InBounds(cell + d) && map.RoomId[map.Idx(cell + d)] == room)
                     inside = Math.Max(inside, map.Light[map.Idx(cell + d)]);
             var glow = Math.Clamp((inside - sky - 0.05f) / 0.4f, 0f, 1f) * dark;
-            if (glow < 0.04f || map.Structure[map.Idx(cell)] is var part && part.IsNull || BuildingKit.Of(sim, part) is not { } kitted)
+            if (map.Structure[map.Idx(cell)] is var part && part.IsNull || BuildingKit.Of(sim, part) is not { } kitted)
+                continue;
+            if (LitWindows && kitted.Building.Def.Has(Sim.Defs.TownRole.Tavern))
+                glow = dark; // key art: every room of the inn lamplit
+            if (glow < 0.04f)
                 continue;
             foreach (var (model, facing) in BuildingKit.WallPieces(kitted.Kit, kitted.Building, cell))
             foreach (var box in model)

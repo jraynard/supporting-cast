@@ -34,7 +34,7 @@ dotnet run --project src/HeroesNotIncluded -- --practice Empath          # the t
 dotnet run --project src/HeroesNotIncluded -- --practice Empath          # the tutorial in the practice yard: no season, customers on request (--lesson ID: straight into a chapter, `basics` and `combat` too)
 dotnet run --project src/HeroesNotIncluded -- --arena Swordsman --weapon IronSpear  # the practice ring: one foe a bout (any raider kind, or Dragon; Enter for the next)
 dotnet run --project src/HeroesNotIncluded -- --furniture-demo --zoom 80    # also --building-demo
-dotnet run --project src/HeroesNotIncluded -- --new-game --screenshot shot.png --screenshot-at 5 --quit  # also --screenshot-no-ui, --look-at X,Y, --yaw/--pitch DEG, --camera-mode; any mode
+dotnet run --project src/HeroesNotIncluded -- --new-game --screenshot shot.png --screenshot-at 5 --quit  # also --screenshot-no-ui, --no-people, --lit-windows, --look-at X,Y, --yaw/--pitch DEG, --camera-mode; any mode
 dotnet run --project src/HeroesNotIncluded -c Release -- --dictate-test clip.wav   # speaking aloud: a clip (or `mic`) through the recognizer, timed (--model small.en)
 dotnet run --project src/HeroesNotIncluded -- --new-game --voice-clip clip.wav       # a clip spoken into a round as if through the microphone
 dotnet run --project src/HeroesNotIncluded -- --replay newest   # watch a kept round again (or a path; --keep-replay-at N keeps one mid-round)

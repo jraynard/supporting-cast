@@ -327,6 +327,12 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
     /// <summary>Debug/screenshots (<c>--hide-roofs</c>): start with every roof cut away, as \ does.</summary>
     public bool HideAllRoofs { init => HideRoofs = value; }
 
+    /// <summary>Screenshots (<c>--no-people</c>): draw no creatures, for key art of the town alone.</summary>
+    public bool NoPeople { get; init; }
+
+    /// <summary>Screenshots (<c>--lit-windows</c>): every window of the inn aglow after dark, for key art.</summary>
+    public bool LitWindows { get; init; }
+
     /// <summary>The storyteller's difficulty by def name ("Normal", "Hard"...); null or "Off" sends no raids.</summary>
     public string? Difficulty { get; init; }
 
@@ -568,6 +574,8 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
         _renderer.FreePredicted = _coop != null && FreeMoving ? _freePredictor : null;
         _renderer.AimLine = HasAvatar ? AimLine() ?? (Mods.GameMods.AimLineFor(ModWorkView, _work.Session) is { } line ? (line.From, line.To, line.Drawn, line.Ready, line.Winded) : null) : null;
         _renderer.PredictedEntity = _avatar;
+        _renderer.ShowCreatures = !NoPeople;
+        _renderer.LitWindows = LitWindows;
         _renderer.Viewer = View.Omniscient ? null : View;
         UpdateOrderBubbles();
         UpdateFestival();

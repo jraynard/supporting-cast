@@ -324,6 +324,8 @@ else
         MapName = ParseString(args, "--map") ?? HeroesNotIncluded.Sim.Scenarios.VillageRound.DefaultMap,
         Freeform = args.Contains("--freeform"),
         HideAllRoofs = args.Contains("--hide-roofs"), // roofs are on by default; --show-roofs is still accepted
+        NoPeople = args.Contains("--no-people"), // key art: the town with nobody in it
+        LitWindows = args.Contains("--lit-windows"), // key art: every window of the inn aglow
         LookAt = ParseString(args, "--look-at") is { } look && look.Split(',') is [var lx, var ly] && int.TryParse(lx, out var x) && int.TryParse(ly, out var y)
             ? new int2(x, y) : null,
         AutoPause = !args.Contains("--no-autopause"),
