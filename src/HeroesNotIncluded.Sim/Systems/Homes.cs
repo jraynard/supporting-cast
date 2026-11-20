@@ -9,7 +9,8 @@ namespace HeroesNotIncluded.Sim.Systems;
 /// cottage (<see cref="BuildingDef.Home"/>) that's theirs (<see cref="BedOwner"/>), and nobody
 /// else sleeps in it. Everyone gets a cottage to themselves while there are cottages to go round,
 /// the nearest to their work; then they share. The inn's staff choose last; if there's no cottage
-/// bed left for them, they get a room at the inn, which is never let.
+/// bed left for them, they get a room at the inn, which is never let. A trade that lodges at the inn
+/// (<see cref="TradeDef.LodgesAtInn"/>, the musician) is comped a room there first.
 /// </summary>
 public static class Homes
 {
@@ -38,9 +39,20 @@ public static class Homes
             .OrderBy(b => Map.Distance(w.Get<PresetBuilding>(b).Anchor, near))
             .ToList();
         var bed = Entity.Null;
+        // A trade comped a room at the inn (the musician): that first, kept from guests.
+        if (w.TryGet<Trade>(who, out var trade) && trade.Def.LodgesAtInn)
+            foreach (var inn in w.Query<PresetBuilding>())
+                if (w.Get<PresetBuilding>(inn) is { Def.LetsBeds: true, Phase: BuildPhase.Done, Demolishing: false }
+                    && Shops.ShopSystem.FreeLetBed(sim, inn) is { IsNull: false } room)
+                {
+                    bed = room;
+                    break;
+                }
         // A cottage to themselves first, then a spare bed in any.
         foreach (var empty in new[] { true, false })
         {
+            if (!bed.IsNull)
+                break;
             foreach (var b in cottages)
             {
                 var beds = BedsIn(sim, b);

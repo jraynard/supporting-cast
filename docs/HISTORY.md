@@ -2771,3 +2771,5 @@ From the user's playing on a Deck:
 - **The miner is off by default** for the multiplayer test (`--mods miner` to play it). The bench moves with it:
   seed 1234 state `30C197C34996F68D`, full `C632C5BF0983A867`; seed 99 state `C532130C046348AB`, full `7EE308EA7A0BC59C`
   (with `--mods miner`, unchanged from before).
+- **The musician is comped a room at the inn** (from play): a trade's `lodgesAtInn` makes its home a room there,
+  kept for them and never let, while one's free (a cottage if not; `Homes.Give`). Bench unchanged.

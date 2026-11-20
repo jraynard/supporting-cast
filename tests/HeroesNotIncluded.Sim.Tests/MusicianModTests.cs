@@ -271,6 +271,22 @@ public class MusicianModTests
     });
 
     [Fact]
+    public void TheMusicianIsCompedARoomAtTheInn() => WithMusician(() =>
+    {
+        var sim = Round(MusicianDefs(), (Arin, "Musician"), (Bea, "Blacksmith"));
+        var w = sim.World;
+        var me = Players.CharacterOf(sim, Arin);
+        var bed = Assert.IsType<BedOwner>(w.Get<BedOwner>(me)).Bed;
+        var inn = Buildings.At(sim, w.Get<Thing>(bed).Cell);
+        Assert.True(w.Get<PresetBuilding>(inn).Def.LetsBeds, "a room at the inn, not a cottage");
+        Assert.True(Shops.ShopSystem.FreeLetBed(sim, inn) != bed, "kept for them: not let to a guest");
+        // The smith still has a cottage.
+        var smith = Players.CharacterOf(sim, Bea);
+        Assert.True(w.Get<PresetBuilding>(Buildings.At(sim, w.Get<Thing>(w.Get<BedOwner>(smith).Bed).Cell)).Def.Home);
+        return 0;
+    });
+
+    [Fact]
     public void AMusicianWhosePlayerLeftStopsPlayingAndKeepsTheInstrument() => WithMusician(() =>
     {
         var sim = Round(MusicianDefs(), (Arin, "Musician"));

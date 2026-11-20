@@ -39,6 +39,12 @@ public sealed class TradeDef : Def
     public string? ArrivesByRoad { get; set; }
 
     /// <summary>
+    /// Their home is a room at the inn (<see cref="Systems.Homes"/>), on the house: kept for them, never let, while there's
+    /// one free; a cottage if not. The musician's: the inn's glad of the music, and they've no cottage of their own.
+    /// </summary>
+    public bool LodgesAtInn { get; set; }
+
+    /// <summary>
     /// How busy the trade keeps its holder, shown where a trade is chosen: some players want a trade
     /// they can take at their own pace, and should be able to find it. Presentation only.
     /// </summary>
