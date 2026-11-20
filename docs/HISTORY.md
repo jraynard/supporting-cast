@@ -2753,3 +2753,21 @@ From the user's playing on a Deck:
 - **The festival, from play:** a little shorter (`festivalHours` 7.5 to 6.5, the revels the shorter; the crowd gathers in
   15 minutes, was 25), the crier's tale told briskly (`talePace` 0.75 of a line's time), and each honour may be
   cheered once, as each toast is (with one party in town there was one toast to cheer, and the rest were honours).
+
+### Work for two, from play: scenes for each helper (2026-11-19)
+- **Every helper's panel is a scene of the work, and the lead sees the helper at it.** The striker sees the anvil with
+  the bar at the smith's heat, the smith's hammer winding up ("Here it comes!", then "Now!") and their own sledge; the
+  smith sees the sledge over their anvil. The keeper sees the body on the pallet lifting toward the grave's glow and
+  their own hands pressing it down; the empath sees the same under the runes. The pitman looks down on the great log,
+  the kerf and the saw between the two of them; the top sawyer sees the pitman under the beam. The lifter sees the
+  wagon tipping on its far wheel, the level, and the carpenter's mallet at the hub. Characters at a helper's work move
+  their hands only while working (`WorkSession.HandsMoving`).
+- **F at or beside work for two wanting a hand lends it** before the stacks, benches and seats round it
+  (`Pairs.WantsHandNear`): in the woodshop, F near the great log kept offering everything else.
+- **The keeper's pull is slower** (`HoldSession.PeakAt` 36 to 54 steps, the peak 9 to 12 wide); **the lift is easier**
+  (a wider level band, a slower sway). **Hanging on a moment at the bottom of a pull doesn't bind the saw**
+  (`PitSession.HoldGrace`, 24 steps): it read as "With the stroke!" then "it binds!" at once. The panel says let go.
+- `--auto-help` (with `--help-as`) joins the bot lead whenever it wants a hand, for screenshots.
+- **The miner is off by default** for the multiplayer test (`--mods miner` to play it). The bench moves with it:
+  seed 1234 state `30C197C34996F68D`, full `C632C5BF0983A867`; seed 99 state `C532130C046348AB`, full `7EE308EA7A0BC59C`
+  (with `--mods miner`, unchanged from before).

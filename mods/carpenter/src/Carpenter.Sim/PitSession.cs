@@ -41,6 +41,9 @@ public sealed class PitSession : HelperSession
     /// <summary>Steps pulling with no call before it binds.</summary>
     public const int BindAfter = 6;
 
+    /// <summary>Steps the saw may be held at the bottom of a full pull, before hanging on fights the lift.</summary>
+    public const int HoldGrace = 24;
+
     /// <summary>Steps a word on the last pull stays up (the panel reads it).</summary>
     public const int WordSteps = 60;
 
@@ -117,9 +120,10 @@ public sealed class PitSession : HelperSession
         }
         if (!CallOpen)
         {
-            // Holding on with no stroke to pull with (or still, after a pull's done, while the top
-            // sawyer draws it back up): fighting the saw. It binds, and again if they keep at it.
-            if (++_against < BindAfter)
+            // Holding on with no stroke to pull with (or still, after a pull's done, while the top sawyer draws
+            // it back up): fighting the saw. It binds, and again if they keep at it. Hanging on at the bottom of a
+            // full pull is let off a moment (HoldGrace): it read as "With the stroke!" then "it binds!" at once.
+            if (++_against < (Down >= 1f ? BindAfter + HoldGrace : BindAfter))
                 return;
             Binds++;
             Sample(0f);

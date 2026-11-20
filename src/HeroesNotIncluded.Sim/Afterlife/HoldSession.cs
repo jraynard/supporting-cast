@@ -27,7 +27,7 @@ public enum HoldResult : byte
 public sealed class HoldSession : HelperSession
 {
     /// <summary>Steps from a rune keyed to its pull peaking (a moment to see it come), and the peak's half-width before skill widens it.</summary>
-    public const int PeakAt = 36, PeakHalf = 9;
+    public const int PeakAt = 54, PeakHalf = 12;
 
     /// <summary>How fast the grip tires a step while bracing, and comes back while eased.</summary>
     public const float TirePerStep = 0.009f, RestPerStep = 0.012f;

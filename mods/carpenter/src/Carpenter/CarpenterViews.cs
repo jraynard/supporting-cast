@@ -1552,6 +1552,8 @@ public sealed class CarpenterViews
             Gui.Trough(dl, b0, b1);
             dl.AddRectFilled(b0, new float2(b0.X + (b1.X - b0.X) * Math.Clamp(left, 0f, 1f), b1.Y), Theme.U8(left > 0.33f ? Theme.Good : Theme.Warn, 0.85f), 0f, ImDrawFlags.None);
         }
+        else if (s.Held && s.Down >= 1f && s.LastWas == PitResult.WithIt)
+            (word, colour) = (s.LastGrade >= 0.7f ? "With the stroke! Now let go: it goes back up" : "Short, or late. Let go: it goes back up", s.LastGrade >= 0.7f ? Theme.Good : Theme.Warn);
         else if (s.LastStep >= 0 && s.StepsDone - s.LastStep < PitSession.WordSteps)
             (word, colour) = s.LastWas switch
             {

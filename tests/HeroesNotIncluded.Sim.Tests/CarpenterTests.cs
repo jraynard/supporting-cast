@@ -117,8 +117,11 @@ public class CarpenterTests
     /// alongside (if any): take up the pit with F at the sawhorse, then pull with each stroke (or,
     /// careless, pull whenever). Returns the sawyer's session as it ended, for its counts.
     /// </summary>
-    private static SawSession SawGreat(Simulation sim, Entity me, Entity horse, Entity? pitman, bool withTheStroke = true, int maxTicks = 60 * 240)
+    [ThreadStatic] private static int _pitBinds, _pitPulls;
+
+    private static SawSession SawGreat(Simulation sim, Entity me, Entity horse, Entity? pitman, bool withTheStroke = true, int maxTicks = 60 * 240, int hangOn = 0)
     {
+        var atBottom = 0;
         var w = sim.World;
         var lead = new WorkPredictor();
         var pit = new WorkPredictor();
@@ -127,7 +130,9 @@ public class CarpenterTests
         for (var t = 0; t < maxTicks && w.Has<WorkSession>(me); t++)
         {
             sim.Tick();
-            var (press, held, axis, axis2, act) = lead.Session is { } s ? keys(s) : (false, false, 0, 0, false);
+            // A top sawyer who takes a breath after each stroke (the bot lead does), while the pitman hangs on.
+            var breath = hangOn > 0 && atBottom > 0 && atBottom <= hangOn + 10;
+            var (press, held, axis, axis2, act) = lead.Session is { } s && !breath ? keys(s) : (false, false, 0, 0, false);
             lead.Update(sim, me, 1, press, held, axis, c => sim.ApplyNow(c), axis2, act: act);
             if (pitman is not { } p)
                 continue;
@@ -143,8 +148,17 @@ public class CarpenterTests
                 pit.Update(sim, p, 1, false, false, 0, c => sim.ApplyNow(c));
                 continue;
             }
-            var pull = pit.Session is PitSession ps && (withTheStroke ? ps.CallOpen || ps.Down is > 0f and < 1f : true);
+            // Off the stroke: pulled in bursts whenever (held at the bottom of a pull is let off a moment, PitSession.HoldGrace).
+            var pull = pit.Session is PitSession ps && (withTheStroke ? ps.CallOpen || ps.Down is > 0f and < 1f : t / 25 % 2 == 0);
+            if (withTheStroke && pit.Session is PitSession { Down: >= 1f })
+                pull = ++atBottom <= hangOn; // a player slow to let go at the bottom of the pull
+            else if (atBottom > 0 && atBottom <= hangOn + 10)
+                atBottom++;
+            else
+                atBottom = 0;
             pit.Update(sim, p, 1, false, pull, 0, c => sim.ApplyNow(c));
+            if (w.TryGet<WorkSession>(p, out var inPit) && inPit is PitSession heldPit)
+                (_pitBinds, _pitPulls) = (heldPit.Binds, heldPit.Pulls);
         }
         sim.Tick();
         return session;
@@ -174,6 +188,21 @@ public class CarpenterTests
         var session = SawGreat(sim, me, horse, null, maxTicks: 60 * 60);
         Assert.True(sim.World.Has<WorkSession>(me), "a minute's sawing alone shouldn't see a great log through");
         Assert.True(session.Cut == 0, $"cut {session.Cut}, {session.Progress:F2} along");
+    }
+
+    [Fact]
+    public void HangingOnAMomentAtTheBottomOfAPullDoesntBind()
+    {
+        // From play: "With the stroke!" then "Against the saw: it binds!" a moment after, for not letting go at once.
+        var (sim, me, horse, _) = AtTheWoodshop();
+        sim.World.Get<Carrying>(me).Item = sim.CreateItem(sim.Thing(Felling.GreatLogDef), 1);
+        var pitman = Pitman(sim, horse);
+        sim.ApplyNow(new CraftCommand(me, horse, Recipe(sim, "SawGreatLog")));
+        var session = SawGreat(sim, me, horse, pitman, hangOn: 18);
+        Assert.True(session.Pulls > 0);
+        Assert.False(sim.World.Has<WorkSession>(me), "the great log sawn");
+        Assert.True(_pitPulls > 0);
+        Assert.True(_pitBinds == 0, $"binds {_pitBinds} pulls {_pitPulls}");
     }
 
     [Fact]

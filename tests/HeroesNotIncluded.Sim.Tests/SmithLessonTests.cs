@@ -113,7 +113,8 @@ public class SmithLessonTests
     public void EveryStepALessonCanNameHasWords()
     {
         var defs = LoadDefs();
-        foreach (var lesson in Lessons.All.Where(l => l.Trade != BasicsLesson.AnyTrade)) // the basics: TutorialTests
+        // The basics: TutorialTests. A mod that's off (registered by another test's load) has its own words checked with it.
+        foreach (var lesson in Lessons.All.Where(l => l.Trade != BasicsLesson.AnyTrade && defs.TryTrade(l.Trade, out _)))
         {
             var def = defs.Trade(lesson.Trade).Lessons.SingleOrDefault(l => l.Id == lesson.Id);
             Assert.True(def != null, $"{lesson.Trade}/{lesson.Id} has no words in trades.json");
