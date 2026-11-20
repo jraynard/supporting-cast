@@ -316,7 +316,7 @@ public static class CombatRules
         PartHeight? bias = dz > 0 ? PartHeight.High : dz < 0 ? PartHeight.Low : null;
         var health = w.TryGet<Health>(target, out var h) ? h : null;
         var part = health != null ? HealthSystem.PickPart(sim, health, bias) : -1;
-        var damage = sim.Rand.Range(attack.DamageMin, attack.DamageMax) * damageScale;
+        var damage = sim.Rand.Range(attack.DamageMin, attack.DamageMax) * damageScale * HouseRules.Pulled(sim, attacker, target);
         var weapon = w.TryGet<Equipment>(attacker, out var wielded) && w.IsAlive(wielded.Weapon)
             && w.Get<Thing>(wielded.Weapon).Def.Weapon == attack ? wielded.Weapon : Entity.Null;
         if (!weapon.IsNull)

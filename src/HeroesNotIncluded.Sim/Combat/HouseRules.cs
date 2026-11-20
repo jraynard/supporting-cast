@@ -43,6 +43,17 @@ public static class HouseRules
         return Entity.Null;
     }
 
+    /// <summary>What a blow between two brawlers of the inn's brawl is worth: drunks among themselves pull their punches.</summary>
+    public const float BrawlersPull = 0.35f;
+
+    /// <summary>
+    /// A blow's damage, as a share, for who's hitting whom: brawlers in the inn's brawl
+    /// (<see cref="Hospitality.Brawler"/>) hit each other soft, so the fight looks like one and goes
+    /// on till someone not in it steps in. At anyone else, they hit as hard as they can.
+    /// </summary>
+    public static float Pulled(Simulation sim, Entity attacker, Entity target) =>
+        sim.World.Has<Hospitality.Brawler>(attacker) && sim.World.Has<Hospitality.Brawler>(target) ? BrawlersPull : 1f;
+
     /// <summary>A raid's on: the town's mustered, or the Director has raiders in the valley.</summary>
     public static bool RaidOn(Simulation sim) =>
         sim.Militia.Mustering || sim.Director.Active.Any(k => k.Kind == CrisisKind.Raid);

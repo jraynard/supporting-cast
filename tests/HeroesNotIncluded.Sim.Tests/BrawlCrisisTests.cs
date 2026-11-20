@@ -161,4 +161,30 @@ public class BrawlCrisisTests(ITestOutputHelper output)
         loaded.TickMany(SimClock.TicksPerHour);
         Assert.True(again.Heat > brawl.Heat, "and carries on");
     }
+
+    [Fact]
+    public void WithTwoLaidOutTheRestKeepAtIt()
+    {
+        // Playtest: with two down the others seemed to stop. Among themselves they pull their
+        // punches (HouseRules.Pulled) but they swing, every turn.
+        var sim = Round();
+        var me = Player(sim);
+        Scenarios.BrawlDrill.Stage(sim, me);
+        var brawl = BrawlCrisis.Of(sim)!;
+        sim.TickMany(SimClock.TicksPerHour / 6 + 1);
+        foreach (var e in brawl.Brawlers.Where(e => e != brawl.Ringleader).Take(2).ToList())
+            LayOut(sim, e, me);
+        var swings = 0;
+        for (var t = 0; t < SimClock.TicksPerHour; t++)
+        {
+            sim.Tick();
+            foreach (var e in brawl.Brawlers)
+                if (sim.World.IsAlive(e) && sim.World.TryGet<Combat.Windup>(e, out var wu) && wu.Start == sim.Clock.Tick - 1)
+                    swings++;
+        }
+        output.WriteLine($"{swings} swings in the hour, heat {brawl.Heat:0.00}");
+        Assert.Contains(brawl, sim.Director.Active);
+        Assert.True(swings >= 20, $"only {swings} swings in an hour");
+        Assert.All(brawl.Brawlers, e => Assert.False(sim.World.Get<Creature>(e).Dead));
+    }
 }

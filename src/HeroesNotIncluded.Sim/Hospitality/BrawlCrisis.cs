@@ -338,9 +338,6 @@ public sealed class BrawlerJob : Job
     /// <summary>Ticks between swings.</summary>
     public const int Between = 80;
 
-    /// <summary>The share of turns a brawler swings for real at another brawler (the rest is shoving).</summary>
-    public const float AmongThemselves = 0.35f;
-
     private Entity _foe;
 
     public override Entity Focus => _foe;
@@ -370,10 +367,8 @@ public sealed class BrawlerJob : Job
                 continue;
             var from = Get<Position>(Pawn).Pos;
             var to = Get<Position>(_foe).Pos;
-            // Drunks among themselves mostly shove and shout: a real swing one time in so many.
-            // At anyone who's hit them, every time.
-            if (!Sim.World.Has<Brawler>(_foe) || Sim.Rand.NextFloat() < AmongThemselves)
-                Blows.Begin(Sim, Pawn, _foe, fists, aim: DetMath.Atan2(to.Y - from.Y, to.X - from.X));
+            // Among themselves they pull their punches (HouseRules.Pulled): it looks a fight, and lasts.
+            Blows.Begin(Sim, Pawn, _foe, fists, aim: DetMath.Atan2(to.Y - from.Y, to.X - from.X));
             if (Sim.Rand.NextFloat() < 0.15f)
                 Sim.Mess.Spill(Sim, MessKind.SpilledAle, PawnCell, 0.3f); // a tankard goes over
             foreach (var s in Wait(Between)) yield return s;
