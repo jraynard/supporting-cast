@@ -21,8 +21,9 @@ in camera mode during a real round, which catches a lived-in town):
 Each key art is PATH or PATH@X,Y, the point (fractions of its width and height) the crops keep in frame.
 Its name is the file's stem without "keyart-" (or --name, for one). Writes art/steam/<name>/: header.png,
 small.png, main.png and library-logo.png (with --demo, *-demo.png beside them, marked in ember), and
-art/steam/contact.png. --all adds the rest of Steam's set (vertical, library, hero, page background),
-laid out but not yet tuned: that's part 2, once a key art is picked.
+art/steam/contact.png (not kept in git). The rest of Steam's set comes with it: vertical.png, library.png,
+library-hero.png and page-background.png. A key art's own layout (LAYOUTS, by its name) moves the logo and
+the crop per size, to keep the logo off what the shot is of.
 
 Needs Pillow, and rsvg-convert (or Edge/Chrome) for the logo, as tools/brand_logo.py does.
 """
@@ -31,7 +32,7 @@ from __future__ import annotations
 import argparse
 import sys
 import tempfile
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
@@ -52,7 +53,9 @@ def rgb(name: str) -> tuple[int, int, int]:
 @dataclass(frozen=True)
 class Size:
     """One of Steam's images. `logo` is "horizontal", "stacked" or None (Steam wants no text on the library
-    hero or the page background); the logo is centred at (ax, ay), fractions of the image, `share` of its height."""
+    hero or the page background); the logo is centred at (ax, ay), fractions of the image, `share` of its height.
+    The crop keeps (fx, fy) of the key art in frame (None: the key art's own focus), `zoom` times tighter than
+    the least that covers. `dim` softens and darkens it, for the page background Steam lays its page over."""
     name: str
     w: int
     h: int
@@ -60,7 +63,10 @@ class Size:
     ax: float = 0.5
     ay: float = 0.5
     share: float = 0.6
-    tuned: bool = True
+    fx: float | None = None
+    fy: float | None = None
+    zoom: float = 1.0
+    dim: bool = False
 
 
 # Steam's sizes (STEAM-PAGE.md, "Capsules and media"; check Steamworks' current list when uploading).
@@ -68,12 +74,24 @@ SIZES = (
     Size("header", 920, 430, "horizontal", 0.5, 0.54, 0.62),
     Size("small", 462, 174, "horizontal", 0.5, 0.5, 0.9),      # the logo nearly fills it: nothing else reads here
     Size("main", 1232, 706, "horizontal", 0.5, 0.6, 0.44),
-    # Part 2: laid out, not yet tuned.
-    Size("vertical", 748, 896, "stacked", 0.5, 0.4, 0.56, tuned=False),
-    Size("library", 600, 900, "stacked", 0.5, 0.36, 0.5, tuned=False),
-    Size("library-hero", 3840, 1240, None, tuned=False),
-    Size("page-background", 1438, 810, None, tuned=False),
+    Size("vertical", 748, 896, "stacked", 0.5, 0.4, 0.56),
+    Size("library", 600, 900, "stacked", 0.5, 0.36, 0.5),
+    Size("library-hero", 3840, 1240, None),       # Steam lays the library logo over it: no text of our own
+    Size("page-background", 1438, 810, None, dim=True),
 )
+
+# A key art's own layout, by set name: what each size changes so the logo keeps off what the shot is of.
+LAYOUTS: dict[str, dict[str, dict]] = {
+    # The festival square at 20:00 (3840x1440): the bonfire at (0.45, 0.66), the inn's lit front across the top
+    # from 0.43 to 0.77. The crops shift right to put the bonfire on the left; the logo sits on the cottages'
+    # roofs bottom right.
+    "square": {
+        "header": dict(fx=0.6, ax=0.7, ay=0.72, share=0.46),
+        "main": dict(fx=0.58, ax=0.7, ay=0.74, share=0.36),
+        "vertical": dict(fx=0.55, ax=0.6, ay=0.78, share=0.42),
+        "library": dict(fx=0.53, ax=0.6, ay=0.8, share=0.4),
+    },
+}
 LIBRARY_LOGO_W = 1280  # transparent, 1280 wide (or 720 tall)
 
 
@@ -82,9 +100,9 @@ def smooth(t: float) -> float:
     return t * t * (3 - 2 * t)
 
 
-def cover(img: Image.Image, w: int, h: int, fx: float, fy: float) -> Image.Image:
-    """Scale to cover w x h, then crop around the focus point, kept as near the middle as the edges allow."""
-    s = max(w / img.width, h / img.height)
+def cover(img: Image.Image, w: int, h: int, fx: float, fy: float, zoom: float = 1.0) -> Image.Image:
+    """Scale to cover w x h (`zoom` times more), then crop around the focus point, as near it as the edges allow."""
+    s = max(w / img.width, h / img.height) * zoom
     sw, sh = round(img.width * s), round(img.height * s)
     big = img.resize((sw, sh), Image.LANCZOS)
     x = min(max(round(fx * sw - w / 2), 0), sw - w)
@@ -111,7 +129,14 @@ def fit(logo: Image.Image, h: int) -> Image.Image:
 
 
 def compose(art: Image.Image, focus: tuple[float, float], size: Size, lockups: dict[str, Image.Image]) -> Image.Image:
-    img = cover(art, size.w, size.h, *focus)
+    img = cover(art, size.w, size.h, focus[0] if size.fx is None else size.fx, focus[1] if size.fy is None else size.fy, size.zoom)
+    if size.dim:
+        # Softened and sunk into the oak, so the page reads over it; the edges fade to the cellar.
+        img = img.filter(ImageFilter.GaussianBlur(2.5))
+        img.paste(rgb("oak_deep"), (0, 0), Image.new("L", img.size, 110))
+        vig = Image.new("L", (64, 64))
+        vig.putdata([int(220 * smooth((max(abs(x / 63 - 0.5), abs(y / 63 - 0.5)) - 0.3) / 0.2)) for y in range(64) for x in range(64)])
+        img.paste(rgb("cellar"), (0, 0), vig.resize(img.size, Image.BICUBIC))
     if size.logo is None:
         return img
     logo = fit(lockups[size.logo], round(size.h * size.share))
@@ -142,7 +167,8 @@ def compose(art: Image.Image, focus: tuple[float, float], size: Size, lockups: d
 def demo_mark(img: Image.Image) -> Image.Image:
     """A "DEMO" tab in ember, cellar lettering, top right: the demo's set is the game's with this on it."""
     img = img.copy()
-    fs = max(14, round(img.height * 0.085))
+    # Sized as on the header (920x430): a tall capsule's tab is no bigger than a wide one's.
+    fs = max(14, round(min(img.height, img.width * 430 / 920) * 0.085))
     font = ImageFont.truetype(str(FONT), fs)
     d = ImageDraw.Draw(img)
     l, t, r, b = d.textbbox((0, 0), "DEMO", font=font)
@@ -156,23 +182,37 @@ def demo_mark(img: Image.Image) -> Image.Image:
     return img
 
 
-def contact_sheet(rows: list[tuple[str, dict[str, Image.Image]]], path: Path) -> None:
-    """One row per key art: header, small and main at 100%, then the small at a store list's half size, and that
-    blown up 3x (pixels kept) to judge whether the title survives it."""
+def sheet_rows(name: str, imgs: dict[str, Image.Image], library_logo: Image.Image) -> list[tuple[str, list[tuple[str, Image.Image]]]]:
+    """A set's two rows on the contact sheet. The store's: header, small and main at 100%, then the small at a store
+    list's half size, and that blown up 3x (pixels kept) to judge whether the title survives it. The library's and
+    the page's: vertical, library, the page background, and the hero at half size with the library logo over it,
+    as the Steam library shows them together."""
+    rows = []
+    if "small" in imgs:
+        half = imgs["small"].resize((imgs["small"].width // 2, imgs["small"].height // 2), Image.LANCZOS)
+        rows.append((name, [("header", imgs["header"]), ("small", imgs["small"]), ("main", imgs["main"]),
+                            ("small at half", half), ("half, 3x", half.resize((half.width * 3, half.height * 3), Image.NEAREST))]))
+    rest = [(k, imgs[k]) for k in ("vertical", "library", "page-background") if k in imgs]
+    if "library-hero" in imgs:
+        hero = imgs["library-hero"].resize((1920, 620), Image.LANCZOS)
+        logo = fit(library_logo, round(hero.height * 0.42))
+        hero.paste(logo, (round(hero.width * 0.04), hero.height - logo.height - round(hero.height * 0.08)), logo)
+        rest.append(("library-hero at half, with the library logo", hero))
+    if rest:
+        rows.append((f"{name}: library and page", rest))
+    return rows
+
+
+def contact_sheet(rows: list[tuple[str, list[tuple[str, Image.Image]]]], path: Path) -> None:
     gap, label_h = 24, 44
     font = ImageFont.truetype(str(FONT), 26)
     small_font = ImageFont.truetype(str(FONT), 22)
-    cells = []
-    for name, imgs in rows:
-        half = imgs["small"].resize((imgs["small"].width // 2, imgs["small"].height // 2), Image.LANCZOS)
-        cells.append((name, [("header", imgs["header"]), ("small", imgs["small"]), ("main", imgs["main"]),
-                             ("small at half", half), ("half, 3x", half.resize((half.width * 3, half.height * 3), Image.NEAREST))]))
-    width = gap + max(sum(i.width + gap for _, i in c) for _, c in cells)
-    row_h = [label_h + max(i.height for _, i in c) + 30 + gap for _, c in cells]
+    width = gap + max(sum(i.width + gap for _, i in c) for _, c in rows)
+    row_h = [label_h + max(i.height for _, i in c) + 30 + gap for _, c in rows]
     sheet = Image.new("RGB", (width, gap + sum(row_h)), rgb("oak_deep"))
     d = ImageDraw.Draw(sheet)
     y = gap
-    for (name, c), rh in zip(cells, row_h):
+    for (name, c), rh in zip(rows, row_h):
         d.text((gap, y), name, font=font, fill=rgb("bone"))
         x = gap
         for label, im in c:
@@ -196,14 +236,13 @@ def main() -> None:
     ap.add_argument("art", nargs="+", help="key art: PATH or PATH@X,Y (the focus, as fractions)")
     ap.add_argument("--name", help="the set's name, for a single key art (default: the file's stem)")
     ap.add_argument("--demo", action="store_true", help="also the demo's set, marked in ember")
-    ap.add_argument("--all", action="store_true", help="also part 2's sizes (vertical, library, hero, background)")
     ap.add_argument("--out", type=Path, default=ROOT / "art" / "steam")
     a = ap.parse_args()
     if a.name and len(a.art) > 1:
         ap.error("--name is for a single key art")
 
     lockups = logos(1600)
-    sizes = [s for s in SIZES if s.tuned or a.all]
+    lib = fit(lockups["horizontal"], round(LIBRARY_LOGO_W * 520 / 1280))
     rows = []
     for spec in a.art:
         path, focus = parse_art(spec)
@@ -214,19 +253,20 @@ def main() -> None:
         out = a.out / name
         out.mkdir(parents=True, exist_ok=True)
         made = {}
-        for size in sizes:
+        for size in SIZES:
+            size = replace(size, **LAYOUTS.get(name, {}).get(size.name, {}))
             img = compose(art, focus, size, lockups)
             assert img.size == (size.w, size.h), (size.name, img.size)
             img.save(out / f"{size.name}.png", optimize=True)
             made[size.name] = img
             if a.demo and size.logo:
                 demo_mark(img).save(out / f"{size.name}-demo.png", optimize=True)
-        rows.append((name, made))
+        rows += sheet_rows(name, made, lib)
         if a.demo:
-            rows.append((f"{name} (demo)", {k: demo_mark(v) for k, v in made.items() if k in ("header", "small", "main")}))
+            marked = {s.name: demo_mark(made[s.name]) for s in SIZES if s.logo}
+            rows += sheet_rows(f"{name} (demo)", marked, lib)
         print("wrote", out)
 
-    lib = fit(lockups["horizontal"], round(LIBRARY_LOGO_W * 520 / 1280))
     a.out.mkdir(parents=True, exist_ok=True)
     lib.save(a.out / "library-logo.png", optimize=True)
     contact_sheet(rows, a.out / "contact.png")

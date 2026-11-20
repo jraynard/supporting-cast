@@ -148,8 +148,10 @@ Phase 2). Steam's required sizes, in pixels (check Steamworks' current list when
 
 The demo needs its own set: the same art with a "Demo" mark.
 
-`tools/capsules.py KEYART.png --demo` makes the header, small and main capsules (`--all`: the rest, untuned)
-and the library logo into `art/steam/`, with a contact sheet for judging candidates at real size.
+`tools/capsules.py KEYART.png --demo` makes every size above but the screenshots, and the library logo, into
+`art/steam/<name>/`, with a contact sheet for judging candidates at real size. A key art's own layout (its
+`LAYOUTS` entry) keeps the logo off what the shot is of. The set: `art/steam/square/` (the festival square,
+empty at night, the inn's windows lit), and `art/steam/forge/` as the alternate.
 
 - **Main capsule (and the small one):** the emblem and logo on a lit common room at dusk. Readable
   at the small capsule's size (231x87); test it shrunk. No heroes in front: the brand is the

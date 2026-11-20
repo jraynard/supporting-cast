@@ -56,11 +56,13 @@ submitted by 1 Feb. Everything else can slip a little.
 - [ ] Set up the game's app, and a **demo app** beside it (demos are an app of their own, with
       their own page and depots).
 - [x] The Steam integration, tried with the test app (below, "Steamworks").
-- [ ] Capsule art, part 1 (below).
+- [x] Capsule art, part 1 (below).
 - [x] The demo marked at runtime (`BuildInfo.IsDemo`), and the `mods/demo` content gate (below). *20 Nov.*
 
 ### Week of 30 Nov: the page's pieces
-- [ ] The in-house capsule set, in every size Steam requires (STEAM-PAGE.md, "Capsules and media").
+- [x] The in-house capsule set, in every size Steam requires (STEAM-PAGE.md, "Capsules and media").
+      *20 Nov: `art/steam/square/`, the demo's beside it, from one 3840x1440 shot; the logo kept off the
+      bonfire and the inn by the square's layout. The forge's set is the alternate.*
 - [ ] Five or more screenshots: `--screenshot-no-ui` with `--fire-test`, `--dragon-test`,
       `--festival-at`, a full bar, the forge, the woodshop.
 - [ ] The page copy brought up to date (STEAM-PAGE.md).
@@ -254,8 +256,7 @@ capsule's size.
 - [x] **Judge the three together** on the contact sheet, at small size first. Pick one, then tweak
       the framing and do part 2. *20 Nov: two kept in `art/steam/` (key art in `keyart/`). The
       festival square, empty at 20:00 with the inn's windows lit (`--no-people --lit-windows`), and the
-      forge's green. **The square is the main set; the forge is the alternate.** Still to do: move
-      the logo off the square's bonfire.*
+      forge's green. **The square is the main set; the forge is the alternate.***
 - [ ] Make a new musician video with updated UI and a non license song lol
       to the trailer's footage. Keep the stories that go with them in MARKETING.md.
 
