@@ -2842,3 +2842,31 @@ come young, beardless and blue-haired. From docs/COMPANY-GEAR-PLAN.md, its first
   then put back what they'd worn over it, dropping each piece it replaced. They come back in what they wore.
   A returning company keeps its folk now, too (it lost its `Kin`).
 - Saves to format 64. `CompanyTests`. Bench hashes unchanged.
+
+### The brawl at the inn (2026-11-20)
+A crisis of its own, from the combat tutorial's sparring: a rowdy crowd tears up the inn, and the town settles it
+before it boils over. Plan and decisions: the brawl plan, slices 0 to 4.
+- **Crisis kinds are a registry** (`SimRegistry.Crisis`, `Director/CrisisTypes`): `CrisisKind` is a name, the
+  Director's send and load, the festival's lines and the replay's labels read the registration. A mod's crisis is
+  `modId:Name`, weighed in `season.json` like the game's.
+- **No steel in the inn** (`Combat/HouseRules`, a building def's `noSteel`): fists only there for the town and its
+  guests, raiders and beasts aside, lifted while a raid's on. Weapons stay sheathed on screen too.
+- **The brawl** (`Hospitality/BrawlCrisis`, the `brawl` block of `season.json`): a `crowd` party (the Bent Nail crew)
+  comes in loud with drink, its ringleader throws the first punch, guests struck join in if rowdy or in their
+  cups. Brawlers fight with the defenders' footwork, pulling their punches among themselves
+  (`HouseRules.Pulled`). Heat climbs with how many are at it and boils over into the street (and maybe a lamp
+  into a fire). Knocked down by someone not in it, a brawler's settled and sleeps it off; dropped by a mate, they
+  get back up. Settle the ringleader and those who aren't rowdy lose heart.
+- **The inn's furniture**: once it's hot, tables and stools are smashed, shoved into, and stools hurled
+  (`breaksInBrawls`, `thrownInBrawls`), the carpenter's to make again (`ITradeModule.Burned` is now `Lost`).
+- **Players hurl stools** (`Combat/Hurling`, `HurlCommand`): fists up, F picks one up; the right button draws it
+  back over a power gauge, the left throws, a little off line and with no landing shown.
+- **Other ways to settle it**: a bucket of well water sobers a brawler out of it; a ghost's sign sends one running;
+  the musician calms them with a tender air, makes dancers of them with a reel, riles them playing sour
+  (`ITradeModule.Soothe`); quick lines while it's on (`SayCommand`'s quick id): "Take it outside!" (only the
+  ringleader can lead them out), "The watch is coming!" (once, on the sobering), "Drinks on the house!" (the
+  keeper's, so much a head).
+- **Bots**: a bot fights brawlers in sight with fists, a keeper bot stands the drinks first, a ghost bot spooks them.
+- `--brawl-test` (`--drill brawl`). Fixed on the way: the carpenter's join split under the gauge's mark (the
+  hand's wobble is in how far a blow drives now, not whether it splits). Saves to format 65. `BrawlCrisisTests`,
+  `HouseRulesTests`, `HurlingTests`. Bench hashes unchanged.

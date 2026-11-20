@@ -68,8 +68,8 @@ public sealed partial class BotPlayer
         if (!raider.IsNull)
         {
             var at = w.Get<Position>(raider).Pos;
-            // A beast close by: into it, and at them.
-            if (g.Presence >= Possession.Cost + PresenceSpare && Possession.Nearest(sim, ghost) is { IsNull: false } ride)
+            // A beast close by: into it, and at them (raiders; a brawler only wants a fright).
+            if (Factions.Attacker(w.Get<Creature>(raider).Faction) && g.Presence >= Possession.Cost + PresenceSpare && Possession.Nearest(sim, ghost) is { IsNull: false } ride)
             {
                 Doing = $"getting into the {w.Get<Creature>(ride).Def.Label}";
                 Send(new PossessCommand(ghost, ride));
@@ -97,7 +97,7 @@ public sealed partial class BotPlayer
 
     public static float Flat(float3 a, float3 b) => MathF.Sqrt((a.X - b.X) * (a.X - b.X) + (a.Y - b.Y) * (a.Y - b.Y));
 
-    /// <summary>The nearest raider (or predator) on its feet in sight; never the dragon, which signs don't shake.</summary>
+    /// <summary>The nearest raider (or predator, or brawler in the inn's brawl) on its feet in sight; never the dragon, which signs don't shake.</summary>
     private static Entity Raider(Simulation sim, PerceptionView view, Entity ghost)
     {
         var w = sim.World;
@@ -105,7 +105,7 @@ public sealed partial class BotPlayer
         var best = Entity.Null;
         var bestD = float.MaxValue;
         foreach (var e in view.Creatures())
-            if (w.Get<Creature>(e) is { Dead: false, Downed: false } c && Factions.Attacker(c.Faction) && c.Def.Race != Race.Dragon
+            if (w.Get<Creature>(e) is { Dead: false, Downed: false } c && (Factions.Attacker(c.Faction) || w.Has<Hospitality.Brawler>(e)) && c.Def.Race != Race.Dragon
                 && !w.Has<Combat.Leaving>(e) && Flat(here, w.Get<Position>(e).Pos) is var d && d <= HauntRange && d < bestD)
                 (best, bestD) = (e, d);
         return best;

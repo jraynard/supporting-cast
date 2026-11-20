@@ -62,7 +62,7 @@ public static class SeasonSweepRun
                 var w = results.Select(r => r.Stores.GetValueOrDefault(k)).OfType<Sim.Scenarios.StoreWatch>().Where(x => x.Hours > 0).ToList();
                 return w.Count == 0 ? $"{k} -" : $"{k} {w.Min(x => x.Low)}, {w.Average(x => x.Low):F0}, {w.Average(x => x.Last):F0}, {w.Average(x => x.HoursOut):F1}";
             })));
-        var kinds = results.SelectMany(r => r.Sim.Reckoning.Crises).GroupBy(c => c.Kind).OrderBy(g => g.Key);
+        var kinds = results.SelectMany(r => r.Sim.Reckoning.Crises).GroupBy(c => c.Kind).OrderBy(g => g.Key.Name, StringComparer.Ordinal);
         Console.WriteLine("Crises met: " + string.Join(", ", kinds.Select(g => $"{g.Key} {g.Count(c => c.Met)}/{g.Count()}")));
         // What each trade's bot played: a game no bot starts shows here as missing, not just as a lost round.
         Console.WriteLine();

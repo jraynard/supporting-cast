@@ -16,6 +16,10 @@ public sealed partial class BotPlayer
     // ---------------- Fighting (free movement) ----------------
 
     private Entity _foe = Entity.Null;
+
+    /// <summary>A keeper bot's stood the brawl drinks already (once a round's enough to try).</summary>
+    private bool _stoodDrinks;
+    private long _drinksAgain;
     private float2 _sentWish;
     private bool _guarding;
 
@@ -34,16 +38,22 @@ public sealed partial class BotPlayer
         var w = sim.World;
         // The nervy don't stand and fight: they get out of the way (Safety).
         if (!w.TryGet<Combat.FreeMover>(me, out var free) || !w.Get<Creature>(me).Able || Ai.RaiderBrain.WantsToFlee(sim, me) || Temper.Nerve < 0.25f
-            || !w.TryGet<Equipment>(me, out var eq) || !w.IsAlive(eq.Weapon) || w.Get<Thing>(eq.Weapon).Def.Weapon is not { } weapon)
+            || Combat.Hurling.Holding(sim, me))
+            return StopFighting(me, free.Drawn);
+        // A raider's met with steel; a brawler in the inn's brawl with fists if need be (and in the inn, fists it is).
+        var armed = w.TryGet<Equipment>(me, out var eq) && w.IsAlive(eq.Weapon) && w.Get<Thing>(eq.Weapon).Def.Weapon != null;
+        var brawl = Hospitality.BrawlCrisis.Of(sim) is { Begun: true };
+        if (!armed && !brawl)
             return StopFighting(me, free.Drawn);
         var here = w.Get<Position>(me).Pos;
-        if (_foe.IsNull || !w.IsAlive(_foe) || !view.CanSee(_foe) || !w.Get<Creature>(_foe).Able)
+        if (_foe.IsNull || !w.IsAlive(_foe) || !view.CanSee(_foe) || !w.Get<Creature>(_foe).Able
+            || (!Factions.Attacker(w.Get<Creature>(_foe).Faction) && !w.Has<Hospitality.Brawler>(_foe)))
         {
             _foe = Entity.Null;
             var best = float.MaxValue;
             foreach (var e in view.CreaturesWithin(here, FightRange))
-                if (w.Get<Creature>(e) is { Dead: false, Downed: false } c && Factions.Attacker(c.Faction) && !w.Has<Combat.Leaving>(e)
-                    && c.Def.Race != Race.Dragon && w.Get<Position>(e).Cell.Z == w.Get<Position>(me).Cell.Z)
+                if (w.Get<Creature>(e) is { Dead: false, Downed: false } c && ((armed && Factions.Attacker(c.Faction)) || w.Has<Hospitality.Brawler>(e))
+                    && !w.Has<Combat.Leaving>(e) && c.Def.Race != Race.Dragon && w.Get<Position>(e).Cell.Z == w.Get<Position>(me).Cell.Z)
                 {
                     var p = w.Get<Position>(e).Pos;
                     var d = (p.X - here.X) * (p.X - here.X) + (p.Y - here.Y) * (p.Y - here.Y);
@@ -53,7 +63,22 @@ public sealed partial class BotPlayer
             if (_foe.IsNull)
                 return StopFighting(me, free.Drawn);
         }
-        Doing = $"fighting {w.Get<Creature>(_foe).Name}";
+        if (Combat.CombatRules.Attacks(sim, me).FirstOrDefault() is not { } weapon)
+            return StopFighting(me, free.Drawn);
+        Doing = w.Has<Hospitality.Brawler>(_foe) ? $"settling {w.Get<Creature>(_foe).Name}" : $"fighting {w.Get<Creature>(_foe).Name}";
+        // The keeper, in their own inn, tries buying the peace first: once a brawl, if the purse will stand it.
+        if (w.Has<Hospitality.Brawler>(_foe) && !_stoodDrinks && now >= _drinksAgain && w.TryGet<Trade>(me, out var trade) && trade.Def.Role == TownRole.Tavern
+            && Coin.Count(sim, me) >= sim.Defs.Season.Brawl.DrinksCost * 3 && sim.Defs.Bark("quick_drinks") is { Lines.Count: > 0 } drinks)
+        {
+            // Once it's been said (a voice that's said too much just now isn't heard: try again in a moment).
+            if (sim.Speech.Kept.Any(u => u.Speaker == me && u.Text == drinks.Lines[0].Text))
+                _stoodDrinks = true;
+            else
+            {
+                _drinksAgain = now + SimClock.TicksPerSecond * 2;
+                Send(new SayCommand(me, drinks.Lines[0].Text, Volume.Shout, "drinks"));
+            }
+        }
         if (!free.Drawn)
             Send(new DrawWeaponCommand(me, true));
         var them = w.Get<Position>(_foe).Pos;

@@ -344,4 +344,34 @@ public class BrawlCrisisTests(ITestOutputHelper output)
         Quick(sim2, me2, "drinks");
         Assert.All(brawl2.Brawlers, e => Assert.True(sim2.World.Has<Brawler>(e)));
     }
+
+    [Fact]
+    public void ABotKeeperStandsTheDrinksThenSettlesTheRestWithFists()
+    {
+        var sim = VillageRound.NewSimulation(TestWorld.LoadDefs(), 1234);
+        sim.Presets.PresetMode = true;
+        VillageRound.Setup(sim);
+        sim.Director.Enable(sim.Defs.Difficulty("Normal"));
+        sim.Round.OpenLobby();
+        sim.ApplyNow(new JoinLobbyCommand(Ana, "Ana", default));
+        sim.ApplyNow(new SetTradePreferencesCommand(Ana, [sim.Defs.Trade("Innkeeper")], []));
+        var bot = new Bots.BotPlayer(() => sim, Ana, c => sim.ApplyNow(c), 7) { Temper = Bots.BotTemperament.Steady };
+        sim.ApplyNow(new StartRoundCommand());
+        var me = Players.CharacterOf(sim, Ana);
+        Inventory.Stow(sim, me, sim.CreateItem(sim.Defs.Thing(Shops.Coin.Silver), 30));
+        Scenarios.BrawlDrill.Stage(sim, me);
+        var brawl = BrawlCrisis.Of(sim)!;
+        var silver = Shops.Coin.Count(sim, me);
+        var (met, unmet) = (sim.Director.Met, sim.Director.Unmet);
+        for (var t = 0; t < SimClock.HoursToTicks(5) && sim.Director.Active.Contains(brawl); t++)
+        {
+            sim.Tick();
+            bot.Tick();
+        }
+        output.WriteLine($"over: {!sim.Director.Active.Contains(brawl)}, met {sim.Director.Met - met}, unmet {sim.Director.Unmet - unmet}, heat {brawl.Heat:0.00}, "
+            + $"silver {silver} -> {Shops.Coin.Count(sim, me)}, smashed {brawl.Smashed}");
+        Assert.True(Shops.Coin.Count(sim, me) < silver, "the keeper stood a round");
+        Assert.DoesNotContain(brawl, sim.Director.Active);
+        Assert.Equal(met + 1, sim.Director.Met);
+    }
 }
