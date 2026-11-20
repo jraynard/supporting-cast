@@ -2546,6 +2546,25 @@ Trees felled, bucked and split by hand; the town's fires burn firewood, not timb
   Panels for work out in the world sit to the side (`VillageGame._workAside`).
 - Saves to format 62. `FellingTests`.
 
+### A Director that reacts (2026-11-17)
+The Director was a fixed script with dice: Dread pulled beats earlier and made them stronger, which
+piled on a losing town. Now it paces like a game master.
+- **`Director/Tension`**: a reading refreshed every 10 game minutes from the sim's own state (harm:
+  deaths, the downed, open injuries, fire, breaches; load: orders, lines, quests; pace: Renown against
+  the expected curve, Dread against its limit; calm: hours since the last crisis).
+- **`Director/RuleMind`**, pure functions: a beat waits for calm (but still fires by its `toHour`),
+  eases off a struggling town and pushes a coasting one within the `pacing` band in `season.json`,
+  and settles a beat's kind a warning ahead from what the players can answer.
+- A beat can follow a quest (`followsQuest`). None in the shipped season does yet; the Reedmere
+  dragon should be the first.
+- **Incidents** (`data/defs/incidents.json`, `Director/Incidents`) fill lulls: a fever brought in,
+  rats, a traveller's errand. A wrecked wagon was left out: wagons already arrive broken most of the time.
+- **`DirectorChoiceCommand`** (a host command) is the only door for a mind outside the sim: it can
+  settle the next beat's kind or call an incident. There's no swappable mind interface, since the
+  sim runs the same on every peer; an outside mind (an LLM on the host, ROADMAP backlog) would act
+  only through that command.
+- Saves to format 60. `DirectorPacingTests`.
+
 ### The carpenter's games, from play (2026-11-18)
 - **Felling** starts aimed the way the tree leans (the easy fell), the lean a broad arrow under the
   aim's, and the hints say the first blow (F) sets the aim.
@@ -2804,3 +2823,22 @@ From the user's playing on a Deck:
 - **The playing panel shows the instrument in your hands** (a first pass, to be played and changed): the pipe's holes
   fingered for the note and breath leaving its end, the lute's and fiddle's strings fretted and ringing (the fiddle's
   bow moving), the drum's head struck where the stroke is played.
+
+### The rare companies dressed as themselves (2026-11-19)
+The companies borrowed outfits that didn't fit them (the grey wanderer in the seer's kaftan and skirt, the
+dwarves in the blue-haired wanderer's poncho), and their looks were the hash's, so the grey wanderer could
+come young, beardless and blue-haired. From docs/COMPANY-GEAR-PLAN.md, its first four parts.
+- **New garments** (`outfits.json`): the wanderer's robe (Tunic slot), a pointed hat and a dwarf's tasselled
+  hood (cloth `garment`s in the Head slot, dyed). Art in `tools/chibi_people.py` (`g_wizard_robe`, `g_hat`), with
+  the dwarf and halfling builds, and icons per dye (`tools/norse_items.py`). A Head item's `_back` layers are
+  drawn behind the body now, as a cloak's are (the hood's tail, seen from the front).
+- **An outfit per company kind**: `GreyWizard` (robe and hat in ash-grey), `DwarfLord`, `DwarfElder`,
+  `DwarfKin` (a hood in a rolled colour; the axe-hands put their helms away to show them), `Burrowfolk`
+  (barefoot), `Ranger`, `ElfWarden`.
+- **A fixed look per adventurer kind** (`look` in `adventurers.json`, on `Kin`): the grey wanderer is always a man
+  with long grey hair and a full beard; the dwarves always bearded, the graybeard grey. `Clothing.BodyOf` fits
+  clothes to that body, `HumanLook.Fixed` draws it.
+- **Fixed: a party back from a quest left a set of clothes in the road.** `Respawn` dressed them in their outfit,
+  then put back what they'd worn over it, dropping each piece it replaced. They come back in what they wore.
+  A returning company keeps its folk now, too (it lost its `Kin`).
+- Saves to format 64. `CompanyTests`. Bench hashes unchanged.

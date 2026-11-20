@@ -3,6 +3,7 @@ using HeroesNotIncluded.Sim.Defs;
 using HeroesNotIncluded.Sim.Expeditions;
 using HeroesNotIncluded.Sim.Round;
 using HeroesNotIncluded.Sim.Scenarios;
+using HeroesNotIncluded.Sim.Systems;
 using static HeroesNotIncluded.Sim.Tests.TestWorld;
 
 namespace HeroesNotIncluded.Sim.Tests;
@@ -47,6 +48,61 @@ public class CompanyTests
         // An ordinary party's look is left to them.
         var party = sim.Parties.Send(sim, sim.Defs.Party("GildedSpurs"));
         Assert.All(party, e => Assert.False(w.Has<Kin>(e)));
+    }
+
+    [Fact]
+    public void TheGreyWandererComesInGreyAndAlwaysOldAndBearded()
+    {
+        var (sim, _, _) = ExpeditionTests.Round("Innkeeper", tillTheyAsk: false);
+        var w = sim.World;
+        var wanderer = sim.Parties.Send(sim, Company(sim, LongRoad))[0];
+        var robe = w.Get<Thing>(Clothing.In(sim, wanderer, ApparelSlot.Tunic));
+        Assert.Equal(("WizardRobe", "Ash"), (robe.Def.Name, robe.Material?.Name));
+        var hat = w.Get<Thing>(Clothing.In(sim, wanderer, ApparelSlot.Head));
+        Assert.Equal(("WizardHat", "Ash"), (hat.Def.Name, hat.Material?.Name));
+        var kin = w.Get<Kin>(wanderer);
+        Assert.Equal((Folk.Human, BodyType.Male, HairStyle.Long, BeardStyle.Full, 0xB8B8B4u), (kin.Folk, kin.Body, kin.Hair, kin.Beard, kin.HairColor));
+        Assert.Equal(BodyType.Male, Clothing.BodyOf(sim, wanderer));
+        var loaded = SaveLoadTests.RoundTrip(sim);
+        var again = loaded.World.Get<Kin>(loaded.Creatures().Single(e => loaded.World.Get<Creature>(e).Name == w.Get<Creature>(wanderer).Name));
+        Assert.Equal((kin.Folk, kin.Body, kin.Hair, kin.Beard, kin.HairColor), (again.Folk, again.Body, again.Hair, again.Beard, again.HairColor));
+        // The rest of the long road come as themselves: the halflings barefoot under their hooded cloaks.
+        var halflings = sim.Creatures().Where(e => w.TryGet<Adventurer>(e, out var a) && a.Kind.Name == "Burrower").ToList();
+        Assert.NotEmpty(halflings);
+        Assert.All(halflings, e => Assert.True(Clothing.In(sim, e, ApparelSlot.Feet).IsNull));
+        Assert.All(halflings, e => Assert.Equal("HoodedCloak", w.Get<Thing>(Clothing.In(sim, e, ApparelSlot.Cloak)).Def.Name));
+    }
+
+    [Fact]
+    public void DwarvesWearHoodsOrHelmsAndComeBackFromTheRoadAsThemselves()
+    {
+        var (sim, me, ordinary) = ExpeditionTests.Round("Innkeeper", tillTheyAsk: false);
+        var w = sim.World;
+        foreach (var e in ordinary) // the test's own party moves on, so the company has the board to itself
+            w.Get<Adventurer>(e).LeaveTick = 0;
+        // Dressing never leaves a piece lying in the road (a helm put on over a hood would; so would
+        // their clothes put back on over a fresh outfit when they return).
+        HashSet<Entity> Loose() => w.Query<Thing>().Where(e => w.Get<Thing>(e).Spawned && Clothing.IsClothes(w.Get<Thing>(e).Def)).ToHashSet();
+        var loose = Loose();
+        var company = sim.Parties.Send(sim, Company(sim, Dwarves));
+        Tinkering.Wagons.Leave(sim, w.Get<Adventurer>(company[0]).Party);
+        Assert.Subset(loose, Loose());
+        string? Head(Entity e) => w.TryGet<Apparel>(e, out var worn) && w.IsAlive(worn[ApparelSlot.Head]) ? w.Get<Thing>(worn[ApparelSlot.Head]).Def.Name : null;
+        string KindOf(Entity e) => w.Get<Adventurer>(e).Kind.Name;
+        Assert.All(company.Where(e => KindOf(e) == "AxeHand"), e => Assert.Equal("DwarfHood", Head(e)));
+        Assert.All(company.Where(e => KindOf(e) is "ExiledHeir" or "Graybeard"), e => Assert.Equal("IronHelm", Head(e)));
+        Assert.All(company.Where(e => KindOf(e) != "Burrower"), e => Assert.NotEqual(BeardStyle.None, w.Get<Kin>(e).Beard ?? BeardStyle.None));
+
+        var party = w.Get<Adventurer>(company[0]).Party;
+        for (var t = 0; t < 60 && ExpeditionSystem.QuestOrder(sim, party) == null; t++)
+            sim.TickMany(SimClock.TicksPerHour / 4);
+        var kinds = company.ToDictionary(e => w.Get<Creature>(e).Name, KindOf);
+        ExpeditionTests.SendAndWait(sim, me, company, sim.Expeditions.OwnQuest(Company(sim, Dwarves)));
+        var back = sim.Creatures().Where(e => w.TryGet<Adventurer>(e, out var a) && a.Party == party).ToList();
+        Assert.NotEmpty(back);
+        Assert.All(back, e => Assert.Equal(kinds[w.Get<Creature>(e).Name] == "Burrower" ? Folk.Halfling : Folk.Dwarf, w.Get<Kin>(e).Folk));
+        Assert.All(back.Where(e => KindOf(e) == "AxeHand"), e => Assert.Equal("DwarfHood", Head(e)));
+        Assert.Subset(loose, Loose());
     }
 
     private static int PartySystemPlayers(Simulation sim) => Adventurers.PartySystem.Players(sim);

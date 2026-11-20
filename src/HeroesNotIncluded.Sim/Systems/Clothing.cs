@@ -128,7 +128,7 @@ public static class Clothing
         if (Dressed(sim, e) || sim.World.Get<Creature>(e).Def.Race != Race.Human)
             return;
         var rand = StreamFor(sim, e);
-        var body = sim.World.TryGet<Appearance>(e, out var look) ? look.Body : DerivedBody(LookId(sim, e));
+        var body = BodyOf(sim, e);
         var choices = sim.Defs.AllOutfits.Where(o => o.Villager && Suits(o, body)).ToList();
         if (choices.Count > 0)
             Dress(sim, e, choices[rand.NextInt(choices.Count)], rand);
@@ -143,6 +143,15 @@ public static class Clothing
 
     public static bool Suits(OutfitDef outfit, BodyType body) =>
         string.IsNullOrEmpty(outfit.Body) || string.Equals(outfit.Body, body.ToString(), StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// The body someone is drawn with: their own appearance's, else a fixed one (<see cref="Kin.Body"/>),
+    /// else <see cref="DerivedBody"/>'s.
+    /// </summary>
+    public static BodyType BodyOf(Simulation sim, Entity e) =>
+        sim.World.TryGet<Appearance>(e, out var look) ? look.Body
+            : sim.World.TryGet<Kin>(e, out var kin) && kin.Body is { } body ? body
+            : DerivedBody(LookId(sim, e));
 
     /// <summary>
     /// The body of someone without an <see cref="Appearance"/>: the same hash the renderer's derived

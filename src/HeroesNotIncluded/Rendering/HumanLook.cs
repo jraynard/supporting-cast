@@ -173,9 +173,28 @@ public static class HumanLook
         return (look, clothes);
     }
 
-    public static Appearance Of(Simulation sim, Entity e) =>
-        sim.World.TryGet<Appearance>(e, out var a) ? a
-            : Derived(Sim.Systems.Clothing.LookId(sim, e), folk: sim.World.TryGet<Kin>(e, out var kin) ? kin.Folk : null);
+    public static Appearance Of(Simulation sim, Entity e)
+    {
+        if (sim.World.TryGet<Appearance>(e, out var a))
+            return a;
+        if (!sim.World.TryGet<Kin>(e, out var kin))
+            return Derived(Sim.Systems.Clothing.LookId(sim, e));
+        return Fixed(Derived(Sim.Systems.Clothing.LookId(sim, e), folk: kin.Folk), kin);
+    }
+
+    /// <summary>A derived look with what's fixed about it (<see cref="Kin"/>: the grey wanderer's hair and beard) put over it.</summary>
+    public static Appearance Fixed(Appearance a, in Kin kin)
+    {
+        if (kin.Body is { } body)
+            a.Body = body;
+        if (kin.Hair is { } hair)
+            a.Hair = hair;
+        if (kin.Beard is { } beard)
+            a.Beard = beard;
+        if (kin.HairColor != 0)
+            a.HairColor = kin.HairColor;
+        return a;
+    }
 
     /// <summary>
     /// A look picked by hashing an id, so it never touches the sim's random stream. Villagers get natural
@@ -478,11 +497,11 @@ public static class HumanLook
             AddHeld(atlas, list, a, color, hn.Back, hn.BackMetal, h.Metal, model);
             AddPiece(atlas, list, a, color, hn.BackPiece, h, model);
         }
-        // Long hair falls behind the body (its _back half): drawn first, under everything but a cloak's back.
+        // Long hair falls behind the body (its _back half): drawn first, under everything but the back of a cloak (or a hood's tail).
         var hairBack = atlas.TryGetSheet(model?.HairBack ?? HairBackSheet(a), out var hb) ? hb : null;
         if (worn != null)
             foreach (var w in worn)
-                if (w.Props.Slot is ApparelSlot.Cloak or ApparelSlot.Neck && w.Props.Worn is { } cloak)
+                if (w.Props.Slot is ApparelSlot.Cloak or ApparelSlot.Neck or ApparelSlot.Head && w.Props.Worn is { } cloak)
                 {
                     var (_, back, backDye) = PartsOf(cloak);
                     Add(atlas, list, back, w, a, color, null, model);

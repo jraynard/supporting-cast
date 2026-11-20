@@ -1092,13 +1092,20 @@ public struct Appearance
 }
 
 /// <summary>
-/// Which folk someone without an <see cref="Appearance"/> of their own is (a company of dwarves come
-/// to town, <see cref="Defs.AdventurerKindDef.Folk"/>): their derived look is drawn from that folk's
-/// colours and build instead of the hash's pick. Cosmetic, like the appearance, and saved with it.
+/// The cosmetic look of someone without an <see cref="Appearance"/> of their own, where it isn't
+/// left to the hash (<see cref="Defs.AdventurerKindDef"/>'s folk and look): a company of dwarves come
+/// to town, all bearded; the grey wanderer, always old and grey. Each part left null is derived as
+/// anyone's is. Cosmetic, like the appearance, and saved with it.
 /// </summary>
 public struct Kin
 {
-    public Folk Folk;
+    public Folk? Folk;
+    public BodyType? Body;
+    public HairStyle? Hair;
+    public BeardStyle? Beard;
+
+    /// <summary>0xRRGGBB, or 0 for the derived colour.</summary>
+    public uint HairColor;
 }
 
 public enum RequestKind : byte

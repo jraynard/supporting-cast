@@ -3,7 +3,7 @@
 Heroes Not Included (`HeroesNotIncluded` in code; the repo folder is still `supporting-cast`) is a multiplayer fantasy village game in C#/.NET 10: players take
 the trades a tabletop party usually walks past, with optional traitors. It was forked from
 DragonWorld at `cf61dfc` and runs on the **Narsil** engine (git submodule at `external/narsil`) on
-BRUTAL (GLFW + Vulkan + Dear ImGui). Design: docs/DESIGN.md. Next: docs/ROADMAP.md; done: docs/HISTORY.md. Brand: art/brand/brand-guide.html.
+BRUTAL (GLFW + Vulkan + Dear ImGui). Design: docs/DESIGN.md. Next: docs/ROADMAP.md; done: docs/HISTORY.md. Long term: docs/VISION.md. Brand: art/brand/brand-guide.html.
 Until 1 Mar 2027 the Now is the Steam Next Fest demo: docs/NEXT-FEST.md.
 
 ## Commands
@@ -35,7 +35,7 @@ dotnet run --project src/HeroesNotIncluded -- --new-game --screenshot shot.png -
 dotnet run --project src/HeroesNotIncluded -c Release -- --dictate-test clip.wav   # speaking aloud: a clip (or `mic`) through the recognizer, timed (--model small.en)
 dotnet run --project src/HeroesNotIncluded -- --new-game --voice-clip clip.wav       # a clip spoken into a round as if through the microphone
 dotnet run --project src/HeroesNotIncluded -- --replay newest   # watch a kept round again (or a path; --keep-replay-at N keeps one mid-round)
-dotnet run --project src/HeroesNotIncluded -- --art-preview
+dotnet run --project src/HeroesNotIncluded -- --art-preview      # every sheet; --dressed: just people, each adventurer kind as it comes, then every outfit
 dotnet run --project src/HeroesNotIncluded -- --check-art     # headless: every sprite and tag exists
 dotnet run --project src/HeroesNotIncluded -- --check-mod mods/long-season   # headless: a mod over the core, checked (any mode takes --mods a,b)
 dotnet run --project src/HeroesNotIncluded -- --check-gpu

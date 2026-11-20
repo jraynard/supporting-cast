@@ -9,7 +9,9 @@
 // "tempers": how likely each kind is to be Easy, Rowdy, Picky, Stingy, Boastful or Timid
 // (Adventurers/Tempers: what a service is worth to them, how long they'll wait, how thirsty, how
 // fussy, what they say). "folk": what they always are (Dwarf, Halfling, Elf; else the look's own
-// pick). Names are our own; keep tabletop terms out.
+// pick); "look": what's fixed about how they look ("body", "hair", "beard" by name, "hairColor" as hex;
+// the rest derived). A helm goes on over the outfit and takes the Head slot, so an outfit with a hood
+// is for a kind without one. Names are our own; keep tabletop terms out.
 //
 // A "rare" company comes now and then (PartySystem: "chance" in a round, on a day from "fromDay"
 // to "toDay", in place of the next party; one a round at most). Its "members" always come, its
@@ -32,20 +34,20 @@
     { "name": "Drover", "label": "drover", "weapon": "Club", "outfit": "Farmhand", "skillMin": 2, "skillMax": 5, "purseMin": 14, "purseMax": 22, "spend": 0.85, "tastes": [ "Savoury", "Hot" ], "tempers": { "Rowdy": 2, "Easy": 2, "Stingy": 1 } },
     { "name": "Minstrel", "label": "minstrel", "outfit": "Skald", "skillMin": 1, "skillMax": 3, "purseMin": 12, "purseMax": 20, "spend": 0.9, "tastes": [ "Sweet", "Hot" ], "tempers": { "Boastful": 2, "Easy": 2, "Rowdy": 1, "Picky": 1 } },
     // The companies' folk. Dwarves come with thin purses and long memories; the halfling keeps the accounts.
-    { "name": "ExiledHeir", "label": "heir-in-exile", "folk": "Dwarf", "weapon": "ShortSword", "apparel": [ "ChainShirt", "IronHelm" ],
-      "outfit": "Wanderer", "skillMin": 9, "skillMax": 13, "purseMin": 8, "purseMax": 18, "spend": 0.9, "tastes": [ "Savoury", "Hot" ], "tempers": { "Boastful": 3, "Picky": 2 } },
-    { "name": "Graybeard", "label": "graybeard", "folk": "Dwarf", "weapon": "Staff", "apparel": [ "IronHelm" ],
-      "outfit": "Wanderer", "skillMin": 5, "skillMax": 9, "purseMin": 6, "purseMax": 14, "spend": 0.8, "tastes": [ "Savoury" ], "tempers": { "Picky": 2, "Stingy": 2, "Boastful": 1 } },
-    { "name": "AxeHand", "label": "axe-hand", "folk": "Dwarf", "weapon": "Axe", "apparel": [ "ChainShirt", "IronHelm" ],
-      "outfit": "Wanderer", "skillMin": 7, "skillMax": 12, "purseMin": 4, "purseMax": 12, "spend": 0.8, "tastes": [ "Savoury", "Hot" ], "tempers": { "Rowdy": 3, "Boastful": 2, "Stingy": 1 } },
+    { "name": "ExiledHeir", "label": "heir-in-exile", "folk": "Dwarf", "look": { "beard": "Full" }, "weapon": "ShortSword", "apparel": [ "ChainShirt", "IronHelm" ],
+      "outfit": "DwarfLord", "skillMin": 9, "skillMax": 13, "purseMin": 8, "purseMax": 18, "spend": 0.9, "tastes": [ "Savoury", "Hot" ], "tempers": { "Boastful": 3, "Picky": 2 } },
+    { "name": "Graybeard", "label": "graybeard", "folk": "Dwarf", "look": { "beard": "Braided", "hairColor": "A8A8A4" }, "weapon": "Staff", "apparel": [ "IronHelm" ],
+      "outfit": "DwarfElder", "skillMin": 5, "skillMax": 9, "purseMin": 6, "purseMax": 14, "spend": 0.8, "tastes": [ "Savoury" ], "tempers": { "Picky": 2, "Stingy": 2, "Boastful": 1 } },
+    { "name": "AxeHand", "label": "axe-hand", "folk": "Dwarf", "look": { "beard": "Full" }, "weapon": "Axe", "apparel": [ "ChainShirt" ],
+      "outfit": "DwarfKin", "skillMin": 7, "skillMax": 12, "purseMin": 4, "purseMax": 12, "spend": 0.8, "tastes": [ "Savoury", "Hot" ], "tempers": { "Rowdy": 3, "Boastful": 2, "Stingy": 1 } },
     { "name": "Burrower", "label": "halfling", "folk": "Halfling", "weapon": "Dagger", "apparel": [],
-      "outfit": "Farmhand", "skillMin": 2, "skillMax": 5, "purseMin": 15, "purseMax": 30, "spend": 1.2, "tastes": [ "Sweet", "Savoury" ], "tempers": { "Easy": 3, "Timid": 2, "Picky": 1 } },
-    { "name": "GreyWanderer", "label": "grey wanderer", "folk": "Human", "weapon": "Staff", "apparel": [],
-      "outfit": "Seer", "skillMin": 6, "skillMax": 10, "purseMin": 20, "purseMax": 40, "spend": 1.1, "tastes": [ "Hot", "Fresh" ], "tempers": { "Picky": 2, "Boastful": 2, "Easy": 1 } },
+      "outfit": "Burrowfolk", "skillMin": 2, "skillMax": 5, "purseMin": 15, "purseMax": 30, "spend": 1.2, "tastes": [ "Sweet", "Savoury" ], "tempers": { "Easy": 3, "Timid": 2, "Picky": 1 } },
+    { "name": "GreyWanderer", "label": "grey wanderer", "folk": "Human", "look": { "body": "Male", "hair": "Long", "beard": "Full", "hairColor": "B8B8B4" },
+      "weapon": "Staff", "apparel": [], "outfit": "GreyWizard", "skillMin": 6, "skillMax": 10, "purseMin": 20, "purseMax": 40, "spend": 1.1, "tastes": [ "Hot", "Fresh" ], "tempers": { "Picky": 2, "Boastful": 2, "Easy": 1 } },
     { "name": "Ranger", "label": "ranger", "folk": "Human", "weapon": "ShortSword", "apparel": [ "LeatherJerkin" ],
-      "outfit": "Hunter", "skillMin": 8, "skillMax": 12, "purseMin": 5, "purseMax": 15, "spend": 0.9, "tastes": [ "Fresh", "Savoury" ], "tempers": { "Easy": 2, "Stingy": 1, "Timid": 1 } },
+      "outfit": "Ranger", "skillMin": 8, "skillMax": 12, "purseMin": 5, "purseMax": 15, "spend": 0.9, "tastes": [ "Fresh", "Savoury" ], "tempers": { "Easy": 2, "Stingy": 1, "Timid": 1 } },
     { "name": "ElfArcher", "label": "elf archer", "folk": "Elf", "weapon": "Bow", "apparel": [ "LeatherCap" ],
-      "outfit": "Hunter", "skillMin": 9, "skillMax": 13, "purseMin": 15, "purseMax": 30, "spend": 1.1, "tastes": [ "Fresh", "Sweet" ], "tempers": { "Picky": 3, "Boastful": 1 } }
+      "outfit": "ElfWarden", "skillMin": 9, "skillMax": 13, "purseMin": 15, "purseMax": 30, "spend": 1.1, "tastes": [ "Fresh", "Sweet" ], "tempers": { "Picky": 3, "Boastful": 1 } }
   ],
   "parties": [
     { "name": "GildedSpurs", "label": "the Gilded Spurs", "members": [ "Sellsword", "Bowman", "Hedgewise" ],

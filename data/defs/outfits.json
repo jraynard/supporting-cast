@@ -4,7 +4,7 @@
 // Armor values here are small: clothes are for warmth and looks, not for stopping blades.
 //
 // "outfits" dress people: villagers ("villager": true, one picked per person from their own
-// stream, a dye from each piece's "dyes"), raiders (a raider kind's "outfit"), story people (by
+// stream, a dye from each piece's "dyes"), raiders and adventurers (a kind's "outfit"), story people (by
 // name: Elder, Sorcerer, Captor) and the character creator's presets ("preset": true; "hair",
 // "beard", "eyes" and "hairColor" are the look the preset starts from).
 {
@@ -87,6 +87,23 @@
       "apparel": { "slot": "Cloak", "covers": [ "Torso" ], "sharp": 0.05, "blunt": 0.04, "heat": 0.08, "worn": "apparel/fur_mantle" }
     },
     {
+      "name": "WizardRobe", "label": "wanderer's robe", "category": "Item", "mass": 1.4, "sprite": "items/wizard_robe", "materialsOf": "Cloth", "flammability": 0.8, "maxHp": 70,
+      "description": "A long wool robe to the ankle, wide in the sleeve, belted with a cord: dusty at the hem from a great many roads.",
+      "apparel": { "slot": "Tunic", "covers": [ "Torso", "LeftArm", "RightArm" ], "sharp": 0.04, "blunt": 0.04, "heat": 0.06, "worn": "apparel/wizard_robe" }
+    },
+
+    // ---- Head (cloth: garments, so outfits and the creator may put them on; a helm takes the slot) ----
+    {
+      "name": "WizardHat", "label": "pointed hat", "category": "Item", "mass": 0.3, "sprite": "items/wizard_hat", "materialsOf": "Cloth", "flammability": 0.8, "maxHp": 30,
+      "description": "A tall felt hat with a wide brim, its point long since given up and flopped over to one side.",
+      "apparel": { "slot": "Head", "garment": true, "covers": [ "Head" ], "sharp": 0.02, "blunt": 0.02, "heat": 0.04, "worn": "apparel/wizard_hat" }
+    },
+    {
+      "name": "DwarfHood", "label": "tasselled hood", "category": "Item", "mass": 0.4, "sprite": "items/dwarf_hood", "materialsOf": "Cloth", "flammability": 0.8, "maxHp": 40,
+      "description": "A close wool hood that leaves the face and the beard out in the weather, its long tail hanging down the back to a tassel.",
+      "apparel": { "slot": "Head", "garment": true, "covers": [ "Head" ], "sharp": 0.03, "blunt": 0.03, "heat": 0.06, "worn": "apparel/dwarf_hood" }
+    },
+    {
       "name": "HornedHelm", "label": "horned helm", "category": "Item", "mass": 1.8, "sprite": "items/horned_helm", "maxHp": 90,
       "description": "An iron cap with a riveted brow band and a pair of ox horns: more for the songs than for the fighting.",
       "apparel": { "slot": "Head", "garment": true, "covers": [ "Head" ], "sharp": 0.3, "blunt": 0.15, "heat": 0.06, "worn": "apparel/horned_helm" }
@@ -159,6 +176,22 @@
       "pieces": [ { "def": "Kaftan", "material": "Orchil" }, { "def": "Trousers", "material": "IronBlack" }, { "def": "Turnshoes" }, { "def": "HoodedCloak", "material": "IronBlack" } ] },
     { "name": "Captor", "label": "Captor",
       "pieces": [ { "def": "Tunic", "dyes": [ "Walnut", "IronBlack" ] }, { "def": "Trousers", "dyes": [ "IronBlack", "Walnut" ] }, { "def": "FurBoots" } ] },
+    // The rare companies (adventurers.json): each kind dressed as itself.
+    { "name": "GreyWizard", "label": "Grey wanderer",
+      "pieces": [ { "def": "WizardRobe", "material": "Ash" }, { "def": "WizardHat", "material": "Ash" }, { "def": "Turnshoes" } ] },
+    { "name": "DwarfLord", "label": "Dwarf lord",
+      "pieces": [ { "def": "Tunic", "material": "Woad" }, { "def": "Trousers", "material": "IronBlack" }, { "def": "FurBoots" }, { "def": "FurMantle" } ] },
+    { "name": "DwarfElder", "label": "Dwarf elder",
+      "pieces": [ { "def": "Kaftan", "material": "Walnut" }, { "def": "Trousers", "material": "IronBlack" }, { "def": "FurBoots" } ] },
+    { "name": "DwarfKin", "label": "Dwarf",
+      "pieces": [ { "def": "Tunic", "dyes": [ "Walnut", "Madder", "Woad", "Lichen", "Weld" ] }, { "def": "Trousers", "dyes": [ "Walnut", "IronBlack" ] }, { "def": "FurBoots" },
+                  { "def": "DwarfHood", "dyes": [ "Madder", "Woad", "Lichen", "Weld", "Orchil", "Walnut", "Ash" ] } ] },
+    { "name": "Burrowfolk", "label": "Halfling",
+      "pieces": [ { "def": "Tunic", "dyes": [ "Weld", "Undyed", "Madder" ] }, { "def": "Trousers", "material": "Walnut" }, { "def": "HoodedCloak", "material": "Lichen" } ] },
+    { "name": "Ranger", "label": "Ranger",
+      "pieces": [ { "def": "Tunic", "material": "Walnut" }, { "def": "Trousers", "material": "IronBlack" }, { "def": "FurBoots" }, { "def": "HoodedCloak", "dyes": [ "Walnut", "Lichen" ] } ] },
+    { "name": "ElfWarden", "label": "Elf warden",
+      "pieces": [ { "def": "Kaftan", "material": "Lichen" }, { "def": "Trousers", "material": "Ash" }, { "def": "Turnshoes" }, { "def": "Cloak", "material": "Ash" } ] },
     { "name": "Raider", "label": "Raider",
       "pieces": [ { "def": "Tunic", "dyes": [ "Walnut", "IronBlack", "Madder", "Undyed" ] }, { "def": "Trousers", "dyes": [ "Walnut", "IronBlack" ] }, { "def": "FurBoots" } ] }
   ]

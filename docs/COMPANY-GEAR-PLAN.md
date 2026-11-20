@@ -1,5 +1,10 @@
 # Grey wizard hat and robe, and gear for the rare companies
 
+_Parts 1–4 are built (2026-11-19, docs/HISTORY.md "The rare companies dressed as themselves"); part 5, the emotes'
+body poses, is not. As built: save format 64, not 52; the graybeard and the heir keep their helms over outfits
+without a hood, and the axe-hands put theirs away; a Head item's `_back` layers are drawn behind the body (the
+hood's tail). Not in the plan: a party back from a quest no longer leaves its clothes in the road._
+
 ## Context
 The two Tolkien-inspired rare companies in `data/defs/adventurers.json` borrow outfits that don't fit them:
 - **GreyWanderer** wears the völva `Seer` outfit (kaftan and skirt).

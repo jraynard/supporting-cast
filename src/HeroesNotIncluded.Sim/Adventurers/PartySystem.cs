@@ -395,8 +395,8 @@ public sealed class PartySystem(ulong seed) : ISimSystem, Saving.ISaveState
     private Entity Spawn(Simulation sim, AdventurerKindDef kind, string name, int3 cell, SimRandom rand)
     {
         var e = sim.SpawnCreature(sim.Defs.Creature("Human"), name, cell, Faction.Adventurer, ageDays: rand.Range(19, 45) * 365f, rand: rand);
-        if (kind.Folk is { } folk)
-            sim.World.Add(e, new Kin { Folk = folk });
+        if (kind.KinOf() is { } kin)
+            sim.World.Add(e, kin);
         if (kind.WeaponDef != null)
             sim.Equip(e, kind.WeaponDef);
         if (kind.OutfitDef != null) // clothes first, then armor over them

@@ -21,6 +21,20 @@ public sealed class AdventurerKindDef : Def
     /// </summary>
     public Components.Folk? Folk { get; set; }
 
+    /// <summary>
+    /// The look they always have, part by part (the grey wanderer's long grey hair and beard; a
+    /// dwarf never beardless). Anything left out is derived as anyone's is.
+    /// </summary>
+    public KindLook? Look { get; set; }
+
+    /// <summary>
+    /// What's fixed about how one of these looks (<see cref="Components.Kin"/>), or null when
+    /// nothing is: put on them when they come to town and when they come back from a quest.
+    /// </summary>
+    public Components.Kin? KinOf() =>
+        Folk == null && Look == null ? null
+            : new Components.Kin { Folk = Folk, Body = Look?.BodyType, Hair = Look?.HairStyle, Beard = Look?.BeardStyle, HairColor = Look?.Color ?? 0 };
+
     /// <summary>The Melee and Shooting levels they come with (inclusive range).</summary>
     public int SkillMin { get; set; } = 5;
     public int SkillMax { get; set; } = 10;
@@ -79,6 +93,50 @@ public sealed class AdventurerKindDef : Def
         if (TemperWeights.Count == 0)
             foreach (var t in Enum.GetValues<Adventurers.Temper>())
                 TemperWeights.Add((t, 1f));
+        Look?.Resolve(Name);
+    }
+}
+
+/// <summary>
+/// An adventurer kind's fixed look (<see cref="AdventurerKindDef.Look"/>): <c>body</c>, <c>hair</c>
+/// and <c>beard</c> by their names (<see cref="Components.BodyType"/>, <see cref="Components.HairStyle"/>,
+/// <see cref="Components.BeardStyle"/>), <c>hairColor</c> as RRGGBB hex. Each optional.
+/// </summary>
+public sealed class KindLook
+{
+    public string? Body { get; set; }
+    public string? Hair { get; set; }
+    public string? Beard { get; set; }
+    public string? HairColor { get; set; }
+
+    [JsonIgnore] public Components.BodyType? BodyType { get; private set; }
+    [JsonIgnore] public Components.HairStyle? HairStyle { get; private set; }
+    [JsonIgnore] public Components.BeardStyle? BeardStyle { get; private set; }
+
+    /// <summary>The hair colour as 0xRRGGBB, or 0 when it's left to the look.</summary>
+    [JsonIgnore] public uint Color { get; private set; }
+
+    internal void Resolve(string kind)
+    {
+        BodyType = Parse<Components.BodyType>(kind, "body", Body);
+        HairStyle = Parse<Components.HairStyle>(kind, "hair", Hair);
+        BeardStyle = Parse<Components.BeardStyle>(kind, "beard", Beard);
+        Color = 0;
+        if (!string.IsNullOrEmpty(HairColor))
+        {
+            if (HairColor.Length != 6 || !uint.TryParse(HairColor, System.Globalization.NumberStyles.HexNumber, null, out var rgb))
+                throw new Exception($"Adventurer kind {kind}: hairColor '{HairColor}' isn't RRGGBB hex");
+            Color = rgb == 0 ? 0x010101u : rgb; // 0 means "derived": pure black is as near as makes no odds
+        }
+    }
+
+    private static T? Parse<T>(string kind, string field, string? text) where T : struct, Enum
+    {
+        if (string.IsNullOrEmpty(text))
+            return null;
+        if (!Enum.TryParse<T>(text, true, out var v) || !Enum.IsDefined(v))
+            throw new Exception($"Adventurer kind {kind}: {field} '{text}' isn't one of {string.Join(", ", Enum.GetNames<T>())}");
+        return v;
     }
 }
 
