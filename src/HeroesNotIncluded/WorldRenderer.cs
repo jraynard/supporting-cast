@@ -615,6 +615,12 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
             }
             if (w.TryGet<Equipment>(e, out var eq) && w.IsAlive(eq.Weapon) && !c.Dead && !c.Downed && (c.Def.Race != Race.Human || w.Get<Thing>(eq.Weapon).Def.Held == null))
                 Billboard(S(w.Get<Thing>(eq.Weapon).Def.Sprite), p.Pos - cam.Right * 0.3f * size + WorldScale.Rise(size * 0.25f), 0.45f, 0.45f, Rgba.White, level);
+            // A stool held to throw (Hurling): up in both hands, raised higher as it's drawn back.
+            if (w.TryGet<Sim.Combat.Hefting>(e, out var heft) && !c.Downed && !c.Dead)
+            {
+                var back = Sim.Combat.Hurling.Charge(sim, e);
+                Billboard(S(heft.Def.Sprite), p.Pos + WorldScale.Rise(size * (0.75f + 0.35f * back)) - cam.Right * (0.15f * back), 0.55f, 0.55f, Rgba.White, level);
+            }
             var carried = w.Get<Carrying>(e).Item;
             if (!carried.IsNull && w.IsAlive(carried))
             {

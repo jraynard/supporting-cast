@@ -378,6 +378,11 @@ public sealed class AvatarSystem : ISimSystem
         // Arms full of a creature (someone hurt for a bed, a carcass for the butcher spot): set it down.
         if (Rescues.CarriedBy(sim, avatar) is { IsNull: false } load)
             return tool is AvatarTool.Use or AvatarTool.Drop && InReach(here, cell) ? Rescues.SetDownAt(sim, load, cell) : AvatarAction.None;
+        // A stool held to throw: F sets it down. Fists up, F at one picks it up (else it's sat on).
+        if (w.Has<Combat.Hefting>(avatar))
+            return tool is AvatarTool.Use or AvatarTool.Drop ? Combat.Hurling.ActionAt(sim, avatar, cell, here, held) ?? AvatarAction.None : AvatarAction.None;
+        if (tool == AvatarTool.Use && Combat.Hurling.ActionAt(sim, avatar, cell, here, held) is { } heft)
+            return heft;
         // Game: shot from as far as the bow carries (or struck from beside it); a carcass in reach is butchered.
         if (tool == AvatarTool.Use && Ai.AvatarHunting.ActionAt(sim, avatar, cell, here) is { } hunting)
             return hunting;
@@ -1104,6 +1109,8 @@ public sealed class AvatarSystem : ISimSystem
                 AiSystem.Order(sim, avatar, new ButcherJob(action.Target));
                 break;
             case AvatarActionKind.Carry:
+                if (Combat.Hurling.Act(sim, avatar, action))
+                    break; // a stool, picked up or set down
                 var lifting = !w.Has<Carried>(action.Target);
                 Rescues.Carry(sim, avatar, action.Target, action.Cell);
                 // An empath lifting someone they can't call back yet hears why (most likely the mana).

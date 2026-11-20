@@ -52,6 +52,8 @@ public sealed partial class VillageGame
 
     private void DrawFightHint()
     {
+        if (HoldingStool)
+            return; // the stool's own hint (DrawStoolThrow)
         if (!HasAvatar || !(InRound || ArenaFoe != null) || !_sim.World.Get<Creature>(_avatar).Able || NearestFoe() is not { } foe)
             return;
         var w = _sim.World;
@@ -178,6 +180,8 @@ public sealed partial class VillageGame
     /// </summary>
     private bool HandleFreeMouse(Input input)
     {
+        if (HoldingStool || _stoolSent)
+            return HandleStool(); // a stool in hand: drawn back and hurled, as a bucket's swung
         if (!WeaponDrawn)
             _bowSent = false; // sheathed lets it down (DrawWeaponCommand)
         if (!WeaponDrawn)

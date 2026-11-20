@@ -78,6 +78,7 @@ public sealed partial class VillageGame
             DrawFightHint();
         DrawCameraModeHint();
         DrawBucketSwing();
+        DrawStoolThrow();
         if (WorkScenesDemo)
             DrawWorkSceneGallery();
         // Free windows.

@@ -387,13 +387,6 @@ public sealed class BrawlCrisis : ICrisis
         }
     }
 
-    /// <summary>A stool hurled in a brawl: what it does to whoever it hits (it breaks over them).</summary>
-    public static readonly AttackDef Hurled = new()
-    {
-        Name = "HurledStool", Label = "a hurled stool", Verb = "hurls a stool at", DamageMin = 3f, DamageMax = 7f,
-        DamageType = DamageType.Blunt, Glance = 0f,
-    };
-
     /// <summary>How far (cells) a stool's hurled.</summary>
     public const int ThrowRange = 6;
 
@@ -413,10 +406,8 @@ public sealed class BrawlCrisis : ICrisis
             return false;
         var def = w.Get<Thing>(stool).Def;
         Gone(sim, stool);
-        sim.RecentShots.RemoveAll(s => sim.Clock.Tick - s.Tick > SimClock.TicksPerSecond * 5);
-        sim.RecentShots.Add(new ShotEvent(sim.Clock.Tick, me.Pos, them.Pos, Ranged: true, Hit: true, "Crash!", def.Sprite));
-        RealtimeAttacks.Strike(sim, thrower, at, Hurled);
-        sim.Messages.Add(MessageKind.Warning, $"{w.Get<Creature>(thrower).Name} hurls a {def.Label} at {w.Get<Creature>(at).Name}, and it breaks over them!", them.Cell);
+        var d = new float2(them.Pos.X - me.Pos.X, them.Pos.Y - me.Pos.Y);
+        Hurling.Fly(sim, thrower, def, DetMath.Atan2(d.Y, d.X), MathF.Sqrt(d.X * d.X + d.Y * d.Y) + 0.5f, 1f);
         return true;
     }
 
@@ -429,6 +420,13 @@ public sealed class BrawlCrisis : ICrisis
             return;
         sim.Messages.Add(MessageKind.Warning, string.Format(System.Globalization.CultureInfo.InvariantCulture, told, t.Def.Label), t.Cell);
         Gone(sim, piece);
+    }
+
+    /// <summary>A piece from <paramref name="cell"/> broken by someone not in it (a player's thrown stool): counted with the rest if it was the inn's.</summary>
+    public void Broke(Simulation sim, int3 cell)
+    {
+        if (Buildings.At(sim, cell) == _inn)
+            Smashed++;
     }
 
     /// <summary>A piece gone from the inn: the carpenter's to set back (<see cref="Modding.Trades.Lost"/>).</summary>

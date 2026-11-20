@@ -196,6 +196,7 @@ public sealed class HealthSystem : ISimSystem
             sim.World.Get<Mover>(e).Stop();
             sim.Messages.Add(c.Faction == Faction.Village ? MessageKind.Danger : MessageKind.Info, $"{c.Name} has collapsed.", cell);
             Combat.Plunders.Drop(sim, e);
+            Combat.Hurling.SetDown(sim, e); // a stool held drops where they fall
         }
         else if (c.Faction == Faction.Raider && sim.World.Has<Combat.Leaving>(e))
         {

@@ -232,7 +232,7 @@ public static class Blows
         var w = sim.World;
         // A player may swing at the air (Target null): it lands on whoever's in its sweep.
         var aimed = !target.IsNull;
-        if (!w.IsAlive(attacker) || attacker == target || w.Has<Windup>(attacker) || !w.TryGet<Creature>(attacker, out var c) || !c.Able
+        if (!w.IsAlive(attacker) || attacker == target || w.Has<Windup>(attacker) || w.Has<Hefting>(attacker) || !w.TryGet<Creature>(attacker, out var c) || !c.Able
             || (aimed && (!w.IsAlive(target) || !w.TryGet<Creature>(target, out var tc) || tc.Dead)))
             return false;
         var index = CombatRules.Attacks(sim, attacker).IndexOf(attack);
