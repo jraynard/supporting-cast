@@ -63,14 +63,15 @@ public static class CombatRules
 {
     public const float MinChance = 0.05f, MaxChance = 0.95f;
 
-    /// <summary>What a creature can attack with: its weapon, then natural attacks. None if it won't fight.</summary>
+    /// <summary>What a creature can attack with: its weapon (not in the inn, <see cref="HouseRules"/>), then natural attacks. None if it won't fight.</summary>
     public static List<AttackDef> Attacks(Simulation sim, Entity e)
     {
         var w = sim.World;
         var list = new List<AttackDef>();
         if (w.Has<NonViolent>(e))
             return list;
-        if (w.TryGet<Equipment>(e, out var eq) && w.IsAlive(eq.Weapon) && w.Get<Thing>(eq.Weapon).Def.Weapon is { } weapon)
+        if (w.TryGet<Equipment>(e, out var eq) && w.IsAlive(eq.Weapon) && w.Get<Thing>(eq.Weapon).Def.Weapon is { } weapon
+            && !HouseRules.NoSteel(sim, e)) // the inn's rule: fists only (raids aside)
             list.Add(weapon);
         var c = w.Get<Creature>(e);
         list.AddRange(c.Stage(sim.Clock.Tick).Attacks);
