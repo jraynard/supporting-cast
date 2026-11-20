@@ -23,6 +23,28 @@
       { "id": "shop", "text": "Open your shop (~J~): what customers have asked of you, and the prices on your sign.", "ui": "shop",
         "more": "The Shop button on the bar at the bottom of the screen does the same." },
       { "id": "controls", "text": "Press ~H~ for the controls card. Every key is on it, any time. That's the basics: the rest is the trade." } ] },
+  // Chapters every trade shares, after the basics, each by "name" (a mod may $patch one): "core" ones in the main run, each kept once per
+  // character (Scenarios/Lessons: CombatLesson). "sparring" sets out a training dummy and a sparring
+  // partner nearby (Scenarios/Sparring). Any action's key as ~@id~ (~@draw~, ~@strike~, ~@guard~...).
+  "shared": [
+    { "name": "combat", "title": "Standing your ground", "core": true, "sparring": true,
+      "blurb": "Fists up, a blow on the dummy, then a round with Hobb: block, parry and dodge.",
+      "steps": [
+        { "id": "draw", "text": "Raiders come, and the heroes are never in when they do. Press ~@draw~ to put up your fists (with a weapon in hand, it draws it).",
+          "more": "Your weapon's in your pack for this one: it's bare knuckles. ~@draw~ again puts your fists down." },
+        { "id": "dummy", "text": "~Pointer~ aims. Press ~@strike~ to hit the training dummy. ~@heavy~ swings heavy: slower, and it hurts more.",
+          "more": "Get close: fists don't reach far. A blow lands on whatever's in its sweep the way you aimed it, friend or foe." },
+        { "id": "brawl", "text": "Now go and stand in front of Hobb with your fists up. He'll square up to you.", "aside": true },
+        { "id": "block", "text": "Hold ~@guard~ as his punch comes, facing him. A blocked blow still stings, a little.",
+          "more": "~Pointer~ turns you to face him. A guard only stops what's in front of it." },
+        { "id": "parry", "text": "Parry: raise ~@guard~ just as his punch lands, when it flashes. Then hit him while he's off balance.",
+          "more": "Let your guard down between punches. A parry is a guard raised right at the flash, not one held up the whole time." },
+        { "id": "dodge", "text": "Dodge: press ~@dash~ with a direction as his punch comes, or just step out of its way.",
+          "more": "Watch his shoulder. Dash just before the punch lands, not when he starts it." } ],
+      "notes": [ "A parried foe is left open: strike then for a riposte, harder than any blow.",
+                 "Swinging, guarding and dashing all cost wind. Tired, a heavy blow breaks your guard and lands in full.",
+                 "Arrows can't be parried: guard facing them, or dash. A dragon can't be parried either; dash late, as it bites.",
+                 "Your weapon's in your pack (~Tab~). Take it in hand and ~@draw~ draws it. Everything here works the same with a blade, only it hurts more." ] } ],
   "trades": [
     // The innkeeper keeps the tavern (the bar, the rooms and the quest board), the cook the kitchen:
     // under one roof at Millbrook's inn, apart where a town has a cookhouse. "serves": the services at the workplace a trade sees to (and prices on the sign).

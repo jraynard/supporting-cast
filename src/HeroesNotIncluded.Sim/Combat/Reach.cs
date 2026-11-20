@@ -144,6 +144,43 @@ public static class Reach
         return hit;
     }
 
+    /// <summary>
+    /// A target (<see cref="Defs.BuildingDef.Target"/>: a training dummy) in the sweep of a blow aimed
+    /// along <paramref name="aim"/>, nearest first; Entity.Null if none. Only a blow that strikes nobody
+    /// looks for one (<see cref="Blows"/>): a dummy takes a blow and keeps no hurt from it.
+    /// </summary>
+    /// <summary>How far a blow's edge counts into a target prop: a solid one fills its cell.</summary>
+    public const float PropRadius = 0.5f;
+
+    public static Entity TargetInSweep(Simulation sim, Entity attacker, AttackDef attack, float aim)
+    {
+        if (attack.Ranged)
+            return Entity.Null;
+        var w = sim.World;
+        var me = w.Get<Position>(attacker);
+        var shape = ShapeOf(sim, attacker, attack);
+        var span = (int)MathF.Ceiling(shape.Length + 1f);
+        var found = Entity.Null;
+        var best = float.MaxValue;
+        for (var dy = -span; dy <= span; dy++)
+            for (var dx = -span; dx <= span; dx++)
+            {
+                var c = new int3(me.Cell.X + dx, me.Cell.Y + dy, me.Cell.Z);
+                if (!sim.Map.InBounds(c) || sim.Map.Structure[sim.Map.Idx(c)] is not { IsNull: false } s
+                    || !w.TryGet<Thing>(s, out var t) || t.Def.Building is not { Target: true })
+                    continue;
+                var d = new float2(t.Cell.X + 0.5f - me.Pos.X, t.Cell.Y + 0.5f - me.Pos.Y);
+                var dist = MathF.Sqrt(d.X * d.X + d.Y * d.Y);
+                if (dist - PropRadius > shape.Length || dist >= best)
+                    continue;
+                var angle = MathF.Abs(MathF.IEEERemainder(DetMath.Atan2(d.Y, d.X) - aim, MathF.Tau));
+                var edge = Math.Min(1f, PropRadius / Math.Max(dist, 0.01f));
+                if (dist < 0.45f || angle <= shape.HalfArc + DetMath.Atan2(edge, MathF.Sqrt(1f - edge * edge)))
+                    (found, best) = (s, dist);
+            }
+        return found;
+    }
+
     /// <summary>Half the width of a target's painted face (<see cref="Defs.BuildingDef.Target"/>), in cells.</summary>
     public const float FaceRadius = 0.38f;
 

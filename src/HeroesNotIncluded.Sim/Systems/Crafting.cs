@@ -489,12 +489,58 @@ public static class Crafting
 
     // ---------------- Repair ----------------
 
+    /// <summary>What of a repair's material the worker has to hand: in their hands, their pack, or a chest in reach.</summary>
+    private static List<Entity> RepairStock(Simulation sim, Entity worker, ThingCount material)
+    {
+        var w = sim.World;
+        return Core.CraftCommandRules.Sources(sim, worker)
+            .Where(e => w.IsAlive(e) && Accepts(material, null, w.Get<Thing>(e).Def, w.Get<Thing>(e).Material)).ToList();
+    }
+
+    /// <summary>How much of a repair's material the worker has to hand (<see cref="PayForRepair"/> pays from the same).</summary>
+    public static int ToHandForRepair(Simulation sim, Entity worker, ThingCount material) =>
+        RepairStock(sim, worker, material).Sum(e => sim.World.Get<Stack>(e).Count);
+
+    /// <summary>
+    /// Why a mend of <paramref name="item"/> at <paramref name="station"/> can't start: the material
+    /// isn't to hand. Said before any work's done, so a smith isn't left heating and hammering a piece
+    /// for nothing: what it takes, what they have, and where it's made if their trade makes it. Null if
+    /// there's enough (or nothing to mend).
+    /// </summary>
+    public static string? ShortForRepair(Simulation sim, Entity worker, Entity station, Entity item)
+    {
+        var w = sim.World;
+        if (!w.IsAlive(station) || RepairCost(sim, w.Get<Thing>(station).Def, item) is not { } cost)
+            return null;
+        var have = ToHandForRepair(sim, worker, cost.Material);
+        if (have >= cost.Count)
+            return null;
+        var label = cost.Material.ThingDef.Label;
+        var text = $"Mending the {sim.LabelOf(item)} takes {cost.Count} {label}, and you have {(have == 0 ? "none" : have.ToString())} to hand (your hands, your pack, or a chest in reach).";
+        if (MadeAt(sim, worker, cost.Material.ThingDef) is { } made)
+            text += $" The {made.Station.Label.ToLowerInvariant()} makes {made.Recipe.Label}.";
+        return text;
+    }
+
+    /// <summary>A station and its recipe that make this (the forge's iron bars): one the worker's trade knows first, else any; null if none.</summary>
+    public static (ThingDef Station, RecipeDef Recipe)? MadeAt(Simulation sim, Entity worker, ThingDef thing)
+    {
+        static RecipeDef? Makes(ThingDef station, ThingDef thing) => station.Recipes.Find(r => r.Products.Exists(p => p.ThingDef == thing));
+        if (sim.World.TryGet<Trade>(worker, out var trade))
+            foreach (var known in trade.Def.KnownStations)
+                if (Makes(known, thing) is { } recipe)
+                    return (known, recipe);
+        foreach (var station in sim.Defs.AllThings)
+            if (station.Building?.Workbench != null && Makes(station, thing) is { } recipe)
+                return (station, recipe);
+        return null;
+    }
+
     /// <summary>Use up a repair's material from what the worker has to hand. False (nothing used) if they're short.</summary>
     public static bool PayForRepair(Simulation sim, Entity worker, ThingCount material, int count)
     {
         var w = sim.World;
-        var payWith = Core.CraftCommandRules.Sources(sim, worker)
-            .Where(e => w.IsAlive(e) && Accepts(material, null, w.Get<Thing>(e).Def, w.Get<Thing>(e).Material)).ToList();
+        var payWith = RepairStock(sim, worker, material);
         if (payWith.Sum(e => w.Get<Stack>(e).Count) < count)
             return false;
         foreach (var e in payWith)

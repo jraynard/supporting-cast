@@ -159,7 +159,7 @@ public static class WeaponWear
         if (Systems.Crafting.RepairCost(sim, w.Get<Thing>(station).Def, item) is { } cost
             && !Systems.Crafting.PayForRepair(sim, worker, cost.Material, cost.Count))
         {
-            sim.Messages.Tell(worker, MessageKind.Info, $"Mending the {sim.LabelOf(item)} takes {cost.Count} {cost.Material.ThingDef.Label}.", at);
+            sim.Messages.Tell(worker, MessageKind.Warning, $"The mend came to nothing: the {sim.LabelOf(item)} takes {cost.Count} {cost.Material.ThingDef.Label}, and it's no longer to hand.", at);
             return false;
         }
         ref var t = ref w.Get<Thing>(item);

@@ -497,7 +497,7 @@ public static class Smithing
             return;
         if (!Crafting.PayForRepair(sim, smith, cost.Material, cost.Count))
         {
-            sim.Messages.Add(MessageKind.Info, $"Mending the {label} needs {cost.Count} {cost.Material.ThingDef.Label}.", cell);
+            sim.Messages.Tell(smith, MessageKind.Warning, $"The mend came to nothing: the {label} takes {cost.Count} {cost.Material.ThingDef.Label}, and it's no longer to hand.", cell);
             return;
         }
         var quality = p.BlowQuality;

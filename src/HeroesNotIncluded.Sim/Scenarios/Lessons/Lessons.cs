@@ -45,7 +45,7 @@ public sealed class LessonRun
     public string Key => KeyOf(Trade, Def);
 
     public static string KeyOf(TradeDef trade, LessonDef def) =>
-        def.Id == Tutorial.BasicsId ? Tutorial.BasicsKey : $"{trade.Name}/{def.Id}";
+        def.Id == Tutorial.BasicsId ? Tutorial.BasicsKey : trade.Lessons.Contains(def) ? $"{trade.Name}/{def.Id}" : Tutorial.SharedKey(def.Id);
 
     public long StartTick { get; }
 
@@ -114,12 +114,12 @@ public sealed record Lesson(string Trade, string Id, string[] Steps, Func<Simula
 /// <summary>Every trade's lessons, by trade and id (the words are in trades.json's <c>lessons</c>).</summary>
 public static class Lessons
 {
-    private static readonly Lesson[] Core = [BasicsLesson.Lesson, .. SmithLessons.All, .. TinkerLessons.All, .. InnLessons.All, .. KitchenLessons.All, .. EmpathLessons.All];
+    private static readonly Lesson[] Core = [BasicsLesson.Lesson, CombatLesson.Lesson, .. SmithLessons.All, .. TinkerLessons.All, .. InnLessons.All, .. KitchenLessons.All, .. EmpathLessons.All];
 
     /// <summary>The game's lessons, then every registered trade's (<see cref="Modding.SimRegistry.Lesson"/>).</summary>
     public static IReadOnlyList<Lesson> All => [.. Core, .. Modding.SimContent.Lessons];
 
-    /// <summary>The trade's lesson by id, or one every trade shares (<see cref="BasicsLesson"/>, trade "*").</summary>
+    /// <summary>The trade's lesson by id, or one every trade shares (<see cref="BasicsLesson"/>, <see cref="CombatLesson"/>: trade "*").</summary>
     public static Lesson? For(string trade, string id) =>
         All.FirstOrDefault(l => l.Trade == trade && l.Id == id) ?? All.FirstOrDefault(l => l.Trade == BasicsLesson.AnyTrade && l.Id == id);
 

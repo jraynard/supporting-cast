@@ -229,10 +229,12 @@ public sealed class SoundDirector(AudioEngine audio)
             if (b.Tick <= _blowsSeen)
                 continue;
             newest = Math.Max(newest, b.Tick);
+            // A blow into a training dummy (a thing, not a creature) is heard where it stands.
+            var dummy = w.IsAlive(b.Target) && !w.Has<Position>(b.Target) && w.TryGet<Thing>(b.Target, out var struckThing) ? struckThing.Cell : (int3?)null;
             var where = w.IsAlive(b.Target) && w.Has<Position>(b.Target) ? b.Target : b.Attacker;
-            if (!w.IsAlive(where) || !w.Has<Position>(where))
+            if (dummy == null && (!w.IsAlive(where) || !w.Has<Position>(where)))
                 continue;
-            var at = w.Get<Position>(where).Pos;
+            var at = dummy is { } dc ? Position.CenterOf(dc) : w.Get<Position>(where).Pos;
             if (Reach(sim, view, me, Cell(at)) is not { } muffle)
                 continue;
             _recentFight.Add(_time);
@@ -256,6 +258,9 @@ public sealed class SoundDirector(AudioEngine audio)
                     break;
                 case Sim.Combat.BlowOutcome.Dodged:
                     audio.Play(Sounds.Miss, pos, gain: 0.9f, muffle: muffle);
+                    break;
+                case Sim.Combat.BlowOutcome.Hit when dummy != null:
+                    audio.Play(Sounds.Block, pos, gain: 0.7f, muffle: muffle, delay: 0.03f); // a dull knock on straw
                     break;
             }
         }

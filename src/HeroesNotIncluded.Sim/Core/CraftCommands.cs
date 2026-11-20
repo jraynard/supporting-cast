@@ -208,6 +208,13 @@ public sealed record RepairCommand(Entity Avatar, Entity Station, Entity Item) :
             || !AvatarSystem.InReach(sim, w.Get<Position>(Avatar).Cell, Station)
             || Crafting.RepairCost(sim, w.Get<Thing>(Station).Def, Item) == null)
             return;
+        // Short of the material: said now, before the work, not after it (a playtester hammered a blade
+        // through again and again, the mend coming to nothing each time for want of a bar).
+        if (Crafting.ShortForRepair(sim, Avatar, Station, Item) is { } shortOf)
+        {
+            sim.Messages.Tell(Avatar, MessageKind.Warning, shortOf, w.Get<Thing>(Station).Cell);
+            return;
+        }
         if (Work.Smithing.AppliesToRepair(sim, Avatar, Station))
             Work.Smithing.BeginMending(sim, Avatar, Station, Item);
         else if (Modding.Trades.MendingAt(sim, Avatar, Station, Item) is { } trade)
