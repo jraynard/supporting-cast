@@ -91,15 +91,7 @@ public sealed partial class VillageGame
         ImGui.TextDisabled($"{recorder.Events.Count} events{(recorder.Spoiled is { } why ? $"; spoiled: {why}" : "")}");
     }
 
-    private static string CrisisLabel(CrisisKind kind) => kind switch
-    {
-        CrisisKind.Raid => "Raiders",
-        CrisisKind.Fire => "Fire",
-        CrisisKind.Shortage => "The shortage",
-        CrisisKind.Plague => "Fever",
-        CrisisKind.Dragon => "The dragon",
-        _ => kind.ToString(),
-    };
+    private static string CrisisLabel(CrisisKind kind) => HeroesNotIncluded.Sim.Director.CrisisTypes.Label(kind);
 
     /// <summary>The round's over: write the recording to the replays folder.</summary>
     private void KeepReplay(ReplayRecorder recorder)

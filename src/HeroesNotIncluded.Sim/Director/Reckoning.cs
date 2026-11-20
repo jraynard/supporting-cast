@@ -183,7 +183,7 @@ public sealed class Reckoning : ISimSystem, ISaveState
         w.Int(_crises.Count);
         foreach (var (kind, met) in _crises)
         {
-            w.Int((int)kind);
+            w.String(kind.Name);
             w.Bool(met);
         }
         w.Int(AdventurersDiedInTown);
@@ -204,7 +204,7 @@ public sealed class Reckoning : ISimSystem, ISaveState
         _crises.Clear();
         if (r.Version >= 31)
             for (var n = r.Count(10_000); n > 0; n--)
-                _crises.Add(((Defs.CrisisKind)r.Int(), r.Bool()));
+                _crises.Add((r.Version >= 65 ? new Defs.CrisisKind(r.String()) : Defs.CrisisKind.FromOld(r.Int()) ?? Defs.CrisisKind.Raid, r.Bool()));
         AdventurersDiedInTown = r.Version >= 41 ? r.Int() : 0; // came with format 41
     }
 }

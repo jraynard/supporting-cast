@@ -145,7 +145,7 @@ public sealed class PartySystem(ulong seed) : ISimSystem, Saving.ISaveState
         // Nobody rides in after dark: they make camp and come in the morning.
         if (Ai.AiQueries.IsNight(sim))
             return;
-        var parties = sim.Defs.AllParties.Where(p => !p.Traveller && !p.Rare).ToList();
+        var parties = sim.Defs.AllParties.Where(p => p.Regular).ToList();
         if (rareDue)
         {
             _rareCame = true;

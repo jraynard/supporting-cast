@@ -452,12 +452,13 @@ public sealed record DevBreakBridgeCommand : IDevCommand
 /// Dev: a crisis of a kind now, as the Director would send it (<see cref="Director.Director.Send"/>).
 /// Outside a round it starts but nobody judges it met or not.
 /// </summary>
-public sealed record DevCrisisCommand(CrisisKind Kind) : IDevCommand
+/// <param name="Kind">The kind's name (<see cref="Director.CrisisTypes"/>).</param>
+public sealed record DevCrisisCommand(string Kind) : IDevCommand
 {
     public void Apply(Simulation sim)
     {
-        if (!Director.Director.CanSend(Kind) || sim.Director.Send(sim, Kind) == null)
-            sim.Messages.Add(MessageKind.Info, $"No {Kind.ToString().ToLowerInvariant()} could come now.");
+        if (Kind is not { Length: > 0 and <= 64 } || Director.CrisisTypes.Find(Kind) is not { } type || sim.Director.Send(sim, type.Kind) == null)
+            sim.Messages.Add(MessageKind.Info, $"No {Director.CrisisTypes.Label(new CrisisKind(Kind ?? "")).ToLowerInvariant()} could come now.");
     }
 }
 

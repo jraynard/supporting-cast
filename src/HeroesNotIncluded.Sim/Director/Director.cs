@@ -105,8 +105,8 @@ public sealed class Director(ulong seed) : ISimSystem, ISaveState
     public int Met { get; private set; }
     public int Unmet { get; private set; }
 
-    /// <summary>Crisis kinds the game can send so far; the season's other kinds are passed over.</summary>
-    public static bool CanSend(CrisisKind kind) => kind is CrisisKind.Raid or CrisisKind.Fire or CrisisKind.Shortage or CrisisKind.Plague or CrisisKind.Dragon;
+    /// <summary>Crisis kinds something registers (<see cref="CrisisTypes"/>); the season's other kinds are passed over.</summary>
+    public static bool CanSend(CrisisKind kind) => CrisisTypes.Of(kind) != null;
 
     public void Enable(DifficultyDef? difficulty)
     {
@@ -226,7 +226,7 @@ public sealed class Director(ulong seed) : ISimSystem, ISaveState
             var kind = _kind[i] ?? Decide(sim, season, i);
             var hours = beat.AfterHours[0] + (beat.AfterHours[1] - beat.AfterHours[0]) * _rand.NextFloat();
             var at = sim.Clock.Tick + SimClock.HoursToTicks(hours);
-            var lasts = kind == CrisisKind.Dragon ? DragonCrisis.Hours : season.CrisisHours;
+            var lasts = kind is { } k ? CrisisTypes.Hours(k, season) : season.CrisisHours;
             var replaced = beat.Replaces.Length == 0 ? -1 : season.Beats.FindIndex(b => b.Id == beat.Replaces);
             if (kind == null || at + SimClock.HoursToTicks(lasts) > sim.Round.SetupTick(sim)
                 || (replaced >= 0 && replaced < _fired.Count && (_fired[replaced] || _planned[replaced] != null)))
@@ -443,15 +443,7 @@ public sealed class Director(ulong seed) : ISimSystem, ISaveState
     /// <summary>Send a crisis now (the beats, tests and the debug panel). Null if it couldn't come.</summary>
     public ICrisis? Send(Simulation sim, CrisisKind kind, float strength = 1f)
     {
-        ICrisis? crisis = kind switch
-        {
-            CrisisKind.Raid => RaidCrisis.Begin(sim, _rand, Difficulty, strength),
-            CrisisKind.Fire => FireCrisis.Begin(sim, _rand),
-            CrisisKind.Shortage => ShortageCrisis.Begin(sim),
-            CrisisKind.Plague => PlagueCrisis.Begin(sim, _rand),
-            CrisisKind.Dragon => DragonCrisis.Begin(sim, _rand),
-            _ => null,
-        };
+        var crisis = CrisisTypes.Of(kind)?.Begin(sim, _rand, Difficulty, strength);
         if (crisis != null)
             _active.Add(crisis);
         return crisis;
@@ -490,8 +482,7 @@ public sealed class Director(ulong seed) : ISimSystem, ISaveState
         {
             w.Long(_beatAt[i]);
             w.Bool(_fired[i]);
-            w.Bool(_kind[i] != null);
-            w.Int((int)(_kind[i] ?? 0));
+            w.NullableString(_kind[i]?.Name);
             w.Bool(_planned[i] != null);
             _planned[i]?.Save(w);
             w.Bool(_fixed[i]);
@@ -501,7 +492,7 @@ public sealed class Director(ulong seed) : ISimSystem, ISaveState
         w.Int(_active.Count);
         foreach (var crisis in _active)
         {
-            w.Int((int)crisis.Kind);
+            w.String(crisis.Kind.Name);
             crisis.Save(w);
         }
         w.Long(_quietSince);
@@ -528,12 +519,19 @@ public sealed class Director(ulong seed) : ISimSystem, ISaveState
         {
             _beatAt.Add(r.Long());
             _fired.Add(r.Bool());
-            if (r.Version >= 60)
+            if (r.Version >= 65)
+            {
+                // From format 65 a kind is saved by name (a mod's among them); one whose mod is off is settled again.
+                _kind.Add(r.NullableString() is { } name && CrisisTypes.Find(name) is { } type ? type.Kind : null);
+                _planned.Add(r.Bool() ? PlannedRaid.Read(r) : null);
+                _fixed.Add(r.Bool());
+            }
+            else if (r.Version >= 60)
             {
                 // From format 60 a beat's kind is settled a warning's lead before it's due, and its moment may be fixed.
                 var known = r.Bool();
                 var kind = r.Int();
-                _kind.Add(known && Enum.IsDefined((CrisisKind)kind) ? (CrisisKind)kind : null);
+                _kind.Add(known ? CrisisKind.FromOld(kind) : null);
                 _planned.Add(r.Bool() ? PlannedRaid.Read(r) : null);
                 _fixed.Add(r.Bool());
             }
@@ -541,7 +539,7 @@ public sealed class Director(ulong seed) : ISimSystem, ISaveState
             {
                 // From format 13 each beat's kind was settled when it was planned (and a raid when it was warned of).
                 var kind = r.Int();
-                _kind.Add(Enum.IsDefined((CrisisKind)kind) ? (CrisisKind)kind : CrisisKind.Raid);
+                _kind.Add(CrisisKind.FromOld(kind) ?? CrisisKind.Raid);
                 var plan = r.Bool() ? PlannedRaid.Read(r) : null;
                 _planned.Add(plan);
                 _fixed.Add(plan != null);
@@ -558,16 +556,9 @@ public sealed class Director(ulong seed) : ISimSystem, ISaveState
         _active.Clear();
         for (var n = r.Count(1000); n > 0; n--)
         {
-            var kind = (CrisisKind)r.Int();
-            _active.Add(kind switch
-            {
-                CrisisKind.Raid => RaidCrisis.Read(r),
-                CrisisKind.Fire => FireCrisis.Read(r),
-                CrisisKind.Shortage => ShortageCrisis.Read(r),
-                CrisisKind.Plague => PlagueCrisis.Read(r),
-                CrisisKind.Dragon => DragonCrisis.Read(r),
-                _ => throw new SaveException($"Unknown crisis kind {kind}"),
-            });
+            var name = r.Version >= 65 ? r.String() : CrisisKind.FromOld(r.Int())?.Name ?? "";
+            var type = CrisisTypes.Find(name) ?? throw new SaveException($"A crisis under way of a kind nothing here knows ({name}): is a mod missing?");
+            _active.Add(type.Read(r));
         }
         _quietSince = -1;
         _lastIncident = -1;

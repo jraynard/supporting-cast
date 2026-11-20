@@ -75,7 +75,7 @@
       // A traditional inn: a common room with a bar, a hearth and tables at the front; a kitchen
       // and a storeroom behind it; and rooms to let upstairs, reached by the stair by the hearth.
       // Where the innkeeper works.
-      "name": "Inn", "roles": [ "Tavern", "Kitchen" ], "label": "inn", "icon": "buildings/table",
+      "name": "Inn", "roles": [ "Tavern", "Kitchen" ], "label": "inn", "noSteel": true, "icon": "buildings/table",
       "description": "A two-storey inn: a common room with a bar and a fireplace, a kitchen and a storeroom behind, and rooms to let upstairs.",
       "layout": [
         "WW.WOWWWWWOWW",
@@ -350,7 +350,7 @@
       // An inn with no kitchen of its own, for a town whose cook keeps a cookhouse: the Inn's common
       // room, bar, storeroom and rooms upstairs, and a scullery behind where the kitchen would be.
       // The innkeeper's; the meals are the cookhouse's.
-      "name": "LandingInn", "roles": [ "Tavern" ], "label": "inn", "icon": "buildings/table",
+      "name": "LandingInn", "roles": [ "Tavern" ], "label": "inn", "noSteel": true, "icon": "buildings/table",
       "description": "A two-storey inn: a common room with a long bar and a fireplace, a scullery and a storeroom behind, and rooms to let upstairs. No kitchen: the food comes from the cookhouse.",
       "layout": [
         "WWWWWWWWWWWWW",

@@ -263,8 +263,14 @@ do it.
 - Later:
   - **Brewing:** the kegs from the keeper's own barley and hops (Forager), not a delivery.
   - **Money:** a tab for parties good for it, and tips for quick, fine service.
-  - **Bar fights:** drunk adventurers start brawls that break furniture (work for the
-    Carpenter, when it's back). The keeper throws them out, or calls the Constable.
+  - **Bar fights:** a rowdy drunk now and then starts a fistfight (`Hospitality/Brawls`). The big one
+    is a crisis (`Hospitality/BrawlCrisis`): a rowdy crowd comes in loud with drink, the ringleader
+    throws the first punch, and it spreads to guests in their cups; its heat climbs till it boils
+    over into the street. No steel in the inn (`Combat/HouseRules`, lifted for a raid), so it's
+    fists: knock them down, or settle the ringleader and the rest lose heart. Once it's hot they smash
+    tables and stools (`breaksInBrawls`), the carpenter's to make again (`Refurnishing`, through
+    `ITradeModule.Lost`); boiling over may knock a lamp into a fire. Still to come: other ways to
+    settle it (a tune, a bucket, a haunting, words).
   - **Rooms:** a chest per room for a guest's things while they're out.
   - **A notice board:** at the inn, for shop signs, favours and quests posted where anyone can
     read them.

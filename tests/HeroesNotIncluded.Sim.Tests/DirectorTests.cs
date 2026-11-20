@@ -90,7 +90,7 @@ public class DirectorTests
     {
         var sim = Round();
         sim.TickMany(SimClock.TicksPerHour);
-        sim.ApplyNow(new DevCrisisCommand(CrisisKind.Fire));
+        sim.ApplyNow(new DevCrisisCommand(CrisisKind.Fire.Name));
         Assert.Contains(sim.Director.Active, c => c.Kind == CrisisKind.Fire);
 
         Assert.Null(sim.Director.Coming);

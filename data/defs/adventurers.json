@@ -94,6 +94,12 @@
       "names": [ "Abel", "Godric", "Mab", "Rufus", "Tilda" ] },
     { "name": "Minstrel", "label": "a minstrel", "members": [ "Minstrel" ], "traveller": true, "wagonChance": 0,
       "description": "Sings for supper, and better for a second ale.",
-      "names": [ "Cormac", "Ffion", "Lisette", "Ned", "Rosalind" ] }
+      "names": [ "Cormac", "Ffion", "Lisette", "Ned", "Rosalind" ] },
+    // A rowdy crowd (Hospitality/Brawling): never one of the season's parties, it comes only as the
+    // Director's brawl at the inn, loud with drink from the last town. One of them is the ringleader.
+    { "name": "BentNailCrew", "label": "the Bent Nail crew", "crowd": true, "wagonChance": 0, "stayHours": 10,
+      "members": [ "Sellsword", "Drover", "Sellsword", "Vanguard", "Drover" ],
+      "description": "Paid off from a river barge, and determined to drink it all in one town.",
+      "names": [ "Bram", "Dunstan", "Grete", "Hobb", "Sigrun", "Wat" ] }
   ]
 }

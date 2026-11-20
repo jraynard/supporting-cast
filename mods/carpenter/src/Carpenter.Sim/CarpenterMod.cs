@@ -114,8 +114,8 @@ public sealed class CarpenterModule : ITradeModule
         }
     }
 
-    public void Burned(Simulation sim, ThingDef def, int3 cell, byte facing) =>
-        Refurnishing.Burned(sim, def, cell, facing); // a joined piece in a town building: the carpenter's to set back
+    public void Lost(Simulation sim, ThingDef def, int3 cell, byte facing) =>
+        Refurnishing.Lost(sim, def, cell, facing); // a joined piece in a town building: the carpenter's to set back
 
     /// <summary>
     /// Logs, timber, planks and feathers in the woodshop's chest at the start: three logs to saw (four

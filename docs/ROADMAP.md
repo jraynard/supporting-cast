@@ -78,6 +78,9 @@ Visual issues and requests from playtests, so they don't get lost between HISTOR
   it's been dragged, its position and folded state kept in `Settings`, a fold button like the tutorial card's
   (`_tutorialFolded`), `_hud.Took()` reserving no room for a panel that's moved, and "Reset layout" in Settings.
   The character block's lines are in `VillageGame.Needs` (`DrawNeedsPanel`: `all = !SimpleHud || hovered`).
+- [ ] **Combat feedback: a better hit stop** (brawl playtest, Nov 2026): a blow landing doesn't read strongly
+  enough yet. Improve the hit stop (the freeze, the shake and the flash on impact) so you can feel each hit
+  land, given or taken. Part of a combat refinement pass to plan separately.
 
 ### 3. The tuning playtest
 **(demo)** The connection checks and a pass on the season's numbers, for the demo's shorter season.
@@ -195,8 +198,8 @@ tinker and innkeeper have nothing to do before one comes. In order:
   map's edges, so the warning it buys by day is seconds; the night raid and the shaking are its worth.
   Watch the alarm now waiting till someone sees them (`RaidCrisis.Watch`): a sleeping town is
   slower to wake.
-- [ ] **The carpenter played by someone** (1, above), then its slice 2: furniture broken in brawls
-  and raids, mended (Backlog, "The trades, deeper").
+- [ ] **The carpenter played by someone** (1, above), then its slice 2: furniture broken in raids,
+  mended (Backlog, "The trades, deeper"); the brawl at the inn breaks it already (`BrawlCrisis.Smash`).
 - [ ] **More town contraptions** (DESIGN.md, "Tinker"): a smoke bell for a fire, rat traps for the
   cook in a shortage, then something for the dragon. Each a `ContraptionUse` that's not `ForTheRoad`,
   set like the trip-bell.
@@ -450,8 +453,8 @@ items into "Now" when a playtest says they matter.
 - **Tinker:** no lockboxes or locked chests (locks go on doors only); AI tinkers don't buy curios;
   a wagon lesson (practice customers' wagons aren't damaged yet); a trip-bell lesson in the practice
   yard, and the trip-bell's own sprite (it borrows the tapping rod's).
-- **Carpenter:** bar fights and raids breaking furniture (`Hospitality/Brawls` doesn't yet; only fire
-  does, `Refurnishing`); a hand game for mending a cudgel or a staff (a split haft spliced and bound:
+- **Carpenter:** raids breaking furniture (fire and the brawl at the inn do, `ITradeModule.Lost`;
+  the small one-on-one fights of `Hospitality/Brawls` don't); a hand game for mending a cudgel or a staff (a split haft spliced and bound:
   it's hold-F for now); lessons for mending a bow, a wagon's woodwork and setting back a piece (the
   practice yard has no worn bows, damaged wagons or burned furniture yet); the build and zone tools
   brought back as the carpenter's own (they are off for everyone, `VillageGame.Journal.BuildTools`,

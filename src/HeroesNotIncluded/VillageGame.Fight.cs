@@ -55,7 +55,9 @@ public sealed partial class VillageGame
         if (!HasAvatar || !(InRound || ArenaFoe != null) || !_sim.World.Get<Creature>(_avatar).Able || NearestFoe() is not { } foe)
             return;
         var w = _sim.World;
-        var armed = w.TryGet<Equipment>(_avatar, out var eq) && w.IsAlive(eq.Weapon);
+        var held = w.TryGet<Equipment>(_avatar, out var eq) && w.IsAlive(eq.Weapon);
+        var houseRule = held && Sim.Combat.HouseRules.NoSteel(_sim, _avatar); // the inn's: fists only, raids aside
+        var armed = held && !houseRule;
         _hud.Next(Anchor.Bottom);
         Panel.Begin("##fight-hint", Hud.Flags | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoNav | ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoInputs);
         _hud.Took();
@@ -63,7 +65,7 @@ public sealed partial class VillageGame
         var aim = Controls.UsingPad ? "the right stick" : "the mouse";
         if (!WeaponDrawn)
         {
-            TextC(Theme.Warn, armed ? $"Press {draw} to draw your weapon." : $"Press {draw} to put up your fists.");
+            TextC(Theme.Warn, armed ? $"Press {draw} to draw your weapon." : houseRule ? $"No steel in the inn: press {draw} to put up your fists." : $"Press {draw} to put up your fists.");
             ImGui.SameLine(0, Gui.S(10));
             TextC(Theme.Dim, $"Then aim with {aim}, {strike} to strike, {heavy} to swing heavy.");
             Panel.End();
@@ -72,7 +74,8 @@ public sealed partial class VillageGame
         TextC(Theme.Warn, !Archery.Crossbow(_sim, _avatar).IsNull
                 ? Archery.IsLoaded(_sim, _avatar) ? $"Loaded. {Cap(strike)} fires it the way you aim." : $"Hold {heavy} to crank it: it stays loaded once it's done."
             : Archery.Bow(_sim, _avatar) != null ? $"Hold {heavy} to draw and aim, {strike} to loose once it's drawn."
-            : armed ? $"{Cap(strike)} strikes the way you aim, {heavy} swings heavy." : $"Fists only: {strike} to strike.");
+            : armed ? $"{Cap(strike)} strikes the way you aim, {heavy} swings heavy."
+            : houseRule ? $"No steel in the inn, fists only: {strike} to strike." : $"Fists only: {strike} to strike.");
         ImGui.SameLine(0, Gui.S(10));
         var shoots = w.TryGet<Equipment>(foe, out var theirs) && w.IsAlive(theirs.Weapon) && w.Get<Thing>(theirs.Weapon).Def.Weapon is { Ranged: true };
         TextC(Theme.Dim, Sim.Combat.Blows.IsDragon(_sim, foe)

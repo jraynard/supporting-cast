@@ -1087,6 +1087,12 @@ public sealed class ThingDef : Def
     /// </summary>
     public JoineryProps? Joinery { get; set; }
 
+    /// <summary>
+    /// Furniture a brawl at the inn can smash (<c>Hospitality.BrawlCrisis</c>): tables and stools, not
+    /// what holds goods. With <see cref="Joinery"/>, the carpenter sets a new one back.
+    /// </summary>
+    public bool BreaksInBrawls { get; set; }
+
     public BuildingProps? Building { get; set; }
 
     /// <summary>

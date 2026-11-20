@@ -11,12 +11,12 @@ namespace HeroesNotIncluded.Sim.Director;
 /// already allows: the next unsettled beat's <paramref name="Kind"/> (one of that beat's kinds),
 /// and an <paramref name="Incident"/> by name, now, if it could happen. Anything else is ignored.
 /// </summary>
-public sealed record DirectorChoiceCommand(CrisisKind? Kind, string? Incident) : ISimCommand, IHostCommand
+public sealed record DirectorChoiceCommand(string? Kind, string? Incident) : ISimCommand, IHostCommand
 {
     public void Apply(Simulation sim)
     {
-        if (Kind is { } kind && Enum.IsDefined(kind))
-            sim.Director.Choose(sim, kind);
+        if (Kind is { Length: > 0 and <= 64 } name0 && CrisisTypes.Find(name0) is { } type)
+            sim.Director.Choose(sim, type.Kind);
         if (Incident is { Length: > 0 and <= 64 } name && !sim.Director.CallIncident(sim, name))
             sim.Messages.Add(MessageKind.Info, $"No {name} could come now.");
     }

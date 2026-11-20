@@ -39,6 +39,10 @@ public sealed class AdventurerBrain : IBrain
         if (Defence.Threat(sim, pawn, Defence.AdventurerRange) is { } foe && Defence.Respond(sim, pawn, foe) is { } defend)
             return defend;
 
+        // In the brawl at the inn: at it till they're settled.
+        if (w.Has<Hospitality.Brawler>(pawn))
+            return new Hospitality.BrawlerJob();
+
         // Handed a key: up to put their things down (and, given someone else's, walk in on them).
         if (w.TryGet<Hospitality.WalkIn>(pawn, out var walkIn))
             return new Hospitality.WalkInJob(walkIn.Bed);

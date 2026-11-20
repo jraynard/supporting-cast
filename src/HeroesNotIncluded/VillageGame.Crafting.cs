@@ -612,13 +612,17 @@ public sealed partial class VillageGame
         {
             ImGui.PushID(item.Index);
             var none = RepairCommand.NoHandGame(_sim, _avatar, _openStation, item);
-            ImGui.BeginDisabled(none);
-            if (ImGui.Button("Mend"u8, in _autoSize) && !none)
+            // Short of the material: the button says so before any work, rather than the work coming to nothing.
+            var have = Crafting.ToHandForRepair(_sim, _avatar, cost.Material);
+            var shortOf = have < cost.Count ? Crafting.ShortForRepair(_sim, _avatar, _openStation, item) : null;
+            ImGui.BeginDisabled(none || shortOf != null);
+            if (ImGui.Button("Mend"u8, in _autoSize) && !none && shortOf == null)
                 Issue(new RepairCommand(_avatar, _openStation, item));
             ImGui.EndDisabled();
-            GuideGlow(TutorialStep == "mend");
+            GuideGlow(TutorialStep == "mend" && shortOf == null);
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
                 Tip(none ? "No hand-work for this yet: it can't be mended here."
+                    : shortOf != null ? shortOf
                     : Sim.Work.Smithing.AppliesToRepair(_sim, _avatar, _openStation)
                     ? "Take it in your tongs: heat it, then hammer out the chips on the anvil. It comes off dull: grind it after."
                     : Mods.GameMods.MendHint(ModWorkView, _openStation, item) is { } modHint
@@ -630,6 +634,11 @@ public sealed partial class VillageGame
             var t = w.Get<Thing>(item);
             var whose = w.TryGet<Entrusted>(item, out var e) && w.IsAlive(e.Owner) && w.TryGet<Creature>(e.Owner, out var owner) ? $"{owner.Name}'s " : "";
             Wrapped($"{whose}{_sim.LabelOf(item)} ({View.Condition(item) ?? $"{t.Hp / t.MaxHp * 100:F0}%"}): {cost.Count} {cost.Material.ThingDef.Label}");
+            if (have < cost.Count)
+            {
+                ImGui.SameLine(0, 6);
+                TextC(Theme.Warn, $"(you have {(have == 0 ? "none" : have.ToString())} to hand)");
+            }
             ImGui.PopID();
         }
     }

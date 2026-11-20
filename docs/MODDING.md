@@ -89,7 +89,7 @@ The core registers its own trades the same way. What can be registered, and what
 | Services of a mod's own: a service def with a new name ("Song"), built; `defs.ServiceKindOf(name)` | the `ServiceKind` enum |
 | Station actions (what F does at a station with what's in hand) | the dispatch in `AvatarSystem` |
 | Lessons per trade | `Lessons.All` |
-| Crises by name, for `season.json` beats | the `CrisisKind` enum |
+| Crises by name, for `season.json` beats, `SimRegistry.Crisis(CrisisType)` (built; a mod's named `modId:Name`) | the `CrisisKind` enum and the Director's, festival's and replay's switches on it |
 | Game modes (`IGameMode`, `IModeView`) | `VillageGame`'s mode flags, `RoundPhase` |
 | Work views and sounds per session type, `GameRegistry.WorkView<T>`/`WorkSound<T>` (built) | `VillageGame.DrawWork`'s switches (now a table), `WorkSounds`' switch |
 | Bot hooks per trade (game side) | `BotPlayer`'s per-workplace partials |
@@ -132,6 +132,8 @@ one didn't. Each is now part of the API:
   so they don't clash with the game's.
 - **An action of a mod's own** (`AvatarActionKind.Custom`, done by the module that offered it).
 - **Drills** (`SimRegistry.Drill`, `--drill NAME`): a moment staged at once for trying a game out.
+- **A crisis** (`SimRegistry.Crisis`, a `CrisisType`: how it begins, how a save reads it back, its label and festival line):
+  weighed by name in `season.json`'s beats (`"kinds": { "mymod:Flood": 2 }`) and the pacing's `answers`, saved by name.
 - **A pastime** (`SimRegistry.Pastime`, an `IPastime`): something the town does with its free time, asked by
   villagers' brains once their work's done and adventurers' before they lounge about: the musician's audience
   (`Listening`, an `AudienceJob`). A job says it's danced (`Job.Dancing`, `DanceTempo`) for the renderer's step.

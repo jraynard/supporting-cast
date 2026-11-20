@@ -186,6 +186,18 @@ public sealed class DefDatabase
     /// </summary>
     public LessonDef Basics { get; private set; } = new() { Id = "basics", Title = "The basics", Steps = [new() { Id = "move", Text = "Walk with ~WASD~." }] };
 
+    private readonly List<LessonDef> _sharedLessons = [];
+
+    /// <summary>
+    /// Chapters every trade shares after the basics (trades.json's "shared": the fight), kept once per
+    /// character, not per trade. In the order loaded; a later file's lesson of the same id replaces it.
+    /// </summary>
+    public IReadOnlyList<LessonDef> SharedLessons => _sharedLessons;
+
+    /// <summary>A shared chapter by id (the basics included), or null.</summary>
+    public LessonDef? Shared(string id) =>
+        id == Basics.Id ? Basics : _sharedLessons.Find(l => string.Equals(l.Id, id, StringComparison.OrdinalIgnoreCase));
+
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNameCaseInsensitive = true,
@@ -230,6 +242,7 @@ public sealed class DefDatabase
         public List<QuestDef> Quests { get; set; } = [];
         public List<MapDef> Maps { get; set; } = [];
         public LessonDef? Basics { get; set; }
+        public List<LessonDef> Shared { get; set; } = [];
     }
 
     public static DefDatabase LoadDirectory(string directory) => LoadDirectories([directory]);
@@ -442,6 +455,14 @@ public sealed class DefDatabase
         AddAll(file.Maps, _maps, AllMaps, source);
         if (file.Basics != null)
             Basics = file.Basics;
+        foreach (var lesson in file.Shared)
+        {
+            var at = _sharedLessons.FindIndex(l => l.Id == lesson.Id);
+            if (at >= 0)
+                _sharedLessons[at] = lesson;
+            else
+                _sharedLessons.Add(lesson);
+        }
     }
 
     private static void AddAll<T>(List<T> defs, Dictionary<string, T> map, List<T> all, string source)
@@ -489,6 +510,12 @@ public sealed class DefDatabase
         foreach (var d in AllBuildings) d.Resolve(this); // after things and thoughts: their parts, furniture, feasts
         foreach (var d in AllTrades) d.Resolve(this); // after buildings: their workplaces
         Basics.Resolve(this, "Basics");
+        foreach (var lesson in _sharedLessons)
+        {
+            if (lesson.Id == Scenarios.Lessons.Tutorial.BasicsId)
+                throw new Exception($"Shared lesson id '{lesson.Id}' is the basics chapter's");
+            lesson.Resolve(this, "Shared");
+        }
         foreach (var d in AllAdventurerKinds) d.Resolve(this);
         foreach (var d in AllParties) d.Resolve(this); // after adventurer kinds and buildings
         if (AllRunes.Count > 9)

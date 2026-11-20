@@ -21,6 +21,7 @@ dotnet run --project src/HeroesNotIncluded -- --join 127.0.0.1 --player-id bea -
 dotnet run --project src/HeroesNotIncluded -- --raid-test --name Arin          # as the smith, bandits down the north road
 dotnet run --project src/HeroesNotIncluded -- --fire-test --name Arin          # the inn alight, you at the well with a full bucket
 dotnet run --project src/HeroesNotIncluded -- --dragon-test --name Arin        # the dragon coming, you at the well with a full bucket
+dotnet run --project src/HeroesNotIncluded -- --brawl-test --name Arin         # a rowdy crowd brawling in the inn, you the innkeeper among them
 dotnet run --project src/HeroesNotIncluded -- --bridge-test --name Arin        # the bridge down, you the tinker at the gap with wood
 dotnet run --project src/HeroesNotIncluded -- --fell-test --name Arin          # the carpenter by a pine in the open, axe and saw to hand (a mod's drill: --drill felling starts the felling)
 dotnet run --project src/HeroesNotIncluded -- --new-game --trade Miner --mods miner --drill hewing   # the miner in the mine, at a face, hewing
@@ -30,6 +31,7 @@ dotnet run --project src/HeroesNotIncluded -- --new-game --die-at 5            #
 dotnet run --project src/HeroesNotIncluded -- --new-game --festival-at 5       # the season's festival, now, you by the well
 dotnet run --project src/HeroesNotIncluded -- --demo                       # as the Next Fest demo plays (BuildInfo.IsDemo, DemoGate: its mods, its flags only)
 dotnet run --project src/HeroesNotIncluded -- --practice Empath          # the tutorial in the practice yard: no season, customers on request (--lesson ID: straight into a chapter, `basics` too)
+dotnet run --project src/HeroesNotIncluded -- --practice Empath          # the tutorial in the practice yard: no season, customers on request (--lesson ID: straight into a chapter, `basics` and `combat` too)
 dotnet run --project src/HeroesNotIncluded -- --arena Swordsman --weapon IronSpear  # the practice ring: one foe a bout (any raider kind, or Dragon; Enter for the next)
 dotnet run --project src/HeroesNotIncluded -- --furniture-demo --zoom 80    # also --building-demo
 dotnet run --project src/HeroesNotIncluded -- --new-game --screenshot shot.png --screenshot-at 5 --quit  # also --screenshot-no-ui, --look-at X,Y, --yaw/--pitch DEG, --camera-mode; any mode
@@ -77,7 +79,9 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. ` (R3
     holds shared helpers. `MapGenerator` (the old valley) remains for the helpers `MapBuilder`
     borrows and the open ground `--building-demo` needs; tests that need a town use `TestWorld.Millbrook`.
   - `Scenarios/Practice` and `Scenarios/Lessons`: the practice yard and its tutorial (`VillageGame.Tutorial`):
-    the shared basics (`BasicsLesson`), then the trade's `core` lessons, the rest offered after (`Tutorial`).
+    the shared basics (`BasicsLesson`) and shared chapters (trades.json's `shared`, kept once per character: the fight,
+    `CombatLesson`, bare knuckles against a training dummy and a sparring partner, `Sparring`), then the trade's `core`
+    lessons, the rest offered after (`Tutorial`).
     A lesson's step is derived each frame from `Perception` (never a cursor), its words are the trade's
     `lessons` in `trades.json` (and its top-level `basics`); a finished one is kept game-side in
     `CharacterProgress.Lessons`. There are no in-round tips: teaching text lives in the tutorial.
@@ -92,7 +96,9 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. ` (R3
   - `Director/`: `Reckoning` keeps Renown (adventurers leaving pleased, quests cleared) and Dread
     (quests unanswered or gone badly; its limit ends the round). Players see words for them,
     through `PerceptionView.Standing`. `Director` sends the season's crises (`season.json` beats:
-    raid, fire, shortage, plague, the dragon), each an `ICrisis` that's met or not. It paces them like a game master
+    raid, fire, shortage, plague, a brawl at the inn, the dragon), each an `ICrisis` that's met or not, registered by name
+    (`SimRegistry.Crisis`, `Director/CrisisTypes`). The brawl (`Hospitality/BrawlCrisis`) is fists: no steel in the inn
+    (`Combat/HouseRules`, a building def's `noSteel`, lifted while a raid's on). It paces them like a game master
     (`Tension`, `RuleMind`: eases off a struggling town, pushes a coasting one, waits for calm, settles a beat's
     kind a warning ahead), lets a beat follow a quest (`followsQuest`) and fills lulls with `incidents.json`
     (`Incidents`). Anything deciding from outside the sim does it only through `DirectorChoiceCommand`. Off unless the

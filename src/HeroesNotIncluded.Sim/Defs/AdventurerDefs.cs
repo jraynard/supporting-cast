@@ -175,6 +175,16 @@ public sealed class PartyDef : Def
     /// </summary>
     public bool Rare { get; set; }
 
+    /// <summary>
+    /// A rowdy crowd: never one of the season's parties, it comes only as trouble at the inn
+    /// (<c>Hospitality.Brawling.BrawlCrisis</c>).
+    /// </summary>
+    public bool Crowd { get; set; }
+
+    /// <summary>One of the parties the season sends in turn: not a traveller, a rare company or a crowd.</summary>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public bool Regular => !Traveller && !Rare && !Crowd;
+
     /// <summary>A rare company's chance of coming in a round (each rare one rolled in turn; the first to come is the round's).</summary>
     public float Chance { get; set; } = 0.25f;
 

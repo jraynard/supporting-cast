@@ -71,7 +71,7 @@ public sealed class CarpenterGame : IGameMod
     {
         var losses = v.Perceived.Losses().ToList();
         var size = v.ButtonSize;
-        ImGuiText.Colored(Theme.Dim, "Burned in the fire, for the town to have back:");
+        ImGuiText.Colored(Theme.Dim, "Lost to fire or a brawl, for the town to have back:");
         foreach (var l in losses)
         {
             ImGui.PushID(l.Id);

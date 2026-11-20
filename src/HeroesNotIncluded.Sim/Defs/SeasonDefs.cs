@@ -92,6 +92,9 @@ public sealed class SeasonDef : Def
     /// <summary>Game hours a crisis runs before it's over whether the town met it or not.</summary>
     public float CrisisHours { get; set; } = 6;
 
+    /// <summary>How a brawl at the inn goes (<c>Hospitality.Brawling.BrawlCrisis</c>).</summary>
+    public BrawlDef Brawl { get; set; } = new();
+
     /// <summary>Game hours before a raid that word of it comes in, and the town calls for arms.</summary>
     public float RaidWarningHours { get; set; } = 5;
 
@@ -183,14 +186,38 @@ public sealed class SeasonDef : Def
     }
 }
 
-/// <summary>What sort of trouble the Director sends.</summary>
-public enum CrisisKind : byte
+/// <summary>
+/// What sort of trouble the Director sends: a name the crisis registry knows
+/// (<see cref="Director.CrisisTypes"/>, <see cref="Modding.SimRegistry.Crisis"/>), so a mod can add a
+/// kind as the game adds its own. The game's are named here for its code and tests to say.
+/// </summary>
+public readonly record struct CrisisKind
 {
-    Raid,
-    Fire,
-    Shortage,
-    Plague,
-    Dragon,
+    private readonly string? _name;
+
+    public CrisisKind(string name) => _name = name;
+
+    public string Name => _name ?? "";
+
+    public static readonly CrisisKind Raid = new("Raid");
+    public static readonly CrisisKind Fire = new("Fire");
+    public static readonly CrisisKind Shortage = new("Shortage");
+    public static readonly CrisisKind Plague = new("Plague");
+    public static readonly CrisisKind Dragon = new("Dragon");
+    public static readonly CrisisKind Brawl = new("Brawl");
+
+    /// <summary>The game's kinds as saves before format 65 numbered them.</summary>
+    internal static CrisisKind? FromOld(int n) => n switch
+    {
+        0 => Raid,
+        1 => Fire,
+        2 => Shortage,
+        3 => Plague,
+        4 => Dragon,
+        _ => null,
+    };
+
+    public override string ToString() => Name;
 }
 
 /// <summary>
@@ -232,10 +259,54 @@ public sealed class CrisisBeat
     {
         var list = new List<(CrisisKind, float)>();
         foreach (var (name, weight) in Kinds.OrderBy(k => k.Key, StringComparer.Ordinal))
-            if (Enum.TryParse<CrisisKind>(name, ignoreCase: true, out var kind) && weight > 0)
-                list.Add((kind, weight));
+            if (Director.CrisisTypes.Find(name) is { } type && weight > 0)
+                list.Add((type.Kind, weight));
         return list;
     }
+}
+
+/// <summary>
+/// A brawl at the inn (<c>Hospitality.Brawling.BrawlCrisis</c>): a rowdy crowd (a <see cref="PartyDef.Crowd"/>)
+/// comes in loud with drink and starts something. Its heat (0..1) climbs with how many are still at it
+/// and boils over into the street at 1; it eases as they're settled.
+/// </summary>
+public sealed class BrawlDef
+{
+    /// <summary>Heat a game hour with <see cref="PerBrawlers"/> still fighting (more or fewer in proportion).</summary>
+    public float RisePerHour { get; set; } = 0.4f;
+
+    /// <summary>The brawlers <see cref="RisePerHour"/> is for.</summary>
+    public float PerBrawlers { get; set; } = 4;
+
+    /// <summary>Heat lost a game hour regardless: tempers tire.</summary>
+    public float CoolPerHour { get; set; } = 0.1f;
+
+    /// <summary>Heat lost when the ringleader's settled (and the rest who aren't rowdy lose heart).</summary>
+    public float RingleaderCools { get; set; } = 0.3f;
+
+    /// <summary>How deep in their cups the crowd comes in (<c>Tipsy</c>; 0.5 is loud).</summary>
+    public float ArriveTipsy { get; set; } = 0.55f;
+
+    /// <summary>A bystander struck by a brawler joins in at this much drink, or if they're rowdy.</summary>
+    public float JoinTipsy { get; set; } = 0.5f;
+
+    /// <summary>Crowd members at strength 1 (more or fewer with the beat's strength), at least 3.</summary>
+    public int Crowd { get; set; } = 4;
+
+    /// <summary>Heat from which brawlers go for the furniture (<see cref="ThingDef.BreaksInBrawls"/>).</summary>
+    public float BreakAt { get; set; } = 0.4f;
+
+    /// <summary>The chance, each turn past <see cref="BreakAt"/>, a brawler takes it out on a table or a stool instead.</summary>
+    public float SmashChance { get; set; } = 0.2f;
+
+    /// <summary>Blows a piece takes before it breaks.</summary>
+    public int BlowsToBreak { get; set; } = 3;
+
+    /// <summary>The chance a brawl boiling over knocks a lamp over: the inn's alight too (a fire crisis of its own).</summary>
+    public float FireOnBoil { get; set; } = 0.35f;
+
+    /// <summary>What a crowd that boiled over, or was never settled, thinks of the town as it goes.</summary>
+    public float SourSatisfaction { get; set; } = -3f;
 }
 
 /// <summary>
@@ -292,7 +363,8 @@ public sealed class PacingDef
             throw new Exception($"Season {season}: pacing's strengthRange is [at most 1, at least 1]");
         AnsweredBy.Clear();
         foreach (var (kind, role) in Answers)
-            AnsweredBy[Enum.Parse<CrisisKind>(kind, ignoreCase: true)] = TownRoles.Parse(role, $"Season {season} pacing");
+            if (Director.CrisisTypes.Find(kind) is { } type) // a kind whose mod is off answers nothing
+                AnsweredBy[type.Kind] = TownRoles.Parse(role, $"Season {season} pacing");
     }
 }
 

@@ -32,6 +32,12 @@ public sealed class BuildingDef : Def
     /// </summary>
     public List<string> UpperLayout { get; set; } = [];
 
+    /// <summary>
+    /// A house rule: no steel drawn in here (the inn). The town's and its guests' fists only, unless a
+    /// raid is on (<see cref="Combat.HouseRules"/>), so a fight inside stays a brawl and not a killing.
+    /// </summary>
+    public bool NoSteel { get; set; }
+
     /// <summary>1, or 2 with an <see cref="UpperLayout"/>.</summary>
     [JsonIgnore] public int Storeys => UpperLayout.Count > 0 ? 2 : 1;
 

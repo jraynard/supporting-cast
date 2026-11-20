@@ -341,7 +341,7 @@ else
         HeroFolk = Enum.TryParse<HeroesNotIncluded.Sim.Components.Folk>(ParseString(args, "--folk"), true, out var folk) ? folk : null,
         // --raid-test: the raid drill (RaidDrill), as the smith unless --trade says otherwise; --bridge-test as the tinker.
         HeroTrade = ParseString(args, "--trade") ?? (ParseString(args, "--practice") is { } practising && !practising.StartsWith("--") ? practising
-            : args.Contains("--raid-test") ? "Blacksmith" : args.Contains("--bridge-test") ? "Tinker" : args.Contains("--fell-test") ? "Carpenter" : null),
+            : args.Contains("--raid-test") ? "Blacksmith" : args.Contains("--bridge-test") ? "Tinker" : args.Contains("--fell-test") ? "Carpenter" : args.Contains("--brawl-test") ? "Innkeeper" : null),
         RaidTest = args.Contains("--raid-test"),
         // --fire-test: the fire drill (FireDrill): the inn alight, you at the well with a full bucket.
         FireTest = args.Contains("--fire-test"),
@@ -352,8 +352,9 @@ else
         // --bridge-test: the bridge drill (BridgeDrill): the bridge down, you at the gap with wood to mend it.
         BridgeTest = args.Contains("--bridge-test"),
         // --drill NAME: a trade's moment staged at once (a mod registers its drills, SimRegistry.Drill);
-        // --fell-test is the carpenter's woods drill: by a pine with an axe and a saw.
-        Drill = ParseString(args, "--drill") ?? (args.Contains("--fell-test") ? "fell" : null),
+        // --fell-test is the carpenter's woods drill: by a pine with an axe and a saw; --brawl-test the
+        // brawl at the inn (BrawlDrill), as the innkeeper among the rowdy crowd.
+        Drill = ParseString(args, "--drill") ?? (args.Contains("--fell-test") ? "fell" : args.Contains("--brawl-test") ? "brawl" : null),
         // --mode NAME: how the round's played (a mod's mode, say "siege"): a season unless told otherwise.
         Mode = ParseString(args, "--mode"),
         // --pairs-test: every job for two pairs of hands ready at once (PairsDrill): a greatsword's iron, a great
@@ -409,7 +410,7 @@ SavedCharacter? PickedCharacter()
 
 static bool LaunchesDirectly(string[] args) =>
     args.Any(a => a is "--new-game" or "--seed" or "--skip-hours" or "--furniture-demo" or "--building-demo" or "--freeform" or "--show-roofs" or "--hide-roofs"
-        or "--ignite-forest" or "--raid-test" or "--fire-test" or "--fire-spread" or "--dragon-test" or "--bridge-test" or "--fell-test" or "--pairs-test" or "--help-as" or "--arena" or "--practice" or "--yaw" or "--pitch" or "--camera-mode" or "--keep-replay-at" or "--cutaway" or "--difficulty" or "--map" or "--work-scenes");
+        or "--ignite-forest" or "--raid-test" or "--fire-test" or "--fire-spread" or "--dragon-test" or "--bridge-test" or "--fell-test" or "--brawl-test" or "--pairs-test" or "--help-as" or "--arena" or "--practice" or "--yaw" or "--pitch" or "--camera-mode" or "--keep-replay-at" or "--cutaway" or "--difficulty" or "--map" or "--work-scenes");
 
 // --load and --check-save take a path, or the name of a slot in the saves directory ("quicksave").
 static string ResolveSave(string pathOrSlot)

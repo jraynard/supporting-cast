@@ -1047,6 +1047,7 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
             return tongs;
         // A player's weapon's only in hand drawn, in combat mode (Combat.FreeMover).
         if (w.TryGet<Equipment>(e, out var eq) && w.IsAlive(eq.Weapon) && !(w.TryGet<Sim.Combat.FreeMover>(e, out var free) && !free.Drawn)
+            && !Sim.Combat.HouseRules.NoSteel(sim, e) // the inn's rule: it stays sheathed
             && HumanLook.HeldOf(w.Get<Thing>(eq.Weapon).Def) is { } weapon)
             return weapon;
         return null;
@@ -1445,7 +1446,8 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
         var now = sim.Clock.Tick;
         foreach (var e in w.Each<Sim.Combat.Windup>())
         {
-            if (!w.TryGet<Equipment>(e, out var eq) || !w.IsAlive(eq.Weapon) || w.Get<Thing>(eq.Weapon).Def is not { Weapon.Ranged: false, Held: { } held } def)
+            if (!w.TryGet<Equipment>(e, out var eq) || !w.IsAlive(eq.Weapon) || w.Get<Thing>(eq.Weapon).Def is not { Weapon.Ranged: false, Held: { } held } def
+                || Sim.Combat.HouseRules.NoSteel(sim, e)) // fists in the inn: no blade to swing
                 continue;
             if (!_swings.TryGetValue(e.Index, out var sw) || sw.Landed >= 0 || sw.Blow.Start != w.Get<Sim.Combat.Windup>(e).Start)
                 _swings[e.Index] = sw = new Swing { Who = e, Kind = held, Sprite = S(def.Sprite) };

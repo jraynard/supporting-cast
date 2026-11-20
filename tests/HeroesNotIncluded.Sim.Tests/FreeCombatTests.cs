@@ -425,6 +425,12 @@ public class FreeCombatTests
         var me = Players.CharacterOf(sim, Ana);
         var other = Players.CharacterOf(sim, Bea);
         sim.Equip(me, sim.Defs.Thing("ShortSword"));
+        if (Combat.HouseRules.NoSteel(sim, me)) // dealt the inn: out to the square, where steel's allowed
+        {
+            var open = sim.SpiralFrom(center, 6).First(c => sim.Map.Passable(c) && !Combat.HouseRules.NoSteelAt(sim, c));
+            sim.World.Get<Position>(me).Cell = open;
+            sim.World.Get<Position>(me).Pos = Position.CenterOf(open);
+        }
         sim.ApplyNow(new DrawWeaponCommand(me, true));
         sim.TickMany(10);
         return (sim, me, other);
