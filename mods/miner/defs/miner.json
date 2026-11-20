@@ -4,13 +4,13 @@
   "trades": [
     // playerOnly: only a player who asks for it is dealt it. "mines": it digs and mines in a round, though it
     // gathers nothing else (no crops, no timber: those are the labourer's).
-    { "name": "Miner", "label": "miner", "pace": "Steady", "playerOnly": true, "mines": true,
+    { "name": "Miner", "label": "miner", "level": "Beginner", "playerOnly": true, "mines": true,
       "description": "Works the mine in the hill east of town: iron and coal hewn from the rock, for the smith.",
       "workplace": "MineShed", "workPriorities": { "Mine": 1 }, "skills": { "Mining": 6 },
-      "tutorialIntro": "You work the mine in the hill east of town. Face the rock in the tunnels and press F to hew it: strike along the crack, hard. The ore's hidden in the rock till you open a face of it, and the smith will pay for what you bring.",
+      "tutorialIntro": "You work the mine in the hill east of town. Face the rock in the tunnels and press F to hew it: strike along the crack, hard. The ore's hidden in the rock till you open a face of it, but a sounding hammer tapped along the wall tells you where it lies. The smith will pay for what you bring.",
       // The ore the carter brings the smithy: with a player the miner, the carter brings only a share of it (season.json's suppliedShare).
       "supplies": [ "IronOre" ],
-      "kit": [ { "def": "Pick" } ],
+      "kit": [ { "def": "Pick" }, { "def": "SoundingHammer" } ],
       "lessons": [
         { "id": "hew", "title": "Hew a rock face", "core": true,
           "blurb": "Into the mine in the hill, a face of rock hewn by hand, and what comes away carried back to the shed.",
@@ -18,12 +18,74 @@
             { "id": "mine", "text": "The mine is in the hill east of town, its mouth by your shed. Walk in: the view cuts away the rock above you." },
             { "id": "face", "text": "Stand at a wall of rock in the tunnels and press ~F~ to hew it with your pick.",
               "more": "Every face looks like plain rock: what's behind it you find only by opening it. Seams of iron and coal run through the hill." },
-            { "id": "hew", "text": "A crack runs across the face. Move the point onto it (~A~/~D~ or the mouse), hold ~F~ to swing the pick back past the mark, and let go. Each good blow breaks a slab away.",
+            { "id": "hew", "text": "A crack runs into the wall. Move the point to its height (~W~/~S~ or the mouse), hold ~F~ to swing the pick back past the mark, and let go. Each good blow breaks a slab away.",
               "more": "Off the crack the point rings off the rock and jars your arms, and they're slow to come up again. On the crack but too soft, it only chips: swing it well back." },
             { "id": "carry", "text": "Pick up what came away (~F~) and carry it to the chest in your mine shed." } ],
           "notes": [ "A clean hewing gets a little more out of a seam than digging it.",
-                     "The smith buys iron ore and coal: take them to the smithy. While you're the miner, the carter brings the smithy less ore of their own." ] }
+                     "The smith buys iron ore and coal: take them to the smithy. While you're the miner, the carter brings the smithy less ore of their own." ] },
+        { "id": "sound", "title": "Sound the rock", "core": true,
+          "blurb": "Before you cut in, find where the ore lies: tap along the wall with the sounding hammer and listen, then chalk it.",
+          "steps": [
+            { "id": "hammer", "text": "Take the sounding hammer in hand (~1-4~). With it in hand, F at a wall sounds it rather than hewing it." },
+            { "id": "face", "text": "In the mine, stand square to a wall of rock and press ~F~." },
+            { "id": "tap", "text": "Choose a spot along the wall (~A~/~D~ or the mouse) and tap it (~F~). Tap each spot a few times and listen.",
+              "more": "Sound rock rings back clear and long. With ore behind it, the note goes dead and short, deader the nearer the ore lies. One tap can mislead you: each tick under a spot is one tap, dead at the left and clear at the right, so look for where they bunch." },
+            { "id": "chalk", "text": "Over the spot that sounds dead, press ~Space~ to chalk an X: a seam. Press it again for a ring (nothing there), and once more to wipe it. ~Esc~ puts the hammer down; the chalk stays on the wall.",
+              "more": "Anyone can see your chalk, and it says only what you wrote. Hew where you chalked an X." } ],
+          "notes": [ "The hammer hears up to three cells into the rock behind the wall. Ore right at the face sounds deadest; far back, only a little duller.",
+                     "Millbrook's mine: the adit runs east from your shed into a gallery running north and south. Iron lies north-east of the gallery, and a smaller lode south of the adit, back toward the mouth. Coal lies south-east of the gallery, and a thin seam north of the adit. Other veins are scattered through the hill.",
+                     "Chalk goes with the rock: once a face is dug out, its mark is gone." ] },
+        { "id": "haul", "title": "Wheel ore to the smithy", "core": true,
+          "blurb": "Load a wheelbarrow with what you've hewn, push it to the smithy, and tip it into the chest: the smith pays you for it.",
+          "steps": [
+            { "id": "barrow", "text": "Wheelbarrows stand by your mine shed. Go to one with ore lying near it, or pick it up (~F~) and take it to your ore." },
+            { "id": "load", "text": "Press ~F~ at the barrow with ore in reach (or at the ore, barrow in hand). Choose a place on the bed (~WASD~ or the mouse) and press ~F~ to set each piece there.",
+              "more": "Keep the dot (where the weight is) in the green steady zone: square across, a little behind the wheel. ~Space~ lifts the top piece off a place again. Loaded steady, it rights itself as you push; loaded off-square, it leans to its heavy side and you'll have to hold it." },
+            { "id": "wheel", "text": "Pick the barrow up (~F~) and push it to the smithy in town: the panel at the bottom points the way, and the chest is marked with ore over it. Keep it upright with ~@miner:lean_left~ and ~@miner:lean_right~, then press ~F~ at the chest to tip it in.",
+              "more": "Whoever works the smithy pays you for each piece: iron ore a silver, coal half that. If they're short, they owe you the rest and pay it when they can." },
+            { "id": "tip", "text": "Tipped in. The smith has ore to work, and you've your pay." } ],
+          "notes": [ "A barrow takes ten pieces of iron ore, or more of lighter coal. Stone doesn't go in: leave it.",
+                     "If it goes over, nothing's lost: load what spilled again, and better. Turns throw it outward, and rough ground jolts it; stood still, it settles." ] }
       ] }
+  ],
+  "things": [
+    // The sounding hammer (SoundSession): light, a small round head, for tapping the rock and listening. Held in the
+    // hand, it turns F at a face from hewing to sounding. No tool kind: it breaks nothing and forges nothing.
+    {
+      "name": "SoundingHammer", "held": "hammer", "label": "sounding hammer", "category": "Item", "mass": 0.6,
+      "sprite": "items/hammer", "maxHp": 80,
+      "description": "A light hammer with a small round head. Tapped along a rock face, sound rock rings back clear; with ore behind it, the note goes dead."
+    },
+    // The wheelbarrow (Miner.LoadSession, Miner.BarrowSystem): pushed in both hands, its load kept on it (not a container),
+    // so it's loaded a piece at a time and tipped out at the smithy. Two stand by the mine shed.
+    {
+      "name": "Wheelbarrow", "label": "wheelbarrow", "category": "Item", "mass": 12, "bulky": true, "carrySpeed": 0.95, "stackLimit": 1,
+      "sprite": "items/wheelbarrow", "maxHp": 120, "flammability": 0.4,
+      "description": "A plank-sided barrow on one iron-shod wheel. Loaded square and close to the wheel, it carries ten pieces of ore anywhere; loaded badly, it goes over.",
+      // Drawn as its model, wheel to the front (+y), pushed ahead of whoever holds it. Its load heaps up in the tray as it
+      // fills (the mod tells the game how full: GameRegistry.ModelCount, one more than its pieces).
+      "pushed": true,
+      "model": [
+        { "min": [0.44, 0.76, 0], "max": [0.56, 1.0, 0.26], "top": "props/iron_band", "side": "props/barrow_wheel", "front": "props/iron_band", "back": "props/iron_band", "fit": true },
+        { "min": [0.22, 0.24, 0], "max": [0.27, 0.29, 0.22], "top": "props/barrow_handle", "side": "props/barrow_handle" },
+        { "min": [0.73, 0.24, 0], "max": [0.78, 0.29, 0.22], "top": "props/barrow_handle", "side": "props/barrow_handle" },
+        { "min": [0.18, 0.2, 0.2], "max": [0.82, 0.84, 0.46], "top": "props/barrow_tray", "side": "props/barrow_side", "fit": true },
+        { "min": [0.2, -0.32, 0.38], "max": [0.27, 0.22, 0.44], "top": "props/barrow_handle", "side": "props/barrow_handle" },
+        { "min": [0.73, -0.32, 0.38], "max": [0.8, 0.22, 0.44], "top": "props/barrow_handle", "side": "props/barrow_handle" },
+        { "min": [0.32, 0.34, 0.46], "max": [0.68, 0.7, 0.51], "top": "props/barrow_ore", "side": "props/barrow_ore", "minCount": 2 },
+        { "min": [0.27, 0.29, 0.46], "max": [0.73, 0.76, 0.56], "top": "props/barrow_ore", "side": "props/barrow_ore", "minCount": 6 },
+        { "min": [0.23, 0.25, 0.46], "max": [0.77, 0.8, 0.61], "top": "props/barrow_ore", "side": "props/barrow_ore", "minCount": 11 }
+      ]
+    }
+  ],
+  // What the smithy pays for each piece tipped into its chest (Miner.OreDef), paid by whoever works it. Only these go in a barrow.
+  "ores": [
+    { "name": "IronOre", "silver": 1 },
+    { "name": "Coal", "silver": 0.5 },
+    { "name": "CopperOre", "silver": 1 },
+    { "name": "TinOre", "silver": 1 },
+    { "name": "SilverOre", "silver": 3 },
+    { "name": "GoldOre", "silver": 5 }
   ],
   "buildings": [
     {

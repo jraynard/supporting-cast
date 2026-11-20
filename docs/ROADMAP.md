@@ -382,7 +382,8 @@ a sketch to build from.
 - **It falls into the lake**, breaking the decks under it, and the town counts what it lost.
 
 ### M7: Playing with strangers
-An authoritative server filtered by `Perception`, matchmaking, moderation, voice.
+An authoritative server filtered by `Perception`, matchmaking, moderation, voice. Likely built
+together with persistent towns' dedicated server (VISION.md, "Shared with M7").
 - **Voice** goes by the speech rules, or it undoes them: each client plays a voice only where
   `SpeechSystem` would let that listener hear it (the same ranges; muffled through walls; the dead
   only to the dead). Raw proximity voice would let the dead talk to the living and get round
@@ -443,13 +444,11 @@ items into "Now" when a playtest says they matter.
   still the overflow for a seventh player and `--trade Labourer`. Its work is the AI's: errands off
   the notice board, hauling, chopping. Being split up rather than given a pass: the Carpenter has come
   out of it, and the Miner (`mods/miner`, a first pass); the Forager is left, for the new woods east of Millbrook.
-- **Miner** (a first pass, to be played and changed): hewing is one game so far (`HewSession`); the rest
-  is still to find. Sounding the rock for a seam behind it (read through `PerceptionView`, never the block);
-  the smith sending for ore as the innkeeper sends for a hamper (ore isn't gear, so it can't go on a wares
-  shelf: for now it changes hands face to face, `Barter`); its own sounds (it borrows the game's);
-  lessons and a practice face in the yard; a bot that walks to the mine between orders (`IBotTrade.Between`);
-  an AI miner choosing faces itself (it digs only what's marked now); later, timbering and cave-ins, bad air,
-  and raiders in the tunnels.
+- **Miner** (a beginner's trade, three games: hewing, sounding, the barrow; its bot works the whole round; off by
+  default till played): an AI miner that hews (it only carries ore to the smithy now; it digs only what's marked,
+  and could prefer chalked seams); the ore price on the shed's sign rather than the mod's list (`ores`); the smith sending
+  for a rush load; a practice face in the yard; tipping the barrow out anywhere; the barrow drawn leaning as it leans
+  (`BarrowLoad.Lean`), and the pusher's pose; later, timbering and cave-ins, bad air, and raiders in the tunnels.
 - **Tinker:** no lockboxes or locked chests (locks go on doors only); AI tinkers don't buy curios;
   a wagon lesson (practice customers' wagons aren't damaged yet); a trip-bell lesson in the practice
   yard, and the trip-bell's own sprite (it borrows the tapping rod's).

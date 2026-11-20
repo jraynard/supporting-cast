@@ -16,6 +16,7 @@ them at a whole-pixel scale and moves, turns and tints them from the session in 
   rasp                    the file a lock's pins are filed down with
   cask_end, spigot, mallet  the cask's head, its tap and the mallet that drives the tap home
   axe, log_side           the woodsman's axe lying flat (swung as the smith's hammer) and a log side on
+  pick                    the miner's pick lying flat, its point down (mods/miner's own)
 
 The kitchen's:
   fire_bed, spoon, pot_lid   the logs and embers under the pot, the stirring spoon, the lid for a flare
@@ -340,6 +341,22 @@ def axe():
     return ink_outline(img)
 
 
+def pick():
+    """The miner's pick lying flat, as the axe: the haft running left to the hand (the pivot end), the iron head
+    across its end at the right, a long thin bar curving back toward the hand at both ends, its point down onto the rock."""
+    img = canvas(34, 26)
+    part(img, stick((1, 13), (30, 12), 2.2, 2.6), WALNUT, radius=0.6)
+    iron = [(v, v + 2, v + 10, 255) for v in (78, 112, 146, 180, 214)]
+    part(img, stick((29, 12), (29, 6), 3.0, 2.2), iron, radius=0.6)                    # the upper arm, curving back
+    part(img, stick((29, 6), (25, 0.5), 2.2, 0.8), iron, radius=0.6)
+    part(img, stick((29, 12), (29, 19), 3.0, 2.2), iron, radius=0.6)                   # the lower arm: the point
+    part(img, stick((29, 19), (25, 25.5), 2.2, 0.8), iron, radius=0.6)
+    part(img, poly([(27, 10), (31, 10), (31, 15), (27, 15)]), iron, radius=0.5)        # the eye round the haft
+    for x, y in ((26, 24), (25, 25)):
+        put(img, x, y, iron[4])                                                        # the point, worn bright
+    return ink_outline(img)
+
+
 def log_side():
     """A log lying side on, bark on, its end showing at the right: what the axe is hewing."""
     img = canvas(64, 20)
@@ -629,7 +646,7 @@ SPRITES = (("whetstone", whetstone), ("blade", blade), ("stew_pot", stew_pot), (
            ("grindwheel", grindwheel), ("grind_posts", grind_posts), ("grind_trough", grind_trough),
            ("strongbox", strongbox), ("probe", probe), ("curio", curio), ("loupe", loupe), ("patient", patient),
            ("stone", stone), ("spirit_level", spirit_level), ("rasp", rasp),
-           ("cask_end", cask_end), ("spigot", spigot), ("mallet", mallet), ("axe", axe), ("log_side", log_side),
+           ("cask_end", cask_end), ("spigot", spigot), ("mallet", mallet), ("axe", axe), ("log_side", log_side), ("pick", pick, "miner"),
            ("fire_bed", fire_bed), ("spoon", spoon), ("pot_lid", pot_lid), ("firedogs", firedogs), ("joint", joint),
            ("knead_board", knead_board), ("dough", dough), ("oven_front", oven_front), ("peel", peel),
            ("block_side", block_side), ("pork_side", pork_side), ("cleaver", cleaver), ("bird", bird), ("feather", feather),
@@ -642,9 +659,9 @@ SPRITES = (("whetstone", whetstone), ("blade", blade), ("stew_pot", stew_pot), (
 def generate():
     out = os.path.join(ROOT, "ui", "work")
     os.makedirs(out, exist_ok=True)
-    for name, make in SPRITES:
-        from artroot import texture_path  # the game's, or the mod that owns it
-        make().save(texture_path("ui/work/" + name))
+    for name, make, *mod in SPRITES:
+        from artroot import texture_path  # the game's, or the mod that owns it (named, or already holding it)
+        make().save(texture_path("ui/work/" + name, mod[0] if mod else None))
     print(f"work ui: wrote {len(SPRITES)} props")
 
 

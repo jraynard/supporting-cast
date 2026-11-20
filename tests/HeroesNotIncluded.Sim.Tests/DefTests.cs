@@ -26,6 +26,23 @@ public class DefTests
     }
 
     [Fact]
+    public void AModsOldPaceReadsAsALevel()
+    {
+        var db = DefDatabase.FromJson(
+            """{ "trades": [ { "name": "Old", "label": "old", "pace": "Busy" }, { "name": "Both", "label": "both", "pace": "Busy", "level": "Beginner" }, { "name": "New", "label": "new", "level": "Intermediate" } ] }""");
+        Assert.Equal(TradeLevel.Experienced, db.Trade("Old").Level);
+        Assert.Equal(TradeLevel.Beginner, db.Trade("Both").Level);
+        Assert.Equal(TradeLevel.Intermediate, db.Trade("New").Level);
+    }
+
+    [Fact]
+    public void EveryTradeOfTheGameSaysWhoItSuits()
+    {
+        foreach (var trade in TestWorld.LoadDefs().AllTrades.Where(t => !t.Unlimited))
+            Assert.True(trade.Level != null, $"{trade.Name} has no level");
+    }
+
+    [Fact]
     public void LaterFilesOverrideEarlierOnes()
     {
         var db = DefDatabase.FromJson(

@@ -204,7 +204,7 @@ public sealed partial class VillageGame
 
     private void DrawPreferences(CoopSession session, LobbySeat seat)
     {
-        // The buttons line up in a column past the longest name and its notes ("only if played", the pace).
+        // The buttons line up in a column past the longest name and its notes ("only if played", the level).
         var start = ImGui.GetCursorPosX();
         var column = Gui.S(220);
         foreach (var trade in _sim.Defs.AllTrades)
@@ -212,7 +212,7 @@ public sealed partial class VillageGame
             {
                 var width = ImGui.CalcTextSize(Capitalized(trade.Label)).X
                     + (trade.PlayerOnly ? Gui.S(6) + ImGui.CalcTextSize("only if played"u8).X : 0f)
-                    + (trade.Pace is { } p ? Gui.S(6) + ImGui.CalcTextSize(TradePaces.Label(p).ToLowerInvariant()).X : 0f);
+                    + (trade.Level is { } p ? Gui.S(6) + ImGui.CalcTextSize(TradeLevels.Label(p).ToLowerInvariant()).X : 0f);
                 column = MathF.Max(column, start + width + Gui.S(16));
             }
         foreach (var trade in _sim.Defs.AllTrades)
@@ -223,18 +223,17 @@ public sealed partial class VillageGame
             var rank = seat.Wanted.IndexOf(trade);
             var never = seat.Never.Contains(trade);
             ImGui.Text(Capitalized(trade.Label));
-            Gui.ItemTip(PacedDescription(trade) + (trade.PlayerOnly ? "\n\n" + OnlyIfPlayed : ""));
+            Gui.ItemTip(trade.Description + (trade.PlayerOnly ? "\n\n" + OnlyIfPlayed : ""));
             if (trade.PlayerOnly)
             {
                 ImGui.SameLine(0, Gui.S(6));
                 TextC(Theme.Dim, "only if played");
                 Gui.ItemTip(OnlyIfPlayed);
             }
-            if (trade.Pace is { } pace)
+            if (trade.Level is { } level)
             {
                 ImGui.SameLine(0, Gui.S(6));
-                TextC(Theme.Dim, TradePaces.Label(pace).ToLowerInvariant());
-                Gui.ItemTip(TradePaces.About(pace));
+                TextC(Theme.Dim, TradeLevels.Label(level).ToLowerInvariant());
             }
             ImGui.SameLine(column, -1);
             if (ImGui.SmallButton(rank >= 0 ? $"Choice {rank + 1}" : "Want"))
@@ -277,9 +276,9 @@ public sealed partial class VillageGame
         {
             if (trade.Unlimited || !RoundSystem.InTown(_sim, trade))
                 continue;
-            if (ImGui.Button(Capitalized(trade.Label) + (trade.Pace is { } pace ? $" ({TradePaces.Label(pace).ToLowerInvariant()})" : ""), in _autoSize))
+            if (ImGui.Button(Capitalized(trade.Label) + (trade.Level is { } level ? $" ({TradeLevels.Label(level).ToLowerInvariant()})" : ""), in _autoSize))
                 Take(session, [trade]);
-            Gui.ItemTip(PacedDescription(trade));
+            Gui.ItemTip(trade.Description);
         }
         if (ImGui.Button("Anything going"u8, in _autoSize))
             Take(session, []);
@@ -288,10 +287,6 @@ public sealed partial class VillageGame
 
     /// <summary>What "only if played" means beside a trade only players take.</summary>
     private const string OnlyIfPlayed = "This trade comes to town only if someone plays it: nobody's dealt it unless they ask for it, and the town does without it otherwise.";
-
-    /// <summary>A trade's description with what its pace means first, for a tooltip.</summary>
-    private static string PacedDescription(TradeDef trade) =>
-        trade.Pace is { } pace ? $"{TradePaces.Label(pace)}: {TradePaces.About(pace)}\n\n{trade.Description}" : trade.Description;
 
     private void Take(CoopSession session, IReadOnlyList<TradeDef> wanted)
     {

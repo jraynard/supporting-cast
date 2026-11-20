@@ -4,7 +4,7 @@
   "trades": [
     // playerOnly: only a player who asked for it is ever dealt it (the musician's way). A trade with a
     // workplace the AI runs too needs a building with a role, stations and AI jobs: see mods/carpenter.
-    { "name": "ExampleTrade", "label": "exampletrade", "pace": "Steady", "playerOnly": true,
+    { "name": "ExampleTrade", "label": "exampletrade", "level": "Beginner", "playerOnly": true,
       "description": "What this trade does for the town, in the game's voice.",
       "kit": [ { "def": "ExampleTradeTool" } ] }
   ],

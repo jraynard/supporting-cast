@@ -43,6 +43,8 @@ bow's tiller, the pipe's lead-in). So:
    was made as a `Crafted` component (the template's `Finish` adds it: `Crafting.QualityFrom(Quality)`), shown as
    its grade and worth more; a different *kind* of result (a cracked bottle) is a def of its own. Read the game's
    `data/defs/trades.json` for every field a trade can have. `"playerOnly": true` for a trade no AI takes.
+   Give it a `"level"` (DESIGN.md, "Trade levels"): `Beginner` for calm work with nothing to learn first and
+   nothing lost to a slip, `Intermediate` for a craft with recipes, `Experienced` for one busy all day.
 3. **The sim half** (`src/<Name>.Sim`, references only `HeroesNotIncluded.Sim`): an `ISimMod` that registers
    - `registry.Trade(new <Name>Module())`: an `ITradeModule`, answering only the hooks that are yours (each
      defaults to "not mine"): work at a station, mending, what F does (`EarlyActionAt`, `SiteActionAt`,

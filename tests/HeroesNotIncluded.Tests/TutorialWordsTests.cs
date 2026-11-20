@@ -21,9 +21,10 @@ public class TutorialWordsTests
     [Fact]
     public void EveryKeyMarkIsOneTheGameKnows()
     {
-        // A mod's lessons name its own controls (~@musician:note1~): registered as the game registers a mod's game half.
+        // A mod's lessons name its own controls (~@musician:note1~, ~@miner:lean_left~): registered as the game registers a mod's game half.
         var before = Mods.GameMods.Loaded;
-        Mods.GameMods.Use([.. before.Where(m => m.ModId != "musician"), ("musician", typeof(Musician.MusicianGame).Assembly)]);
+        Mods.GameMods.Use([.. before.Where(m => m.ModId is not ("musician" or "miner")),
+            ("musician", typeof(Musician.MusicianGame).Assembly), ("miner", typeof(Miner.MinerGame).Assembly)]);
         try
         {
             Marks();

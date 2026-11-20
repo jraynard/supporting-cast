@@ -730,6 +730,13 @@ public sealed class DefDatabase
     /// </summary>
     public IReadOnlyList<T> ModDefs<T>(string kind) where T : Def
     {
+        // One database is shared by simulations on several threads (the season sweep): read once, under a lock.
+        lock (_modDefs)
+            return ModDefsLocked<T>(kind);
+    }
+
+    private IReadOnlyList<T> ModDefsLocked<T>(string kind) where T : Def
+    {
         if (_modDefs.TryGetValue((kind, typeof(T)), out var cached))
             return (List<T>)cached;
         var list = new List<T>();

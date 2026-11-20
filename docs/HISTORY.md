@@ -2870,3 +2870,91 @@ before it boils over. Plan and decisions: the brawl plan, slices 0 to 4.
 - `--brawl-test` (`--drill brawl`). Fixed on the way: the carpenter's join split under the gauge's mark (the
   hand's wobble is in how far a blow drives now, not whether it splits). Saves to format 65. `BrawlCrisisTests`,
   `HouseRulesTests`, `HurlingTests`. Bench hashes unchanged.
+
+### Trade levels; the miner made a beginner's trade (2026-11-20)
+- **A trade's level replaces its pace** (`TradeDef.Level`, `TradeLevel`: beginner, intermediate, experienced), the word
+  alone beside its name wherever a trade is chosen (a line on what it meant made every description start the
+  same): the miner, musician and candlemaker are beginner's trades; the smith, carpenter,
+  tinker, empath and cook intermediate; the innkeeper experienced (DESIGN.md, "Trade levels"). A mod's old
+  `"pace"` still reads as a level. `DefTests`. Bench hashes unchanged.
+- **Hewing, gentler** (`HewSession`): the crack's band wider (`CrackWidth` 0.11 to 0.15), arms jarred for less
+  (`JarSteps` 45 to 25).
+- **The miner's own sounds** (`mods/miner/sounds`, `MinerSounds`): a slab breaking and its rubble, a chip, the point
+  ringing off the rock, a glance, and two hammer taps for sounding to come. Synthesized by `tools/sfx_synth.py`'s
+  `mine_*`; a catalogue entry can name its mod now, and is written into that mod's sounds folder.
+- **Hewing's window redrawn, side on** (from play: the hollow growing in the middle read as nothing): the wall
+  seen from the side, the crack running into it at some height, the point put at it with W/S (or A/D) or the
+  mouse up and down (`HewSession.Aim` is up the wall now). The pick is shown, a sprite of the mod's own
+  (`ui/work/pick`, `tools/work_ui_art.py`; a sprite can name its mod now): hands low, head high, its point in the
+  rock; held, it swings back up about the hands, and in in a blink on the blow (the smith's swing, stood up against
+  the wall). Each slab takes a layer off the wall, so the face steps back with fresh rock along it, and its pieces
+  tumble to the rubble at its foot; a chip throws flakes, a blow that rings throws sparks and shakes the pick.
+- **Sounding the rock** (`SoundSession`, the miner's second game): with the sounding hammer in hand (in the kit; a new
+  `SoundingHammer` def, no tool kind), F at a wall taps along it, five spots across (the face and two either side).
+  Sound rock rings clear and long; ore in the wall or up to three cells behind deadens the note, more the nearer
+  (`DepthWeight`). Each tap is heard through noise (`Noise`: steadied by Mining skill, worse for a shaky hand; from
+  play, it was clear at once, so now about one tap in ten misleads a new miner with ore a cell behind, and ore further
+  back takes four or five), so it pays to tap again: under each spot its last five taps are ticks where each was
+  heard (`RecentAt`), dead to clear, not summed up; and ripples off the rock carry the same note for anyone who can't
+  hear it. The window says outright to chalk an X where it's dead (from play: it wasn't clear which), and the lesson
+  says where Millbrook's seams lie.
+  What's behind is read once at the start and kept private to the session. Space chalks a spot (an X for a seam, a
+  ring for nothing): `ChalkMarks`, saved, the miner's own claim, seen by all and gone with the rock when it's dug.
+  Its own taps (`tools/sfx_synth.py`'s `mine_tap_*`), a lesson (`sound`, core), `--drill sounding`; the bot taps
+  each spot twice and chalks one that stands out (`MinerBot.Seam`).
+- **Marks on cells** (`GameRegistry.CellMarks`): a mod's sprites laid flat on cells for everyone, drawn as a dig
+  order's mark is. The chalk's sprites are the mod's own (`mods/miner/tools/miner_art.py`).
+- Bench: unchanged with the miner off; with `--mods miner` the state hashes are unchanged and the full ones move
+  with the chalk's saved state: seed 1234 full `BA0FAAB212ECE6F1`, seed 99 full `0368C090D227C2A2`. `MinerModTests`.
+- **The barrow** (the miner's third game, and the way ore reaches the smith): two wheelbarrows by the mine shed
+  (`MinerModule.Stock`). A barrow's load is a `BarrowLoad` on it (not a container: a container on the ground opens
+  as storage, and one picked up can be worn as a pack): pieces, each in a slot of a bed three across and four from
+  the wheel to the handles, two high (`Barrows`). F at a barrow with ore in reach, or at ore with one in hand,
+  loads it (`LoadSession`): a piece at a time where you choose, Space lifts one off again, and a dot shows where the
+  weight centres against the steady zone (square across, a little behind the wheel). Pushed (`BarrowSystem`), a
+  load out of the zone may tip on each new cell, likelier on rough going; a tip drops the barrow and spills a third
+  of the load from the side it leaned, nothing lost. F at the smithy's chest tips it in, paid by whoever works the
+  smithy at the mod's own prices (`ores` defs, `OreDef`: iron a silver, coal a half), and what they're short is
+  owed and paid when they have it (`OreTally`). Things are set down in reach on your own level (`Barrows.PutDown`:
+  "near" alone found the hilltop above the tunnel). A lesson (`haul`, core), `--drill hauling`, its sprite
+  (`mods/miner/tools/miner_art.py`). Not yet: the bot's and the AI miner's hauling.
+- Bench: unchanged with the miner off; with `--mods miner` (two barrows by the shed) seed 1234 state
+  `FA5832CE2E5733BD`, full `75BF1CEA429514A4`; seed 99 state `21E34C65DB6A0705`, full `184C15E749A1ECD8`.
+- **Pushing the barrow is balanced** (from play: the walk was plain walking, and it wasn't plain where the ore went):
+  a loaded barrow leans as it's pushed (`BarrowLoad.Lean`), and Q/E (LB/RB) lean it back (`BarrowLeanCommand`,
+  controls of the mod's own). A square load rights itself; one off-square drifts to its heavy side and won't right
+  itself (its risk past steady), so it must be held. Turns throw it outward, rough going jolts it, stood still it
+  settles; over the edge it goes over, spilling from that side (the old hidden chance per cell is gone). A panel at
+  the bottom shows the lean, the keys and the way to the smithy, and an ore icon bobs over the smithy's chest, on
+  the pusher's screen alone. The loading window says what its shapes are (the green steady zone, the dot the weight).
+- **A mod's overlay** (`GameRegistry.Overlay`): called every frame in the world, mini-game or not, with a HUD panel
+  of its own (`WorkView.BeginHudPanel`) and its controls live (`WorkView.Playing`). **Floating marks**
+  (`CellMark.Floating`): an icon bobbing over a cell, as over a dig order. Bench unchanged.
+- **The barrow is a prop you push** (from play, for the feel of it): a box model (`model` on its def: tray, wheel,
+  legs, handles; its faces the mod's own, `miner_art.py`), on the ground and in hand. A def's `pushed`
+  (`ThingDef.Pushed`, presentation only) draws a held thing as its model ahead of whoever has it, turned the way
+  they're going (`WorldRenderer.DrawPushed`), not as a little picture in the hand. Its load heaps up in the tray:
+  **`GameRegistry.ModelCount`** tells the game how full a one-item thing is drawn, for its model's `minCount` boxes.
+- **The miner bot works the mine** (`MinerBot`, its own file now; only through commands and what anyone sees): it
+  sounds walls it hasn't (every spot of a sounding counted), hews what shows as ore or is chalked a seam, and after
+  three soundings that find nothing cuts in where the mine's deepest. With six pieces lying hewn it fetches a barrow,
+  loads each piece where it keeps the load steadiest (`MinerBot.BestSlot`), wheels it to the smithy leaning it back by
+  its lean, tips it in, and comes back for a loaded barrow it set down. `MinerModTests`: in a round it's paid for ore
+  it found itself.
+- **An AI miner takes ore to the smithy** (a player's character once they've left): `OreRunJob`, a barrowload in
+  its arms from the shed's chest or hewn about the mine, paid as a barrow is (`BarrowSystem.Deliver`, shared now).
+- **A trade's own jobs of any work type** (`ITradeModule.JobFor`): the AI asked trades only for crafting, though the
+  hook said every type; now it asks after the core's own jobs of each type come up empty. Bench unchanged.
+- **The miner is on by default** (`defaultOn`; still player-only, and not in the Next Fest demo's depots): every
+  Millbrook round has the shed and its barrows, and the lobby offers the trade "only if played". A sweep of 8
+  seeds with the miner bot dealt in: the smithy's iron ore never ran out (low 12, mean end 44); the bot hewed 8.4,
+  sounded 3.4 and loaded 3.2 times a season.
+- **Fixed on the way, both latent in the core and shown by the miner's dice:** a dragon called off its attack when
+  the first villager in the list couldn't be reached from the map's edge (in Reedmere, across a broken bridge); it
+  comes for the first it can get at now (`DragonCrisis.Begin`, `CrisisTests`). And a mod's own kind of def
+  (`DefDatabase.ModDefs`) was cached unsafely when the season sweep's seasons, on several threads, read it at once;
+  it's read under a lock. `CompanyTests` no longer hangs on its seed: the company's given silver enough for a
+  broker's word, and no rare company of the round's own comes alongside the one sent (`ExpeditionTests.Round`'s
+  `beforeStart`). `TutorialWordsTests` registers the miner's controls, as the musician's.
+- Bench: seed 1234 state `FA5832CE2E5733BD`, full `75BF1CEA429514A4`; seed 99 state `21E34C65DB6A0705`, full
+  `184C15E749A1ECD8` (the miner on by default; as with `--mods miner` before).

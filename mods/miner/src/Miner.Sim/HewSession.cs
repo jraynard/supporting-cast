@@ -9,12 +9,12 @@ using HeroesNotIncluded.Sim.Work;
 namespace HeroesNotIncluded.Miner;
 
 /// <summary>
-/// Hewing a rock face (the miner's hand game; a first pass, to be found by playing it). The face shows the
-/// crack it'll break along, a seam of weakness running down it.
+/// Hewing a rock face (the miner's hand game; a first pass, to be found by playing it). The wall is seen side on,
+/// the crack it'll break along running into it at some height: a seam of weakness.
 /// <list type="bullet">
-/// <item>A/D (or the mouse across the face) puts the pick's point over the crack (<see cref="Aim"/>).</item>
+/// <item>W/S (or A/D, or the mouse up and down the wall) puts the pick's point at the crack's height (<see cref="Aim"/>).</item>
 /// <item>F held swings the pick back, let go it strikes. On the crack and hard enough (<see cref="NeedRaise"/>)
-/// a slab comes away and the crack runs on a little further across the face.</item>
+/// a slab comes away, a layer off the wall, and the crack runs on a little higher or lower.</item>
 /// <item>On the crack but soft, it only chips. Off it and hard, the point rings off the rock and jars the arms:
 /// the next swing comes up slowly (<see cref="Jarred"/>).</item>
 /// </list>
@@ -30,14 +30,14 @@ public sealed class HewSession : WorkSession
     /// <summary>How far the aim moves a step on the keys, and how much of the way to the mouse.</summary>
     public const float AimPerStep = 0.025f, MouseEase = 0.3f;
 
-    /// <summary>How near the crack (across the face, −1..1) the point must land, before skill widens it.</summary>
-    public const float CrackWidth = 0.11f;
+    /// <summary>How near the crack (up the wall, −1..1) the point must land, before skill widens it.</summary>
+    public const float CrackWidth = 0.15f;
 
     /// <summary>How far back the pick must swing to break a slab away.</summary>
     public const float NeedRaise = 0.55f;
 
     /// <summary>Steps the arms stay jarred after the point rings off the rock.</summary>
-    public const int JarSteps = 45;
+    public const int JarSteps = 25;
 
     /// <summary>Dig work (the block's <c>digWork</c>) per slab, and the fewest and most slabs a face takes.</summary>
     public const float DigWorkPerChunk = 250f;
@@ -56,10 +56,10 @@ public sealed class HewSession : WorkSession
     public int Chunks { get; set; } = 3;
     public int ChunksDone { get; private set; }
 
-    /// <summary>Where the point is across the face, −1..1.</summary>
+    /// <summary>Where the point is up the wall, −1 (high) .. 1 (low).</summary>
     public float Aim { get; private set; }
 
-    /// <summary>Where the crack runs across the face now, −1..1.</summary>
+    /// <summary>The height the crack runs into the wall at now, −1 (high) .. 1 (low).</summary>
     public float Crack { get; private set; }
 
     /// <summary>How far back the pick is swung (0 down, 1 as far as it goes).</summary>
@@ -122,10 +122,13 @@ public sealed class HewSession : WorkSession
 
     protected override void Begin() => Crack = Rand.Range(-0.6f, 0.6f);
 
-    /// <summary>The crack after a slab comes away: on along the face from where it was, never off it.</summary>
+    /// <summary>The crack after a slab comes away: a little higher or lower than it was, never off the wall.</summary>
     private float NextCrack() => Math.Clamp(Crack + Rand.Range(-0.5f, 0.5f), -0.75f, 0.75f);
 
+    // A/D and W/S both move the point along the wall (A and W up it), so the keys of any mini-game work here.
     protected override void Axis(int value) => _aim = value;
+
+    protected override void Axis2(int value) => _aim = value;
 
     protected override void Step()
     {
@@ -135,8 +138,8 @@ public sealed class HewSession : WorkSession
             Jarred--;
         if (!_raising)
         {
-            Aim = PointU is { } u
-                ? Math.Clamp(Aim + (Math.Clamp(u * 2f - 1f, -1f, 1f) - Aim) * MouseEase, -1f, 1f)
+            Aim = PointV is { } pv
+                ? Math.Clamp(Aim + (Math.Clamp(pv * 2f - 1f, -1f, 1f) - Aim) * MouseEase, -1f, 1f)
                 : Math.Clamp(Aim + _aim * AimPerStep, -1f, 1f);
         }
         if (Held)

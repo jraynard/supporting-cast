@@ -311,11 +311,16 @@ public sealed class DragonCrisis : ICrisis
         var town = sim.Creatures().Where(e => w.Get<Creature>(e) is { Faction: Faction.Village, Dead: false }).Select(e => w.Get<Position>(e).Cell).ToList();
         if (def == null || town.Count == 0)
             return null;
-        var toward = town[0];
+        // It comes for the first of the town it can get at: one shut away (across a broken bridge, say) doesn't call it off.
         var first = rand.NextInt(4);
         int3? entry = null;
-        for (var i = 0; i < 4 && entry == null; i++)
-            entry = Combat.Raids.EdgeEntry(sim, (first + i) % 4, toward);
+        foreach (var toward in town)
+        {
+            for (var i = 0; i < 4 && entry == null; i++)
+                entry = Combat.Raids.EdgeEntry(sim, (first + i) % 4, toward);
+            if (entry != null)
+                break;
+        }
         if (entry is not { } at)
             return null;
         var adult = def.LifeStages.Count > 0 ? def.LifeStages[^1].MinAgeDays + 8 : 30;

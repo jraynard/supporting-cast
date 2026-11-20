@@ -24,7 +24,7 @@ dotnet run --project src/HeroesNotIncluded -- --dragon-test --name Arin        #
 dotnet run --project src/HeroesNotIncluded -- --brawl-test --name Arin         # a rowdy crowd brawling in the inn, you the innkeeper among them
 dotnet run --project src/HeroesNotIncluded -- --bridge-test --name Arin        # the bridge down, you the tinker at the gap with wood
 dotnet run --project src/HeroesNotIncluded -- --fell-test --name Arin          # the carpenter by a pine in the open, axe and saw to hand (a mod's drill: --drill felling starts the felling)
-dotnet run --project src/HeroesNotIncluded -- --new-game --trade Miner --mods miner --drill hewing   # the miner in the mine, at a face, hewing
+dotnet run --project src/HeroesNotIncluded -- --new-game --trade Miner --drill hewing   # the miner in the mine, at a face, hewing (--drill sounding: tapping it; --drill hauling: loading a barrow)
 dotnet run --project src/HeroesNotIncluded -- --host --name Arin --pairs-test  # every job for two ready: a greatsword's iron, a great log, a wagon's axle, a body on a shrine pallet (solo: --new-game, and Help! brings a villager)
 dotnet run --project src/HeroesNotIncluded -- --new-game --name Arin --help-as striker  # be the second pair of hands alone: a bot leads and waits for you (striker, keeper, pitman, lifter)
 dotnet run --project src/HeroesNotIncluded -- --new-game --die-at 5            # your character drops dead: try being a ghost
@@ -177,8 +177,13 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. ` (R3
     aimed (`FellSession`; its lean from `LeanOf`, plain to see), a `Falling` tree landing on whoever's under it after a creak,
     the `Trunk` bucked into bulky `Log`s and `GreatLog`s (`BuckSession`; an oak's with a `CrosscutSession` on the other end),
     logs split into firewood at the chopping block (`SplitSession`); a wagon's sprung board nailed with the claw hammer (`NailSession`). AI: `SawJob`, `FletchJob`, `ArrowsJob`, `FurnishJob`, `SplitJob`, `FellJob`.
-  - The miner (`mods/miner`, player-only, a first pass): F at a rock face hews it (`HewSession`, its slabs read from the rock it
-    looks like, so hidden ore never shows); the trade `mines` (`RoundSystem.MayMine`) and `supplies` iron ore, so the carter brings
+  - The miner (`mods/miner`, player-only, a beginner's trade, on by default): F at a rock face hews it (`HewSession`, the wall side on, its slabs
+    read from the rock it looks like, so hidden ore never shows); with the sounding hammer in hand F sounds it (`SoundSession`: taps
+    along five spots of wall, each note deadened by ore behind, heard through noise; what's behind is private to the session) and
+    chalks it (`ChalkMarks`, the miner's own claim, drawn for all through `GameRegistry.CellMarks`). Ore goes to the smith by
+    wheelbarrow (`Barrows`: its load a `BarrowLoad` on the barrow, not a container): loaded a piece at a time (`LoadSession`, the
+    balance where the weight centres), wheeled (`BarrowSystem`: it leans as it's pushed, Q/E lean it back through `BarrowLeanCommand` from the mod's `GameRegistry.Overlay`; over the edge it spills), tipped into the smithy's chest
+    and paid for by whoever works it at the mod's `ores` prices (`OreDef`; short, it's owed: `OreTally`); the trade `mines` (`RoundSystem.MayMine`) and `supplies` iron ore, so the carter brings
     less (`OreCarterSystem.Delivered`). Underground, the view cuts at your level (`VillageGame.UpdateFollowedLevel`).
   - `Tinkering/`: the Tinker. Lockwork on strongboxes from quests: a box's trap is hidden item
     state, shown only through `PerceptionView.Strongbox`, which never says an armed one is there.
@@ -279,8 +284,8 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. ` (R3
   `Mods/GameContent` (defs, then `$patch` merges; atlas and sound roots; the build tag; save meta).
   Read content through `GameContent.Current`, never a hardcoded `data/defs` path. A new trade, mini-game,
   content mod or town: the skills in `.claude/skills/` (`new-trade`, `new-minigame`, `content-mod`, `new-map`)
-  and the ModKit (`modkit/`). The game's own trades are mods too: `mods/carpenter` and `mods/musician` on by default,
-  `mods/miner` off for now (`--mods miner`; the last two player-only: `TradeDef.PlayerOnly`; a trade whose workplace the town hasn't is neither dealt
+  and the ModKit (`modkit/`). The game's own trades are mods too: `mods/carpenter`, `mods/musician` and `mods/miner`
+  on by default (the last two player-only: `TradeDef.PlayerOnly`; a trade whose workplace the town hasn't is neither dealt
   nor offered, `RoundSystem.InTown`). A round's mode is an `IGameMode` (`Modding/GameMode.cs`; `new-mode` skill,
   `mods/siege`); `--mode NAME`.
 - The musician (`mods/musician`, docs/MUSICIAN-PLAN.md): instruments and tunes are the mod's own kinds of def

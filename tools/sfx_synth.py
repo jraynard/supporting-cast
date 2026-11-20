@@ -704,7 +704,70 @@ def speech_syllable(rng, register, onset, vowel):
     return norm(fade_edges(y, 3), 0.7)
 
 
-# name -> (folder, [signal makers]); variants become name_1, name_2...
+# ---- the miner's (mods/miner): a pick at the rock face, and a hammer sounding it
+
+def rock_thud(rng, seconds=0.35, f=None):
+    """Steel into stone: a dull low knock with a gritty edge, no ring to it."""
+    f = f or rng.uniform(95, 125)
+    body = modes(rng, seconds, [(f, 1, 0.05), (f * 2.7, 0.5, 0.03), (f * 5.1, 0.25, 0.015)])
+    grit = band(noise(rng, seconds), lo=900, hi=7000) * env(seconds, 0.0005, 0.02)
+    return body + grit * 0.7
+
+
+def rubble(rng, seconds=0.7, stones=9):
+    """Bits of rock coming down: small knocks, each its own pitch, thinning out, over a dusty hiss."""
+    parts = []
+    for k in range(stones):
+        t0 = rng.uniform(0.02, seconds * 0.7) * (0.4 + 0.6 * k / stones)
+        f = rng.uniform(380, 1300)
+        knock_ = modes(rng, 0.12, [(f, 1, 0.012), (f * 2.4, 0.5, 0.006)]) + band(noise(rng, 0.12), lo=1500, hi=8000) * env(0.12, 0.0003, 0.006) * 0.6
+        parts.append((t0, knock_ * rng.uniform(0.25, 0.8)))
+    dust = band(noise(rng, seconds), lo=1200, hi=9000) * env(seconds, 0.03, 0.2) * 0.15
+    return at(seconds, (0, dust), *parts)
+
+
+def mine_break(rng):
+    """A slab breaking away: the blow, the rock cracking along the line, and what falls."""
+    crack = band(noise(rng, 0.18), lo=600, hi=9000) * env(0.18, 0.0005, 0.035)
+    return norm(at(1.0, (0, rock_thud(rng)), (0.02, crack * 1.4), (0.05, rubble(rng, 0.9, 11))), 0.9)
+
+
+def mine_chip(rng):
+    """On the crack but soft: a sharp tick of steel on stone and a few flakes."""
+    tick_ = band(noise(rng, 0.05), lo=2000, hi=10000) * env(0.05, 0.0003, 0.006)
+    return norm(at(0.45, (0, rock_thud(rng, 0.25, rng.uniform(160, 200)) * 0.6), (0, tick_ * 1.2), (0.03, rubble(rng, 0.4, 3) * 0.6)), 0.7)
+
+
+def mine_ring(rng):
+    """Off the crack and hard: the point rings off the rock, bright and jangling up the haft."""
+    f0 = rng.uniform(1900, 2300)
+    ring = modes(rng, 0.7, [(f0, 1, 0.22), (f0 * 2.63, 0.6, 0.12), (f0 * 4.2, 0.35, 0.07), (f0 * 0.57, 0.5, 0.15)], jitter=0.01)
+    buzz = ring * (1 + 0.5 * np.sin(2 * np.pi * 31 * t_axis(0.7)))
+    return norm(at(0.7, (0, rock_thud(rng, 0.3) * 0.7), (0, buzz)), 0.85)
+
+
+def mine_glance(rng):
+    """Off the crack and soft: the point skids across the face."""
+    scrape = sweep_band(noise(rng, 0.25), [2600, 1500], q=3.0) * env(0.25, 0.01, 0.07)
+    return norm(at(0.3, (0, scrape), (0, rock_thud(rng, 0.2, 180) * 0.3)), 0.55)
+
+
+def tap(rng, solid):
+    """A small hammer on the face: sound rock rings back clear and long (solid 1), with ore behind it the note
+    goes dead and low (solid 0). The game pitches and mixes the two by what's heard."""
+    if solid:
+        f = 1450.0
+        tone = modes(rng, 0.9, [(f, 1, 0.3), (f * 2.41, 0.55, 0.16), (f * 3.9, 0.3, 0.08), (f * 0.5, 0.25, 0.2)])
+        hit = band(noise(rng, 0.02), lo=2500) * env(0.02, 0.0003, 0.003)
+        return norm(at(0.9, (0, tone), (0, hit)), 0.75)
+    f = 520.0
+    tone = modes(rng, 0.35, [(f, 1, 0.045), (f * 2.2, 0.4, 0.02), (f * 0.6, 0.6, 0.06)])
+    hit = band(noise(rng, 0.05), lo=200, hi=2500) * env(0.05, 0.0005, 0.01)
+    return norm(at(0.35, (0, tone), (0, hit * 0.8)), 0.75)
+
+
+# name -> (folder, [signal makers]) or (folder, [makers], mod); variants become name_1, name_2... A mod's sounds are
+# written into its own sounds/ folder (mods/<mod>/sounds), never the game's.
 def catalogue():
     v = lambda f, n: [f] * n
     return {
@@ -764,6 +827,12 @@ def catalogue():
         "amb_blaze": ("amb", [lambda r: fire_loop(r, 6, roar=2.0, crackle=1.6)]),
         "amb_crowd": ("amb", [crowd_loop]),
         # Babble: register x onset x vowel, as voice/blip_ROV.ogg (Audio/Babble.cs picks by index).
+        "mine_break": ("sfx", v(mine_break, 3), "miner"),
+        "mine_chip": ("sfx", v(mine_chip, 3), "miner"),
+        "mine_ring": ("sfx", v(mine_ring, 2), "miner"),
+        "mine_glance": ("sfx", v(mine_glance, 2), "miner"),
+        "mine_tap_ring": ("sfx", [lambda r: tap(r, True)], "miner"),
+        "mine_tap_dead": ("sfx", [lambda r: tap(r, False)], "miner"),
         "blip": ("voice", [lambda r, g=g, o=o, v=v: speech_syllable(r, g, o, v)
                            for g in range(len(REGISTERS)) for o in ONSETS for v in "aeiou"]),
     }
@@ -797,7 +866,7 @@ def main():
     ap.add_argument("--only", help="only names starting with this")
     args = ap.parse_args()
     made = []
-    for name, (folder, makers) in catalogue().items():
+    for name, (folder, makers, *mod) in catalogue().items():
         if args.only and not name.startswith(args.only):
             continue
         for i, make in enumerate(makers):
@@ -808,7 +877,7 @@ def main():
                 per = len(ONSETS) * 5
                 suffix = f"_{i // per}{i % per // 5}{i % 5}"
             from artroot import sound_path  # the game's, or the mod that owns it
-            path = sound_path(os.path.join(folder, f"{name}{suffix}.ogg"))
+            path = sound_path(os.path.join(folder, f"{name}{suffix}.ogg"), mod[0] if mod else None)
             to_ogg(x, path)
             made.append((name, x))
             print(f"{os.path.relpath(path, ROOT)}  {len(x) / RATE:.2f}s")

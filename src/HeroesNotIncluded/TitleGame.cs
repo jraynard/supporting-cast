@@ -280,18 +280,15 @@ public sealed class TitleGame : Game
         Game Start(string? trade) => new VillageGame(DefaultSeed) { Adventure = true, Character = c, HeroTrade = trade, MapName = map, Mode = _mode };
         return _defs.AllTrades
             .Where(t => !t.Unlimited)
-            .Select(t => new MenuItem(TradeTitle(t), PaceNote(t) + t.Description, () => Start(t.Name)))
+            .Select(t => new MenuItem(TradeTitle(t), t.Description, () => Start(t.Name)))
             .Append(new MenuItem("Any", "Let the deal pick a trade for you.", () => Start(null)))
             .Append(new MenuItem("Back", "Back to who you'll be.", null, MenuAction.BackToCreator))
             .ToArray();
     }
 
-    /// <summary>A trade's name in a menu, with its pace when it has one: "Tinker (easygoing)".</summary>
+    /// <summary>A trade's name in a menu, with its level when it has one: "Miner (beginner)".</summary>
     private static string TradeTitle(Sim.Defs.TradeDef t) =>
-        char.ToUpperInvariant(t.Label[0]) + t.Label[1..] + (t.Pace is { } pace ? $" ({Sim.Defs.TradePaces.Label(pace).ToLowerInvariant()})" : "");
-
-    /// <summary>What a trade's pace means, ahead of its description.</summary>
-    private static string PaceNote(Sim.Defs.TradeDef t) => t.Pace is { } pace ? Sim.Defs.TradePaces.About(pace) + " " : "";
+        char.ToUpperInvariant(t.Label[0]) + t.Label[1..] + (t.Level is { } level ? $" ({Sim.Defs.TradeLevels.Label(level).ToLowerInvariant()})" : "");
 
     /// <summary>
     /// The tutorial's trades: those with lessons of their own (a core chapter), each with how far this
@@ -313,7 +310,7 @@ public sealed class TitleGame : Game
         }
         return _defs.AllTrades
             .Where(t => t.Lessons.Any(l => l.Core))
-            .Select(t => new MenuItem(TradeTitle(t), Progress(t) + PaceNote(t) + t.Description, () => Start(t.Name)))
+            .Select(t => new MenuItem(TradeTitle(t), Progress(t) + t.Description, () => Start(t.Name)))
             .Append(new MenuItem("Back", "Back to the main menu.", null, MenuAction.Back))
             .ToArray();
     }

@@ -1,0 +1,12 @@
+{
+  // The miner's own sounds, synthesized by tools/sfx_synth.py (its mine_* entries): the pick at the face, and the
+  // hammer's two taps for sounding the rock, a clear ring and a dead knock, mixed by what's heard.
+  "sounds": {
+    "miner.break":    { "files": ["sfx/mine_break_*.ogg"], "gain": 0.9, "pitch": [0.95, 1.05], "max": 2, "priority": 3 },
+    "miner.chip":     { "files": ["sfx/mine_chip_*.ogg"], "gain": 0.75, "pitch": [0.95, 1.05], "max": 2, "priority": 3 },
+    "miner.ring":     { "files": ["sfx/mine_ring_*.ogg"], "gain": 0.7, "pitch": [0.97, 1.03], "max": 2, "priority": 3 },
+    "miner.glance":   { "files": ["sfx/mine_glance_*.ogg"], "gain": 0.6, "pitch": [0.95, 1.05], "max": 2, "priority": 3 },
+    "miner.tap.ring": { "files": ["sfx/mine_tap_ring.ogg"], "gain": 0.8, "max": 3, "priority": 3 },
+    "miner.tap.dead": { "files": ["sfx/mine_tap_dead.ogg"], "gain": 0.8, "max": 3, "priority": 3 }
+  }
+}

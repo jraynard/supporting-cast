@@ -20,6 +20,12 @@ public interface IGameMod
     void Register(GameRegistry registry);
 }
 
+/// <summary>
+/// A mark a mod draws on a cell (<see cref="GameRegistry.CellMarks"/>): a sprite, tinted, laid flat on its top; or, <see cref="Floating"/>,
+/// an icon bobbing over it, as over a dig order (where to take something).
+/// </summary>
+public readonly record struct CellMark(int3 Cell, string Sprite, float4 Colour, float Size = 0.6f, bool Floating = false);
+
 /// <summary>What one mod registers with the game: how its mini-games look and sound.</summary>
 public sealed class GameRegistry
 {
@@ -31,6 +37,9 @@ public sealed class GameRegistry
     internal readonly Dictionary<Type, Action<WorkSoundContext, WorkSession>> Sounds = [];
     internal readonly Dictionary<Type, Func<WorkView, WorkSession, AimLine?>> AimLines = [];
     internal readonly List<Func<Simulation, Entity, long, Tilt?>> Tilts = [];
+    internal readonly List<Func<Simulation, IEnumerable<CellMark>>> CellMarkers = [];
+    internal readonly List<Action<WorkView>> Overlays = [];
+    internal readonly List<Func<Simulation, Entity, int?>> ModelCounts = [];
     internal readonly List<Func<IWorldSounds>> WorldSoundMakers = [];
     internal readonly List<StationTab> StationTabs = [];
     internal readonly List<Func<WorkView, Entity, Entity, string?>> MendHints = [];
@@ -61,6 +70,26 @@ public sealed class GameRegistry
     /// far (radians, 0 upright to π/2 flat), or null to draw it standing. Read only what anyone can see.
     /// </summary>
     public void Tilt(Func<Simulation, Entity, long, Tilt?> tilt) => Tilts.Add(tilt);
+
+    /// <summary>
+    /// Marks the mod puts on cells for anyone to see (a miner's chalk on a rock face): each drawn flat on the cell's top
+    /// (a solid one's, as a dig order's mark is; else its floor). Read only what anyone can see: it's drawn for every player.
+    /// </summary>
+    public void CellMarks(Func<Simulation, IEnumerable<CellMark>> marks) => CellMarkers.Add(marks);
+
+    /// <summary>
+    /// Called every frame while the player's in the world, mini-game or not: a panel of the mod's own on the HUD
+    /// (<see cref="WorkView.BeginHudPanel"/>), its controls read (<see cref="WorkView.Playing"/>) and sent as commands
+    /// (<see cref="WorkView.Issue"/>). The miner's barrow, leaned back as it's pushed. Read only what the player perceives.
+    /// </summary>
+    public void Overlay(Action<WorkView> draw) => Overlays.Add(draw);
+
+    /// <summary>
+    /// How full a thing is drawn (its model's boxes with a <c>minCount</c> shown from that many: a pile grows with its
+    /// stack), for a thing that's one item yet holds more (a barrow's load heaping up). Null if not the mod's. Read only
+    /// what anyone can see.
+    /// </summary>
+    public void ModelCount(Func<Simulation, Entity, int?> count) => ModelCounts.Add(count);
 
     /// <summary>Sounds of the world the mod adds (a tree's creak and crash), made once per game: heard as the player perceives it.</summary>
     public void WorldSounds(Func<IWorldSounds> make) => WorldSoundMakers.Add(make);
@@ -224,6 +253,14 @@ public sealed class WorkView
     /// <summary>Whether the work's clock is running (not paused, the session live): read controls only then.</summary>
     public bool Live => _game.WorkLive;
 
+    /// <summary>In the world with a character, the game running (an overlay reads its controls only then).</summary>
+    public bool Playing => _game.InWorld;
+
+    /// <summary>A panel of the HUD's (anchored, stacked, nothing overlapping) for an overlay; close it with <see cref="EndHudPanel"/>.</summary>
+    public void BeginHudPanel(string id, Narsil.Ui.Anchor anchor = Narsil.Ui.Anchor.Bottom) => _game.HudPanel(id, anchor);
+
+    public void EndHudPanel() => Narsil.Ui.Panel.End();
+
     /// <summary>A tooltip in the game's style.</summary>
     public void Tip(string text) => _game.ShowTip(text);
 
@@ -289,6 +326,27 @@ public static class GameMods
 
     internal static AimLine? AimLineFor(WorkView view, WorkSession? session) =>
         session != null && Find(session.GetType(), r => r.AimLines) is { } line ? line(view, session) : null;
+
+    /// <summary>Every mod's marks on cells (<see cref="GameRegistry.CellMarks"/>), this frame.</summary>
+    internal static IEnumerable<CellMark> CellMarks(Simulation sim) => _registries.SelectMany(r => r.CellMarkers).SelectMany(marks => marks(sim));
+
+    /// <summary>How full a thing's drawn, by a mod (<see cref="GameRegistry.ModelCount"/>); null if no mod says.</summary>
+    internal static int? ModelCountOf(Simulation sim, Entity e)
+    {
+        foreach (var r in _registries)
+            foreach (var count in r.ModelCounts)
+                if (count(sim, e) is { } n)
+                    return n;
+        return null;
+    }
+
+    /// <summary>Every mod's overlay (<see cref="GameRegistry.Overlay"/>), this frame.</summary>
+    internal static void DrawOverlays(WorkView view)
+    {
+        foreach (var r in _registries)
+            foreach (var draw in r.Overlays)
+                draw(view);
+    }
 
     internal static Tilt? TiltOf(Simulation sim, Entity e, long tick)
     {

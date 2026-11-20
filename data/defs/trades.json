@@ -50,7 +50,7 @@
     // under one roof at Millbrook's inn, apart where a town has a cookhouse. "serves": the services at the workplace a trade sees to (and prices on the sign).
     // "wants": what an AI holder pins an errand for when its workplace has fewer than "below" of it
     // (Favours/Wants), "count" of them for "price" silver: the labourer's living.
-    { "name": "Innkeeper", "label": "innkeeper", "pace": "Busy", "description": "Keeps the bar and the rooms, hears everything said over the counter, and points adventuring parties at work, on whatever that's worth.",
+    { "name": "Innkeeper", "label": "innkeeper", "level": "Experienced", "description": "Keeps the bar and the rooms, hears everything said over the counter, and points adventuring parties at work, on whatever that's worth.",
       "workplace": "Tavern", "workPriorities": { "Cook": 1 }, "brokers": true, "serves": [ "Drink", "MixedDrink", "Lodging", "Quest" ], "holdsKeys": true,
       "stations": [ "AleCask", "BarShelf", "BarCounter", "BarTub", "KeyBoard" ],
       "tutorialIntro": "You keep the inn. Adventurers come in thirsty, tired and looking for work: you pour their drinks, rent them rooms and point them at quests. They pay in silver. They take the credit.",
@@ -79,7 +79,7 @@
             { "id": "wait", "text": "A party is on its way. One of them will ask you for work." },
             { "id": "offer", "text": "~Click~ the one who asked while you're close, open the quests (~K~), and press \"Send them here\" on one that suits how strong they look. A quest isn't always what it seems.", "ui": "quests" } ] } ],
       "kit": [ { "def": "Mop" } ], "stash": [ { "def": "LuckyLou" } ] },
-    { "name": "Cook", "label": "cook", "pace": "Busy", "description": "Keeps the inn's kitchen: the stew pot by taste, the larder, the bowls, the meals out to the tables, and rations for the road.",
+    { "name": "Cook", "label": "cook", "level": "Intermediate", "description": "Keeps the inn's kitchen: the stew pot by taste, the larder, the bowls, the meals out to the tables, and rations for the road.",
       "workplace": "Kitchen", "workPriorities": { "Cook": 1 }, "serves": [ "Meal", "Provisions" ], "namesShop": false, "skills": { "Cooking": 5 },
       "wants": [ { "thing": "Firewood", "below": 6, "count": 10, "price": 5 }, { "thing": "Berries", "below": 4, "count": 8, "price": 4 },
                  { "thing": "Cabbage", "below": 3, "count": 6, "price": 4 } ],
@@ -130,7 +130,7 @@
                      "Chop at the prep table before the rush: draw your fingers back a slice (~A~), then chop (~F~). Chopped food cooks quicker. Forget your fingers and it's them you cut.",
                      "Three portions at the prep table make rations for the road. They go to the innkeeper in a hamper, who sells them." ] } ],
       "kit": [ { "def": "Mop" }, { "def": "KitchenKnife" } ] },
-    { "name": "Blacksmith", "label": "blacksmith", "pace": "Easygoing", "description": "Works the forge: blades, tools and repairs.",
+    { "name": "Blacksmith", "label": "blacksmith", "level": "Intermediate", "description": "Works the forge: blades, tools and repairs.",
       "workplace": "Forge", "workPriorities": { "Craft": 1 },
       "knows": [ "Forge" ], "skills": { "Crafting": 6 },
       "stations": [ "Forge", "Anvil", "Grindstone", "QuenchTub", "Kiln" ],
@@ -189,7 +189,7 @@
             { "id": "prices", "text": "Now open your shop (~J~) and change what a repair costs on the sign.", "ui": "shop" } ],
           "notes": [ "Some ask for bronze: there are a few bronze bars in the chest. For more, smelt copper ore into bars at the kiln, then alloy three copper bars with two tin ore there. Charcoal in the kiln gets it hot enough; the carter brings copper and tin with the iron." ] } ],
       "kit": [ { "def": "Hammer" }, { "def": "Whetstone" }, { "def": "IronBar", "count": 2 }, { "def": "Leather", "count": 2 }, { "def": "Planks", "count": 4 } ] },
-    { "name": "Empath", "label": "empath", "pace": "Steady", "formerly": [ "Healer" ],
+    { "name": "Empath", "label": "empath", "level": "Intermediate", "formerly": [ "Healer" ],
       "description": "Lays on hands to take others' wounds into themselves, feels them as their own, then mends them with the gift.",
       "workplace": "Shrine", "workPriorities": { "Doctor": 1 }, "skills": { "Medicine": 6 }, "mana": 100,
       "stations": [ "StrawPallet", "MeditationStone" ],
@@ -235,7 +235,7 @@
             { "id": "show", "text": "Put the charm on the wares shelf beside the altar (~F~ at it with the charm in hand, or from your pack). It goes up for sale at once: open the shelf to change its price. Parties buy charms to take on quests: they take one down and pay you themselves, even while you're out. Finding nothing for them, one may ask you to weave a charm by name: hand it to them, or put it on the shelf and they'll buy it." } ] } ],
       "kit": [ { "def": "Staff" }, { "def": "Bandage", "count": 4 } ] },
 
-    { "name": "Tinker", "label": "tinker", "pace": "Easygoing", "description": "Locks and clockwork: opens what adventurers drag home, fits locks and cuts keys, builds contraptions for the road, mends wagons and crossbows and knows what a curio's worth.",
+    { "name": "Tinker", "label": "tinker", "level": "Intermediate", "description": "Locks and clockwork: opens what adventurers drag home, fits locks and cuts keys, builds contraptions for the road, mends wagons and crossbows and knows what a curio's worth.",
       "workplace": "TinkerShop", "workPriorities": { "Craft": 1 }, "skills": { "Crafting": 6, "Construction": 4 }, "mendsTown": true,
       "wants": [ { "thing": "Planks", "below": 4, "count": 8, "price": 5 } ],
       "knows": [ "TinkerBench" ],

@@ -993,6 +993,12 @@ public sealed class ThingDef : Def
     public bool Bulky { get; set; }
 
     /// <summary>
+    /// Held, it's drawn as its <see cref="Model"/> pushed along ahead of whoever has it, turned the way they're going (a
+    /// wheelbarrow), not as a little picture in the hand. Presentation only: the sim never reads it.
+    /// </summary>
+    public bool Pushed { get; set; }
+
+    /// <summary>
     /// How fast someone walks carrying one of these (1: not slowed; a great log, about 0.6). Set on
     /// what's heavy and awkward on purpose, not worked out from mass, so kegs and stacks stay as they were.
     /// </summary>

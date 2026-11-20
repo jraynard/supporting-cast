@@ -15,9 +15,11 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\HeroesNotIncluded\HeroesNotIncluded.csproj" />
     <ProjectReference Include="..\..\mods\carpenter\src\Carpenter.Sim\Carpenter.Sim.csproj" />
-    <!-- The musician's game half, for its controls: lesson words name them (TutorialWordsTests). -->
+    <!-- The musician's and the miner's game halves, for their controls: lesson words name them (TutorialWordsTests). -->
     <ProjectReference Include="..\..\mods\musician\src\Musician.Sim\Musician.Sim.csproj" />
     <ProjectReference Include="..\..\mods\musician\src\Musician\Musician.csproj" />
+    <ProjectReference Include="..\..\mods\miner\src\Miner.Sim\Miner.Sim.csproj" />
+    <ProjectReference Include="..\..\mods\miner\src\Miner\Miner.csproj" />
     <!-- Built, not referenced: ModCodeTests loads it from a mod folder, as the game loads a mod. -->
     <ProjectReference Include="..\ExampleMod.Sim\ExampleMod.Sim.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>

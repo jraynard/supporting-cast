@@ -191,6 +191,25 @@ public class CrisisTests
     }
 
     [Fact]
+    public void ADragonComesEvenIfTheFirstOfTheTownIsShutAway()
+    {
+        var sim = Round();
+        var w = sim.World;
+        // The first villager walled in where nothing from the map's edge can get at them (across a broken bridge, say).
+        var first = sim.Creatures().First(e => w.Get<Creature>(e) is { Faction: Faction.Village, Dead: false });
+        var at = w.Get<Position>(first).Cell;
+        var stone = sim.Defs.Block("Stone");
+        foreach (var c in sim.SpiralFrom(at, 1))
+            if (c != at && sim.Map.InBounds(c) && c.Z == at.Z)
+            {
+                sim.Map.Block[sim.Map.Idx(c)] = stone;
+                sim.Map.MarkStructureChanged(sim.Map.Idx(c));
+            }
+        sim.RebuildDerivedIfNeeded();
+        Assert.IsType<DragonCrisis>(sim.Director.Send(sim, CrisisKind.Dragon));
+    }
+
+    [Fact]
     public void ADragonHarriesTheTownFromTheAirThenComesDownForGood()
     {
         var sim = Round();

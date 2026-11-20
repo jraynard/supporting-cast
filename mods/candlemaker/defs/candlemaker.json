@@ -2,7 +2,7 @@
 // (playerOnly), worked anywhere with the dipping rod for now: no chandlery or wax vat yet.
 {
   "trades": [
-    { "name": "Candlemaker", "label": "candlemaker", "pace": "Steady", "playerOnly": true,
+    { "name": "Candlemaker", "label": "candlemaker", "level": "Beginner", "playerOnly": true,
       "description": "Light for the town: dips candles by hand, a layer of wax at a time, and lets each one set. Comes only if someone plays it.",
       "kit": [ { "def": "DippingRod" } ] }
   ],

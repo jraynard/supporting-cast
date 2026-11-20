@@ -148,10 +148,14 @@ public class CompanyTests
     [Fact]
     public void ACompanyGoesOnlyWhereItCameToGo()
     {
-        var (sim, me, _) = ExpeditionTests.Round("Innkeeper");
+        // No rare company of the round's own besides the one sent (its dice may bring one on day 1).
+        var (sim, me, _) = ExpeditionTests.Round("Innkeeper", beforeStart: s => s.Parties.SetRare(Company(s, Dwarves), 99));
         var w = sim.World;
         var company = sim.Parties.Send(sim, Company(sim, Dwarves));
         var party = w.Get<Adventurer>(company[0]).Party;
+        // Silver enough for a broker's word, whatever they spend on the way (what's tested is where they go, not their purse).
+        foreach (var m in company)
+            HeroesNotIncluded.Sim.Systems.Inventory.Stow(sim, m, sim.CreateItem(sim.Defs.Thing(HeroesNotIncluded.Sim.Shops.Coin.Silver), 40));
         // Until they've asked for work at the bar.
         for (var t = 0; t < 60 && ExpeditionSystem.QuestOrder(sim, party) == null; t++)
             sim.TickMany(SimClock.TicksPerHour / 4);

@@ -52,6 +52,9 @@ public sealed class WorkGivers
                     WorkType.Haul => Hospitality.HamperRunJob.For(sim, pawn) ?? Favours.ErrandJob.For(sim, pawn) ?? Haul(sim, pawn),
                     _ => null,
                 };
+                // A trade's own work of the type (a mod's, Modding.ITradeModule.JobFor), once the core has none (crafting asks before its bills).
+                if (job == null && type != WorkType.Craft)
+                    job = Modding.Trades.JobFor(sim, pawn, type);
                 if (job != null)
                 {
                     LastType = type;

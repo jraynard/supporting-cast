@@ -16,6 +16,10 @@ and art are our own: generic fantasy, with no trademarked tabletop terms or mons
 
 Tone: warm, comic and a little put-upon, until someone finds the blacksmith in the river.
 
+Immersive: you should feel like you are doing the work your character is supposed to be doing in a realistic way.
+it should give the feeling of mastering a trade and being good at something, maybe expose you to depth
+you hadn't thought of.
+
 ## Pillars
 
 1. **Your trade is your game.** Each one has its own interface, knowledge and way to be good at it.
@@ -108,6 +112,16 @@ villagers to supper and adventurers to the hatch, but nobody sees it and it neve
 
 Called `Trade` in code, because `Ai/Job` is already the AI coroutine.
 
+**Trade levels** (`TradeDef.Level`, shown wherever a trade is chosen). Trades run from beginner to experienced, so a
+new player can find a calm one and an old hand the busy one:
+- **Beginner:** gathering and the like (the miner, the musician). Calm work at its own pace: no recipes to learn
+  first, nobody kept waiting, and no slip that loses the work, only time. Its games are forgiving and it has a
+  plain loop that pays (the miner's ore wheeled to the smithy).
+- **Intermediate:** the crafts (the smith, carpenter, tinker, empath, cook). Know-how to learn (recipes, materials,
+  a craft's steps), with customers now and then.
+- **Experienced:** the innkeeper. Customers all day, several things on the go at once, and the town's talk to keep
+  track of.
+
 | Trade | The game it plays | Built from | Betrayal it enables |
 | --- | --- | --- | --- |
 | Innkeeper | Order juggling at the bar, drink mixing, letting rooms, keeping the common room, hearing gossip; matching parties to quests on partial intel | Social, `Expeditions/` | Spiked drinks, selling secrets, sending a party to its death |
@@ -118,11 +132,13 @@ Called `Trade` in code, because `Ai/Job` is already the AI coroutine.
 | Apothecary | Discover reagent reactions, reshuffled each round | New `Reagents` | Poisons, explosives |
 | Merchant | Haggling, spotting cursed loot | Inventory, `HoardValue` | Fencing, forged goods |
 | Undertaker | Autopsy, burial before the dead rise | Health, `Scars`, carcasses, the pyre | Destroying evidence |
-| Miner | Hewing the rock face in the hill's mine by its cracks; the ore hidden till a face of it opens; selling it to the smith (`mods/miner`, a first pass) | Mining, `MapDef.Tunnels`/`Seams`, `Work/` | Ore held back from the smith, a seam kept secret |
+| Miner | A beginner's trade. Hewing the rock face in the hill's mine by its cracks; sounding the wall for where a seam lies and chalking it; the ore hidden till a face of it opens; loading it into a wheelbarrow square and steady and wheeling it to the smithy, paid by the piece (`mods/miner`) | Mining, `MapDef.Tunnels`/`Seams`, `Work/` | Ore held back from the smith, a seam kept secret |
 | Forager | Risky trips beyond the walls | Harvest, Hunting, Fishing | Alone out there, in both directions |
+| Woodcutter / forest tender| beginner job split off from the carpenter | supplies the carpenter, plants new trees | |
 | Tinker | Pick the locks and disarm the traps on chests adventurers bring back; pin locks and cut keys; fit contraptions together for the road; mend wagons; appraise curios and buy them for a collector; set trip-bells across the roads before a raid | `Tinkering/`, doors, `Work/`, expeditions, loot | A spare key, a chest opened early, a trap left armed, a contraption that jams, a curio talked down, a trip-bell that never rings |
 | Carpenter | Felling and bucking trees, sawing planks, splitting firewood, fletching quivers for the parties' archers, bracing the bridge, putting up the festival; later mending furniture and building | Construction, `Carpentry/`, the woodshop | A warped shaft in a quiver that looks true |
 | Musician | Rhythm performance, morale, rumours. | Mood, Social | Spreading lies |
+| Mason | stone works - polishing stone, statues, bricks, building foundations / bridges. uses stone from the miner. |
 | Mayor | Treasury, laws, chairs town meetings | New | Corruption |
 | Animal Handler / Druid | taming wild animals, ancient forest rituals | new | forest spirts, "wild" animal attacks
 | Farmer | grows crops, tends livestock, processes results | farm plots exist on map but need a barn or farmouse | rot, not sure |

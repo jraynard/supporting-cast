@@ -258,7 +258,7 @@ public class MusicianModTests
     {
         var sim = Round(MusicianDefs(), (Arin, "Musician"));
         var me = Players.CharacterOf(sim, Arin);
-        Assert.Equal(TradePace.Easygoing, sim.Defs.Trade("Musician").Pace);
+        Assert.Equal(TradeLevel.Beginner, sim.Defs.Trade("Musician").Level);
         var town = Players.Home(sim);
         float Away() => HeroesNotIncluded.Sim.Maps.Map.Distance(sim.World.Get<Position>(me).Cell, town);
         var from = Away();

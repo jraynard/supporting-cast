@@ -79,6 +79,7 @@ public sealed partial class VillageGame
         DrawCameraModeHint();
         DrawBucketSwing();
         DrawStoolThrow();
+        Mods.GameMods.DrawOverlays(ModWorkView); // a mod's own, bottom centre (the miner's barrow as it's pushed)
         if (WorkScenesDemo)
             DrawWorkSceneGallery();
         // Free windows.

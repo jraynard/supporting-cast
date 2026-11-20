@@ -122,6 +122,9 @@ stays the game's.
 
 Building the musician (`mods/musician`) only through the doors above showed what a new trade needs that a moved
 one didn't. Each is now part of the API:
+- **A trade's level** (`"level"`: `Beginner`, `Intermediate` or `Experienced`; DESIGN.md, "Trade levels"): who it
+  suits, shown where a trade is chosen. A gathering trade should aim for beginner. The old `"pace"` key
+  (easygoing, steady, busy) still reads as a level.
 - **A trade only players take** (`"playerOnly": true` on the trade): never dealt to an AI villager or a
   seat that didn't ask, and its player comes to town as a newcomer.
 - **Defs of a mod's own kind** (`"instruments"` in its defs): kept, merged and patched like the game's,
@@ -131,6 +134,13 @@ one didn't. Each is now part of the API:
 - **Controls of a mod's own** (`GameRegistry.Control`): rebindable in Settings, with a context of their own
   so they don't clash with the game's.
 - **An action of a mod's own** (`AvatarActionKind.Custom`, done by the module that offered it).
+- **Marks on cells** (`GameRegistry.CellMarks`): sprites a mod lays flat on cells for anyone to see, as a dig order's
+  mark is (the miner's chalk on a rock face), or floating over them (`Floating`: where to take something). Drawn for
+  every player, so only what anyone may know, unless the mod sets them from its own player's screen.
+- **How full a thing's drawn** (`GameRegistry.ModelCount`): a one-item thing that holds more (a barrow's load) shows its
+  model's `minCount` boxes by the mod's count. A def's `pushed` draws it held as its model, pushed ahead of its carrier.
+- **An overlay** (`GameRegistry.Overlay`): every frame in the world, a HUD panel of the mod's own and its controls read
+  (`WorkView.Playing`) and sent as commands: the miner's barrow, leaned back with Q/E as it's pushed.
 - **Drills** (`SimRegistry.Drill`, `--drill NAME`): a moment staged at once for trying a game out.
 - **A crisis** (`SimRegistry.Crisis`, a `CrisisType`: how it begins, how a save reads it back, its label and festival line):
   weighed by name in `season.json`'s beats (`"kinds": { "mymod:Flood": 2 }`) and the pacing's `answers`, saved by name.

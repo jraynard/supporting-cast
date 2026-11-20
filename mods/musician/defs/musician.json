@@ -2,7 +2,7 @@
 // class), a trade only a player takes, never an AI villager's.
 {
   "trades": [
-    { "name": "Musician", "label": "musician", "pace": "Easygoing", "playerOnly": true, "lodgesAtInn": true, "formerly": [ "Bard" ],
+    { "name": "Musician", "label": "musician", "level": "Beginner", "playerOnly": true, "lodgesAtInn": true, "formerly": [ "Bard" ],
       // Comes in by the road at the deal, a pack of instruments on their back (Players.ArriveByRoad).
       "arrivesByRoad": "{name} comes wandering in from the road, a lute on their back and a pipe in their belt.",
       "description": "Music for the town: the pipe, the lute, the fiddle and the drum, for whoever will listen. Comes only if someone plays it.",

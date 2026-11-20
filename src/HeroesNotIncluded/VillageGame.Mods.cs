@@ -51,4 +51,16 @@ public sealed partial class VillageGame
     internal float2? AutoSize => _autoSize;
 
     internal bool WorkLive => !Paused && Working;
+
+    /// <summary>In the world with a character, the game running: a mod's overlay reads its controls only then.</summary>
+    internal bool InWorld => HasAvatar && !Paused;
+
+    /// <summary>A panel in the HUD's stack at <paramref name="anchor"/> (nothing overlaps), for a mod's overlay. Pair with <see cref="Narsil.Ui.Panel.End"/>.</summary>
+    internal void HudPanel(string id, Narsil.Ui.Anchor anchor)
+    {
+        _hud.Next(anchor);
+        Narsil.Ui.Panel.Begin(id, Narsil.Ui.Hud.Flags | Brutal.ImGuiApi.ImGuiWindowFlags.AlwaysAutoResize | Brutal.ImGuiApi.ImGuiWindowFlags.NoNav
+            | Brutal.ImGuiApi.ImGuiWindowFlags.NoDecoration | Brutal.ImGuiApi.ImGuiWindowFlags.NoInputs);
+        _hud.Took();
+    }
 }

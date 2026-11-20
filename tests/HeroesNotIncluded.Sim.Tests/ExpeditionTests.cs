@@ -15,7 +15,7 @@ public class ExpeditionTests
 {
     private static readonly Guid Ana = new("00000000-0000-0000-0000-00000000000a");
 
-    internal static (Simulation Sim, Entity Me, List<Entity> Party) Round(string trade, ulong seed = 1234, bool tillTheyAsk = true)
+    internal static (Simulation Sim, Entity Me, List<Entity> Party) Round(string trade, ulong seed = 1234, bool tillTheyAsk = true, Action<Simulation>? beforeStart = null)
     {
         var sim = VillageRound.NewSimulation(LoadDefs(), seed);
         sim.Presets.PresetMode = true;
@@ -23,6 +23,7 @@ public class ExpeditionTests
         sim.Round.OpenLobby();
         sim.ApplyNow(new JoinLobbyCommand(Ana, "Ana", default));
         sim.ApplyNow(new SetTradePreferencesCommand(Ana, [sim.Defs.Trade(trade)], []));
+        beforeStart?.Invoke(sim);
         sim.ApplyNow(new StartRoundCommand());
         var party = sim.Parties.Send(sim, sim.Defs.Party("IronLantern"));
         Assert.NotEmpty(party);

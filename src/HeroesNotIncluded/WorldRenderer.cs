@@ -538,6 +538,22 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
             }
         }
 
+        // Marks mods put on cells for anyone to see (a miner's chalk on a face), flat on the cell's top.
+        foreach (var mark in Mods.GameMods.CellMarks(sim))
+        {
+            var (x, y, z) = (mark.Cell.X, mark.Cell.Y, mark.Cell.Z);
+            if (!map.InBounds(mark.Cell) || x < x0 || x > x1 || y < y0 || y > y1 || z < 1 || z > cut)
+                continue;
+            var floor = map.IsSolid(map.Idx(mark.Cell)) ? z + 1 : z;
+            if (mark.Floating)
+            {
+                var bob = MathF.Sin(time * 2.2f + (x * 7 + y * 13) * 0.37f) * 0.06f;
+                Billboard(S(mark.Sprite), new float3(x + 0.5f, y + 0.5f, floor + 1.1f + bob), mark.Size, mark.Size, Rgba.Pack(mark.Colour), Quad.Level(z) | Quad.Unlit);
+            }
+            else
+                Decal(S(mark.Sprite), new float3(x + 0.5f, y + 0.5f, floor + 0.035f), mark.Size, Rgba.Pack(mark.Colour), Quad.Level(z) | Quad.Unlit, translucent: true);
+        }
+
         // Signs of the dead, as perceived: a chill's breath hangs in the air.
         foreach (var sign in Sees(sim).Signs())
         {
@@ -628,7 +644,9 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
                 Billboard(S(heft.Def.Sprite), p.Pos + WorldScale.Rise(size * (0.75f + 0.35f * back)) - cam.Right * (0.15f * back), 0.55f, 0.55f, Rgba.White, level);
             }
             var carried = w.Get<Carrying>(e).Item;
-            if (!carried.IsNull && w.IsAlive(carried))
+            if (!carried.IsNull && w.IsAlive(carried) && w.Get<Thing>(carried).Def is { Pushed: true, Model: { } pushedModel } pushedDef)
+                DrawPushed(sim, e, carried, pushedDef, pushedModel, p.Pos, level);
+            else if (!carried.IsNull && w.IsAlive(carried))
             {
                 if (_heldAt is { } hand)
                     Billboard(S(w.Get<Thing>(carried).Def.Sprite), hand - _cam.Up * 0.12f, 0.3f, 0.3f, Rgba.White, level);
@@ -1076,6 +1094,48 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
             color, flags, count: count, rise: rise, lift: lift, heightScale: heightScale);
         foreach (var q in _modelQuads)
             _quads.Add(q, translucent);
+    }
+
+    /// <summary>How far ahead of its pusher a pushed thing's middle goes (its handles' ends just before them).</summary>
+    private const float PushedAhead = 0.85f;
+
+    /// <summary>Each pusher's last place and the way they're going (smoothed), so what's pushed turns with them.</summary>
+    private readonly Dictionary<Entity, (float3 Last, float2 Heading)> _pushers = [];
+
+    /// <summary>
+    /// A thing pushed along (<see cref="ThingDef.Pushed"/>: a wheelbarrow), drawn as its model ahead of <paramref name="who"/>,
+    /// its front (the model's +y) the way they're going: built as at a cell, then turned and moved there.
+    /// </summary>
+    private void DrawPushed(Simulation sim, Entity who, Entity item, ThingDef def, IReadOnlyList<ModelBox> model, float3 feet, uint level)
+    {
+        if (_pushers.Count > 64)
+            _pushers.Clear();
+        var (last, heading) = _pushers.TryGetValue(who, out var was) ? was : (feet, new float2(0f, 1f));
+        var step = new float2(feet.X - last.X, feet.Y - last.Y);
+        var moved = MathF.Sqrt(step.X * step.X + step.Y * step.Y);
+        if (moved > 0.005f)
+        {
+            var turned = heading * 0.8f + step / moved * 0.2f;
+            var len = MathF.Sqrt(turned.X * turned.X + turned.Y * turned.Y);
+            if (len > 1e-4f)
+                heading = turned / len;
+        }
+        _pushers[who] = (feet, heading);
+        var right = new float2(heading.Y, -heading.X);
+        var centre = new float3(feet.X + heading.X * PushedAhead, feet.Y + heading.Y * PushedAhead, feet.Z);
+        float3 Turn(float3 v) => new(v.X * right.X + v.Y * heading.X, v.X * right.Y + v.Y * heading.Y, v.Z);
+        var material = sim.World.Get<Thing>(item).Material;
+        _modelQuads.Clear();
+        PropModel.Build(_modelQuads, model, default, 0, name => _materials.Resolve(name, material) is var (n, t) ? (S(n), t) : default,
+            Rgba.White, level, count: Mods.GameMods.ModelCountOf(sim, item) ?? 1);
+        foreach (var q in _modelQuads)
+        {
+            var turned = q;
+            turned.Origin = centre + Turn(q.Origin - new float3(0.5f, 0.5f, 0f));
+            turned.AxisU = Turn(q.AxisU);
+            turned.AxisV = Turn(q.AxisV);
+            _quads.Add(turned, false);
+        }
     }
 
     /// <summary>How high the top of the furniture in a cell is, as drawn (0 with none, or a blueprint): where items there rest, and who's climbed up stands.</summary>
@@ -1993,7 +2053,8 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
         {
             // Item piles grow with the stack; furniture is in the chunk meshes (WorldMesher).
             if (def.Category == ThingCategory.Item)
-                AddModel(model, cell, thing.Facing, thing.Material, tint, level, count: w.TryGet<Stack>(e, out var st) ? st.Count : 1, lift: lift);
+                AddModel(model, cell, thing.Facing, thing.Material, tint, level,
+                    count: Mods.GameMods.ModelCountOf(sim, e) ?? (w.TryGet<Stack>(e, out var st) ? st.Count : 1), lift: lift);
         }
         else if (def.Category == ThingCategory.Item)
         {

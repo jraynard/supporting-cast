@@ -45,10 +45,27 @@ public sealed class TradeDef : Def
     public bool LodgesAtInn { get; set; }
 
     /// <summary>
-    /// How busy the trade keeps its holder, shown where a trade is chosen: some players want a trade
-    /// they can take at their own pace, and should be able to find it. Presentation only.
+    /// Who the trade suits, shown where a trade is chosen: a new player should be able to find a calm trade with
+    /// little to learn first, and an old hand the busy one. Presentation only.
     /// </summary>
-    public TradePace? Pace { get; set; }
+    public TradeLevel? Level { get; set; }
+
+    /// <summary>
+    /// The old key for <see cref="Level"/> (easygoing, steady, busy), still read so a mod written before it loads:
+    /// easygoing reads as beginner, steady as intermediate, busy as experienced. A <c>level</c> wins over it.
+    /// </summary>
+    [Obsolete("Use Level (\"level\" in a trade def).")]
+    public string? Pace
+    {
+        get => null;
+        set => Level ??= value?.ToLowerInvariant() switch
+        {
+            "easygoing" => TradeLevel.Beginner,
+            "steady" => TradeLevel.Intermediate,
+            "busy" => TradeLevel.Experienced,
+            _ => null,
+        };
+    }
 
     /// <summary>Changes from the default work priorities (1 highest, 4 lowest, 0 disabled).</summary>
     public Dictionary<WorkType, int> WorkPriorities { get; set; } = [];
@@ -344,33 +361,29 @@ public sealed class TradeWant
     [JsonIgnore] public ThingDef ThingDef { get; set; } = null!;
 }
 
-/// <summary>How much a trade asks of its holder through a day (<see cref="TradeDef.Pace"/>).</summary>
-public enum TradePace : byte
+/// <summary>
+/// Who a trade suits (<see cref="TradeDef.Level"/>): how much there is to learn before it goes well, and how much
+/// it has going at once. Gathering trades are the calm ones to start with; the inn, the busiest, is for old hands.
+/// </summary>
+public enum TradeLevel : byte
 {
-    /// <summary>Work comes now and then; time between to potter, wander and talk.</summary>
-    Easygoing,
+    /// <summary>Calm work at its own pace: no recipes to learn first, nobody kept waiting, nothing lost to a slip.</summary>
+    Beginner,
 
-    /// <summary>A steady day's work, with lulls.</summary>
-    Steady,
+    /// <summary>Know-how to learn (recipes, materials, a craft's steps), and customers now and then.</summary>
+    Intermediate,
 
-    /// <summary>Customers all day, several things on the go at once.</summary>
-    Busy,
+    /// <summary>Customers all day and several things on the go at once.</summary>
+    Experienced,
 }
 
-/// <summary>Words for a <see cref="TradePace"/>, for the menus.</summary>
-public static class TradePaces
+/// <summary>The word for a <see cref="TradeLevel"/>, shown beside a trade's name in the menus.</summary>
+public static class TradeLevels
 {
-    public static string Label(TradePace pace) => pace switch
+    public static string Label(TradeLevel level) => level switch
     {
-        TradePace.Easygoing => "Easygoing",
-        TradePace.Steady => "Steady",
-        _ => "Busy",
-    };
-
-    public static string About(TradePace pace) => pace switch
-    {
-        TradePace.Easygoing => "Work comes now and then, with time between to potter about.",
-        TradePace.Steady => "A steady day's work, with lulls.",
-        _ => "Customers all day and several things on the go at once.",
+        TradeLevel.Beginner => "Beginner",
+        TradeLevel.Intermediate => "Intermediate",
+        _ => "Experienced",
     };
 }

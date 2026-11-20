@@ -20,9 +20,13 @@ def owner(name):
     return None
 
 
-def sound_path(rel):
-    """A generated sound file (``"amb/work_saw.ogg"``, relative to a sounds folder): the mod's whose
-    sounds/ already holds it, else the game's data/sounds."""
+def sound_path(rel, mod=None):
+    """A generated sound file (``"amb/work_saw.ogg"``, relative to a sounds folder): the named mod's, else the
+    mod's whose sounds/ already holds it, else the game's data/sounds."""
+    if mod:
+        p = os.path.join(MODS, mod, "sounds", rel)
+        os.makedirs(os.path.dirname(p), exist_ok=True)
+        return p
     if os.path.isdir(MODS):
         for mod in sorted(os.listdir(MODS)):
             p = os.path.join(MODS, mod, "sounds", rel)
