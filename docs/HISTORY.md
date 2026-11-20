@@ -2789,3 +2789,7 @@ From the user's playing on a Deck:
   and the AI then ended it again (`Job.Tick`, `AiSystem.RunJob`).
 - **Anyone can toss a coin in the musician's hat** (from the co-op list): F at or beside a playing musician's hat puts in
   a silver, as often as you like (`Takings.Toss`); the musician's window shows who gave it. Not their own hat.
+- **An untended wound stops bleeding by itself** (`HealthSystem.ClotHours`, 6 game hours, easing off evenly from when
+  it was made; it still wants a dressing). A town all put down by a raid wakes hurt rather than bled out; the deepest
+  wounds still kill. Six bots, 16 seeds: deaths 1.4 to 0.5 a round, won 11 to 13; solo musician deaths 0.6 to 0.4.
+  The panels show bleeding as it is now.

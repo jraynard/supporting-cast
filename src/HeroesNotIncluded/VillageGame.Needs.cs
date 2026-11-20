@@ -104,7 +104,7 @@ public sealed partial class VillageGame
         if (c.Downed && w.TryGet<Health>(_avatar, out var health))
         {
             Below();
-            var bleeding = health.BleedPerHour > 0;
+            var bleeding = Sim.Systems.HealthSystem.Bleeding(_sim, health) > 0;
             TextC(Bad, health.Blood < 0.2f ? "You're slipping away." : bleeding ? "You've collapsed, bleeding out." : "You've collapsed.");
             TextC(Ui.Theme.Dim, bleeding
                 ? $"Call for help ({Controls.Glyph(Act.Heard)}, /s to shout): someone has to bind you, or carry you to a bed."
@@ -188,7 +188,7 @@ public sealed partial class VillageGame
         if (w.TryGet<Health>(_avatar, out var h) && (h.Injuries.Count > 0 || h.Blood < 0.999f))
         {
             Below();
-            var bleed = h.BleedPerHour;
+            var bleed = Sim.Systems.HealthSystem.Bleeding(_sim, h);
             if (h.Blood < 0.999f)
                 HudBar("Blood", h.Blood, h.Blood < 0.6f ? Bad : Warn, $"{h.Blood * 100:F0}%");
             var parts = new List<string>(3);

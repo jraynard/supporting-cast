@@ -7,6 +7,16 @@ Write it for testers: what they'll notice, not how it's done.
 Playing together always needs everyone on the same build. Saves and characters carry over
 between builds unless a section's **Compatibility** line says otherwise.
 
+## 0.1.0-playtest.28
+
+Two changes for the co-op round.
+
+- **Tip the musician:** F at a playing musician's hat tosses a coin in, as often as you like. The
+  musician sees who gave it.
+- **Wounds stop bleeding by themselves** after a few hours, even untended. A town that all went down in
+  a raid now wakes up hurt instead of dead by morning. The deepest wounds still kill, and a wound still
+  wants the empath or a bandage to heal properly.
+
 ## 0.1.0-playtest.27
 
 The musician joins the town, Millbrook grows a hill to the east, work for two gets proper scenes, and

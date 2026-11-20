@@ -784,7 +784,7 @@ public sealed partial class VillageGame
     private void InspectHealth(Health h)
     {
         Bar("Blood", h.Blood, h.Blood < 0.5f ? Bad : h.Blood < 0.8f ? Warn : Good);
-        var bleed = h.BleedPerHour;
+        var bleed = Sim.Systems.HealthSystem.Bleeding(_sim, h);
         TextC(h.Pain > 0.5f ? Bad : Dim, $"Pain {h.Pain * 100:F0}%" + (bleed > 0 ? $"   bleeding {bleed * 100:F0}%/h" : ""));
         var caps = Enum.GetValues<Capacity>()
             .Where(k => k != Capacity.Flying || h.Body.Parts.Exists(p => p.Capacities.Contains(Capacity.Flying)))
@@ -797,7 +797,7 @@ public sealed partial class VillageGame
         foreach (var inj in h.Injuries.OrderBy(i => i.Part))
         {
             var part = h.Body.Parts[inj.Part];
-            var state = inj.Tended ? $"bandaged, {TendQuality(inj.Quality)}" : h.BleedOf(inj) > 0 ? "bleeding" : "untended";
+            var state = inj.Tended ? $"bandaged, {TendQuality(inj.Quality)}" : h.BleedOf(inj) * Sim.Systems.HealthSystem.StillBleeding(_sim, inj) > 0 ? "bleeding" : "untended";
             // A wound an empath drew into themselves is known by its feel, not its name.
             var kind = inj.Absorbed && !View.Omniscient ? Sim.Healing.Empathy.Feel(_sim, inj.Type) : DamageTypes.Wound(inj.Type);
             TextC(inj.Infection != null ? Bad : inj.Tended ? Dim : Warn, $"  {part.Label}: {kind}, {inj.Damage:F0}/{h.PartMaxHp(inj.Part):F0} ({state})");

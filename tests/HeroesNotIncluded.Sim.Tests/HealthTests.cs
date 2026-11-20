@@ -31,6 +31,28 @@ public class HealthTests
     private static int Part(Simulation sim, Entity e, string name) => sim.World.Get<Health>(e).Body.PartIndex(name);
 
     [Fact]
+    public void AnUntendedWoundStopsBleedingByItselfAfterAFewHours()
+    {
+        // A solo round: a raid put the whole town down, nobody was left to bind anyone, and all bled out by morning.
+        var sim = Warm();
+        var me = Person(sim, C(10, 10));
+        var h = sim.World.Get<Health>(me);
+        HealthSystem.Damage(sim, me, 10, DamageType.Cut, Part(sim, me, "LeftLeg"));
+        var fresh = HealthSystem.Bleeding(sim, h);
+        Assert.True(fresh > 0f);
+        var half = (int)(SimClock.TicksPerHour * HealthSystem.ClotHours / 2f);
+        sim.TickMany(half);
+        Assert.InRange(HealthSystem.Bleeding(sim, h), fresh * 0.4f, fresh * 0.6f); // easing off
+        sim.TickMany(half + 60);
+        Assert.Equal(0f, HealthSystem.Bleeding(sim, h));
+        var blood = h.Blood;
+        Assert.True(blood > 1f - fresh * HealthSystem.ClotHours * 0.6f, $"lost about half of {HealthSystem.ClotHours} hours' fresh bleeding: {blood}");
+        sim.TickMany(SimClock.TicksPerHour);
+        Assert.True(h.Blood >= blood, "stopped: blood comes back");
+        Assert.True(h.Injuries[0].NeedsTending(sim.Clock.Tick), "still wants a dressing");
+    }
+
+    [Fact]
     public void BloodComesBackFasterInBed()
     {
         var sim = Warm();
@@ -76,9 +98,11 @@ public class HealthTests
     {
         var sim = Warm();
         var pawn = Person(sim, C(5, 5));
-        HealthSystem.Damage(sim, pawn, 30, DamageType.Cut, Part(sim, pawn, "Torso"));
+        // Deep cuts all over: more than the blood they have, even with each easing off by itself (HealthSystem.ClotHours).
+        foreach (var part in new[] { "Torso", "LeftLeg", "RightLeg", "LeftArm", "RightArm" })
+            HealthSystem.Damage(sim, pawn, 30, DamageType.Cut, Part(sim, pawn, part));
         var h = sim.World.Get<Health>(pawn);
-        Assert.True(h.BleedPerHour > 0.1f, $"a deep torso cut should bleed fast ({h.BleedPerHour:F2}/h)");
+        Assert.True(h.BleedPerHour * HealthSystem.ClotHours / 2f > 1.2f, $"cut deep enough to bleed out ({h.BleedPerHour:F2}/h)");
 
         var downedAt = -1L;
         for (var t = 0; t < SimClock.HoursToTicks(24) && !sim.World.Get<Creature>(pawn).Dead; t += 60)

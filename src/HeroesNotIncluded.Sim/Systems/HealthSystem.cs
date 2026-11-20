@@ -48,7 +48,7 @@ public sealed class HealthSystem : ISimSystem
             ref var c = ref w.Get<Creature>(e);
 
             var inBed = InBed(sim, e);
-            var bleed = h.BleedPerHour;
+            var bleed = Bleeding(sim, h);
             h.Blood = bleed > 0 ? h.Blood - bleed / UpdatesPerHour
                 : Math.Min(1f, h.Blood + BloodPerDay * (inBed ? InBedBloodFactor : 1f) / UpdatesPerDay);
 
@@ -87,6 +87,28 @@ public sealed class HealthSystem : ISimSystem
             }
             UpdateDowned(sim, e, ref c, h);
         }
+    }
+
+    /// <summary>
+    /// Game hours an untended wound takes to stop bleeding by itself, easing off evenly from when it was made: a town all
+    /// put down by a raid, with nobody left standing to bind anyone, wakes hurt rather than all bled out by morning (a solo
+    /// round lost every soul that way). Before it stops it loses what three hours at the fresh rate would;
+    /// the worst wounds still kill.
+    /// </summary>
+    public const float ClotHours = 6f;
+
+    /// <summary>How much of a wound's bleeding is still going, 0..1, by its age: all of it fresh, none after <see cref="ClotHours"/>.</summary>
+    public static float StillBleeding(Simulation sim, Injury inj) =>
+        Math.Clamp(1f - (sim.Clock.Tick - inj.Tick) / (ClotHours * SimClock.TicksPerHour), 0f, 1f);
+
+    /// <summary>Blood lost an hour now: each untended wound's bleeding, as much of it as hasn't stopped by itself.</summary>
+    public static float Bleeding(Simulation sim, Health h)
+    {
+        var b = 0f;
+        foreach (var inj in h.Injuries)
+            if (!inj.Tended)
+                b += h.BleedOf(inj) * StillBleeding(sim, inj);
+        return b;
     }
 
     /// <summary>Damage healed per day per 100 max HP: tending helps, and good tending more (12 at quality 0.5). First aid doesn't.</summary>
