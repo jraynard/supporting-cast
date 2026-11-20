@@ -82,5 +82,10 @@ internal sealed class CoreCrises : ISimMod
             FestivalLine = met => met ? "And the dragon! We stood up to a dragon, friends!" : "And the dragon... we'll not speak of the dragon.",
             Hours = DragonCrisis.Hours,
         });
+        registry.Crisis(new CrisisType(CrisisKind.Brawl, (sim, rand, _, strength) => Hospitality.BrawlCrisis.Begin(sim, rand, strength), Hospitality.BrawlCrisis.Read)
+        {
+            Label = "The brawl",
+            FestivalLine = met => met ? "When a rowdy crowd tore up the inn, we saw them off with our bare hands." : "When the brawl broke out at the inn, it got the better of us.",
+        });
     }
 }

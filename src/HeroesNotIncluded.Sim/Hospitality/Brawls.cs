@@ -62,7 +62,7 @@ public static class Brawls
     public static bool Ready(Simulation sim, Entity e)
     {
         var w = sim.World;
-        return w.IsAlive(e) && w.Get<Creature>(e).Able && !w.Has<Combat.Leaving>(e) && !Players.Steered(sim, e)
+        return w.IsAlive(e) && w.Get<Creature>(e).Able && !w.Has<Combat.Leaving>(e) && !Players.Steered(sim, e) && !w.Has<Brawler>(e)
             && (!w.TryGet<Health>(e, out var h) || h.Injuries.Sum(i => i.Damage) < EnoughDamage);
     }
 }

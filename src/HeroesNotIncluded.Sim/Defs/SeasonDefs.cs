@@ -92,6 +92,9 @@ public sealed class SeasonDef : Def
     /// <summary>Game hours a crisis runs before it's over whether the town met it or not.</summary>
     public float CrisisHours { get; set; } = 6;
 
+    /// <summary>How a brawl at the inn goes (<c>Hospitality.Brawling.BrawlCrisis</c>).</summary>
+    public BrawlDef Brawl { get; set; } = new();
+
     /// <summary>Game hours before a raid that word of it comes in, and the town calls for arms.</summary>
     public float RaidWarningHours { get; set; } = 5;
 
@@ -260,6 +263,38 @@ public sealed class CrisisBeat
                 list.Add((type.Kind, weight));
         return list;
     }
+}
+
+/// <summary>
+/// A brawl at the inn (<c>Hospitality.Brawling.BrawlCrisis</c>): a rowdy crowd (a <see cref="PartyDef.Crowd"/>)
+/// comes in loud with drink and starts something. Its heat (0..1) climbs with how many are still at it
+/// and boils over into the street at 1; it eases as they're settled.
+/// </summary>
+public sealed class BrawlDef
+{
+    /// <summary>Heat a game hour with <see cref="PerBrawlers"/> still fighting (more or fewer in proportion).</summary>
+    public float RisePerHour { get; set; } = 0.4f;
+
+    /// <summary>The brawlers <see cref="RisePerHour"/> is for.</summary>
+    public float PerBrawlers { get; set; } = 4;
+
+    /// <summary>Heat lost a game hour regardless: tempers tire.</summary>
+    public float CoolPerHour { get; set; } = 0.1f;
+
+    /// <summary>Heat lost when the ringleader's settled (and the rest who aren't rowdy lose heart).</summary>
+    public float RingleaderCools { get; set; } = 0.3f;
+
+    /// <summary>How deep in their cups the crowd comes in (<c>Tipsy</c>; 0.5 is loud).</summary>
+    public float ArriveTipsy { get; set; } = 0.55f;
+
+    /// <summary>A bystander struck by a brawler joins in at this much drink, or if they're rowdy.</summary>
+    public float JoinTipsy { get; set; } = 0.5f;
+
+    /// <summary>Crowd members at strength 1 (more or fewer with the beat's strength), at least 3.</summary>
+    public int Crowd { get; set; } = 4;
+
+    /// <summary>What a crowd that boiled over, or was never settled, thinks of the town as it goes.</summary>
+    public float SourSatisfaction { get; set; } = -3f;
 }
 
 /// <summary>

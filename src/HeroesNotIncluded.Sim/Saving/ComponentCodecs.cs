@@ -884,6 +884,7 @@ internal static class ComponentCodecs
             return k;
         }),
         Codec("Tipsy", (w, t) => w.Float(t.Level), r => new Hospitality.Tipsy { Level = r.Float() }),
+        Codec("Brawler", (w, b) => w.Long(b.Since), r => new Hospitality.Brawler { Since = r.Long() }),
         Codec("Savouring", (w, s) =>
         {
             w.Entity(s.Item);

@@ -149,7 +149,7 @@ public static class Practice
     public static List<Entity> SendCustomers(Simulation sim, Entity player, CustomerKind wear = CustomerKind.Trade)
     {
         var w = sim.World;
-        var parties = sim.Defs.AllParties.Where(p => !p.Traveller && !p.Rare).ToList();
+        var parties = sim.Defs.AllParties.Where(p => p.Regular).ToList();
         if (parties.Count == 0)
             return [];
         // A customer or two, not a whole party through the door: one for a drink or a quest, two where

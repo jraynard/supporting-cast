@@ -39,6 +39,11 @@
       "dragonMetRenown": 20,
       "dragonUnmetDread": 20,
       "crisisHours": 6,
+      // A brawl at the inn (Hospitality/BrawlCrisis): a rowdy crowd ("crowd" parties) comes in loud
+      // with drink. Heat climbs risePerHour for every perBrawlers still at it and eases coolPerHour;
+      // at 1 it boils over (not met). Settling the ringleader takes ringleaderCools off.
+      "brawl": { "risePerHour": 0.4, "perBrawlers": 4, "coolPerHour": 0.1, "ringleaderCools": 0.3,
+        "arriveTipsy": 0.55, "joinTipsy": 0.5, "crowd": 4, "sourSatisfaction": -3 },
       // Raid points (storyteller.json's formula) times this: at 0.85 a town of six meets a bandit or
       // two on the first evening and three on the second day. Left to itself the town loses that
       // one (at 1 it was wiped out): it needs its players. At 1.6 the combat sweep's sixteen
@@ -105,14 +110,14 @@
         "seenWeight": 0.4,
         "playerWeight": 1.5,
         "nobodyWeight": 0.25,
-        "answers": { "Raid": "Forge", "Shortage": "Kitchen", "Plague": "Shrine" }
+        "answers": { "Raid": "Forge", "Shortage": "Kitchen", "Plague": "Shrine", "Brawl": "Tavern" }
       },
       // A beat may follow a quest instead ("followsQuest": a quest's name, "afterHours": [earliest,
       // latest] after its party sets out, "replaces": another beat's "id", "omen": what the town
       // hears then): it comes only if a party goes, and never into the festival.
       "beats": [
         { "day": 1, "fromHour": 20, "toHour": 23, "strength": 0.5, "kinds": { "Raid": 1 } },
-        { "day": 2, "fromHour": 10, "toHour": 17, "strength": 1, "kinds": { "Raid": 3, "Fire": 2, "Shortage": 2, "Plague": 2 } },
+        { "day": 2, "fromHour": 10, "toHour": 17, "strength": 1, "kinds": { "Raid": 3, "Fire": 2, "Shortage": 2, "Plague": 2, "Brawl": 2 } },
         // The dragon on the last morning: gone (DragonCrisis.Hours) and its fires out before the
         // festival goes up at festivalSetupHour, never into it (DirectorTests checks).
         { "day": 3, "fromHour": 6, "toHour": 8, "strength": 1.2, "kinds": { "Dragon": 1 } }

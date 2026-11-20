@@ -119,6 +119,38 @@
       { "text": "I've wrestled bears bigger than you, {who}.", "when": [ "boastful" ] },
       { "text": "I'm not paying for anything you break.", "when": [ "stingy" ] }
     ] },
+    // The brawl at the inn (Hospitality/BrawlCrisis): the crowd coming in, the ringleader egging them
+    // on, a guest drawn in, one losing heart, one put out of the door, and the fight boiling over.
+    { "name": "brawl_crowd", "lines": [
+      { "text": "Landlord! Ale, and plenty of it!" },
+      { "text": "Barge is paid off, lads! Drinks!" },
+      { "text": "Is this the inn? It'll do. It'll DO!" }
+    ] },
+    { "name": "brawl_rally", "lines": [
+      { "text": "Go on! Hit him!" },
+      { "text": "Don't just stand there, get in there!" },
+      { "text": "Bent Nail! Bent Nail!" },
+      { "text": "That's it! Again!" }
+    ] },
+    { "name": "brawl_join", "lines": [
+      { "text": "Right, that's it, {who}!" },
+      { "text": "Who threw that? Was it you, {who}?" },
+      { "text": "Oh, now you've done it." }
+    ] },
+    { "name": "brawl_settled", "lines": [
+      { "text": "Ah, what's the use." },
+      { "text": "I'm done. I'm done. Where's my ale?" },
+      { "text": "Wasn't my fight anyway." }
+    ] },
+    { "name": "brawl_thrown", "lines": [
+      { "text": "Fine! Your ale's watered anyway!" },
+      { "text": "I'll be back! Tomorrow! Maybe!" },
+      { "text": "Don't need your inn. Got a perfectly good ditch." }
+    ] },
+    { "name": "brawl_spill", "lines": [
+      { "text": "Outside! The lot of you!" },
+      { "text": "Into the street with it!" }
+    ] },
     { "name": "adv_leaving", "lines": [
       { "text": "Best town on the road. Don't tell anyone.", "when": [ "pleased" ] },
       { "text": "We'll be back. Keep the ale cold.", "when": [ "pleased" ] },
