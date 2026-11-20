@@ -26,6 +26,12 @@ public enum PracticeAction : byte
 
     /// <summary>The healer's: a patient with more to them than one wound (<see cref="PracticeCommand.Arg"/>, a <see cref="PatientCase"/>).</summary>
     PatientCase,
+
+    /// <summary>A shared chapter's setup (<see cref="DefDatabase.SharedLessons"/>, by index): the fight's dummy and sparring partner.</summary>
+    SharedLesson,
+
+    /// <summary>The sparring partner stands down: the fight's chapter is over (<see cref="Sparring.StandDown"/>).</summary>
+    EndSparring,
 }
 
 /// <summary>A practice patient beyond one plain wound.</summary>
@@ -96,6 +102,13 @@ public static class Practice
                 if (w.TryGet<Trade>(player, out var trade) && arg >= 0 && arg < trade.Def.Lessons.Count)
                     SetUp(sim, player, trade.Def.Lessons[arg]);
                 break;
+            case PracticeAction.EndSparring:
+                Sparring.StandDown(sim);
+                break;
+            case PracticeAction.SharedLesson:
+                if (arg >= 0 && arg < sim.Defs.SharedLessons.Count)
+                    SetUp(sim, player, sim.Defs.SharedLessons[arg]);
+                break;
         }
     }
 
@@ -120,7 +133,9 @@ public static class Practice
             BringPatient(sim, player, wound);
         if (lesson.Spent && sim.World.Has<Mana>(player))
             sim.World.Get<Mana>(player).Current = 0f;
-        if (sim.World.TryGet<Trade>(player, out var trade) && Modding.Trades.Of(sim, trade.Def.Name) is { } module)
+        if (lesson.Sparring)
+            Sparring.SetUp(sim, player);
+        if (sim.World.TryGet<Trade>(player, out var trade) && trade.Def.Lessons.Contains(lesson) && Modding.Trades.Of(sim, trade.Def.Name) is { } module)
             module.SetUpLesson(sim, player, lesson); // the trade's own setup
     }
 

@@ -28,7 +28,7 @@ dotnet run --project src/HeroesNotIncluded -- --host --name Arin --pairs-test  #
 dotnet run --project src/HeroesNotIncluded -- --new-game --name Arin --help-as striker  # be the second pair of hands alone: a bot leads and waits for you (striker, keeper, pitman, lifter)
 dotnet run --project src/HeroesNotIncluded -- --new-game --die-at 5            # your character drops dead: try being a ghost
 dotnet run --project src/HeroesNotIncluded -- --new-game --festival-at 5       # the season's festival, now, you by the well
-dotnet run --project src/HeroesNotIncluded -- --practice Empath          # the tutorial in the practice yard: no season, customers on request (--lesson ID: straight into a chapter, `basics` too)
+dotnet run --project src/HeroesNotIncluded -- --practice Empath          # the tutorial in the practice yard: no season, customers on request (--lesson ID: straight into a chapter, `basics` and `combat` too)
 dotnet run --project src/HeroesNotIncluded -- --arena Swordsman --weapon IronSpear  # the practice ring: one foe a bout (any raider kind, or Dragon; Enter for the next)
 dotnet run --project src/HeroesNotIncluded -- --furniture-demo --zoom 80    # also --building-demo
 dotnet run --project src/HeroesNotIncluded -- --new-game --screenshot shot.png --screenshot-at 5 --quit  # also --screenshot-no-ui, --look-at X,Y, --yaw/--pitch DEG, --camera-mode; any mode
@@ -76,7 +76,9 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. ` (R3
     holds shared helpers. `MapGenerator` (the old valley) remains for the helpers `MapBuilder`
     borrows and the open ground `--building-demo` needs; tests that need a town use `TestWorld.Millbrook`.
   - `Scenarios/Practice` and `Scenarios/Lessons`: the practice yard and its tutorial (`VillageGame.Tutorial`):
-    the shared basics (`BasicsLesson`), then the trade's `core` lessons, the rest offered after (`Tutorial`).
+    the shared basics (`BasicsLesson`) and shared chapters (trades.json's `shared`, kept once per character: the fight,
+    `CombatLesson`, bare knuckles against a training dummy and a sparring partner, `Sparring`), then the trade's `core`
+    lessons, the rest offered after (`Tutorial`).
     A lesson's step is derived each frame from `Perception` (never a cursor), its words are the trade's
     `lessons` in `trades.json` (and its top-level `basics`); a finished one is kept game-side in
     `CharacterProgress.Lessons`. There are no in-round tips: teaching text lives in the tutorial.

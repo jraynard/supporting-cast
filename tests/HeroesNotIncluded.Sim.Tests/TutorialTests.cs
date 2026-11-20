@@ -11,7 +11,7 @@ namespace HeroesNotIncluded.Sim.Tests;
 
 /// <summary>
 /// The tutorial's run: which chapters a newcomer gets in which order (<see cref="Tutorial"/>), and
-/// the basics chapter every trade shares (<see cref="BasicsLesson"/>). The trades' own chapters are
+/// the basics chapter every trade shares (<see cref="BasicsLesson"/>; the fight is <see cref="CombatLessonTests"/>). The trades' own chapters are
 /// walked through in <see cref="TradeLessonTests"/> and <see cref="SmithLessonTests"/>.
 /// </summary>
 public class TutorialTests
@@ -44,12 +44,14 @@ public class TutorialTests
         var smith = defs.Trade("Blacksmith");
         var core = smith.Lessons.Where(l => l.Core).ToList();
 
+        var shared = defs.SharedLessons.Where(l => l.Core).ToList();
         var fresh = Tutorial.Chapters(defs, smith, _ => false);
         Assert.Same(defs.Basics, fresh[0]);
-        Assert.Equal(core, fresh.Skip(1));
+        Assert.Equal(shared, fresh.Skip(1).Take(shared.Count));
+        Assert.Equal(core, fresh.Skip(1 + shared.Count));
 
-        // Someone who's done the basics (in any trade) goes straight to the trade.
-        var known = Tutorial.Chapters(defs, smith, key => key == Tutorial.BasicsKey);
+        // Someone who's done the basics and the shared chapters (in any trade) goes straight to the trade.
+        var known = Tutorial.Chapters(defs, smith, key => key == Tutorial.BasicsKey || shared.Exists(l => Tutorial.SharedKey(l.Id) == key));
         Assert.Equal(core, known);
         Assert.Equal(smith.Lessons.Where(l => !l.Core), Tutorial.Extras(smith));
 

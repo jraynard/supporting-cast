@@ -11,7 +11,7 @@ using HeroesNotIncluded.Ui;
 namespace HeroesNotIncluded;
 
 // The tutorial (the title's Tutorial, or --practice TRADE): the practice yard with a guide. What
-// the trade's about, then the basics (unless done before), then the trade's core chapters one after
+// the trade's about, then the basics and the fight (unless done before), then the trade's core chapters one after
 // another, each a lesson whose scene is set up through PracticeCommand and whose step is read every
 // frame from what the player knows (Lessons.Stage, through Perception only). The step at hand is
 // pointed at in the world (an arrow at the screen's edge when it's off it) and its button glowed;
@@ -105,13 +105,36 @@ public sealed partial class VillageGame
         SetUpLesson(trade, def);
     }
 
-    /// <summary>The chapter's scene (customers, stock, a patient), through the yard's command; the basics need none.</summary>
+    /// <summary>The chapter's scene (customers, stock, a patient, the dummy and a sparring partner), through the yard's command; the basics need none.</summary>
     private void SetUpLesson(TradeDef trade, LessonDef def)
     {
+        if (def.Sparring)
+            _sparringOut = true;
         var index = trade.Lessons.IndexOf(def);
         if (index >= 0)
             Issue(new PracticeCommand(_avatar, PracticeAction.Lesson, index));
+        else if (_sim.Defs.SharedLessons.ToList().IndexOf(def) is var shared and >= 0)
+            Issue(new PracticeCommand(_avatar, PracticeAction.SharedLesson, shared));
     }
+
+    /// <summary>A sparring partner was set out and may still be swinging: told to stand down once his chapter isn't the one running.</summary>
+    private bool _sparringOut;
+
+    /// <summary>
+    /// The fight's chapter done, skipped or left: the sparring partner stands down, rather than
+    /// following the player into the next chapter still throwing punches.
+    /// </summary>
+    private void StandDownSparring()
+    {
+        if (!_sparringOut || (_tutorial == TutorialState.Running && _lesson is { Def.Sparring: true } && !_lessonStage.Done))
+            return;
+        _sparringOut = false;
+        if (HasAvatar)
+            Issue(new PracticeCommand(_avatar, PracticeAction.EndSparring));
+    }
+
+    /// <summary>A chapter with a scene to set up again ("Set it up again"): the trade's own, or a shared one like the fight.</summary>
+    private bool HasScene(TradeDef trade, LessonDef def) => trade.Lessons.Contains(def) || _sim.Defs.SharedLessons.Contains(def);
 
     /// <summary>The run from the start: the trade's chapters, the basics first if they're new.</summary>
     private void StartTutorial(TradeDef trade)
@@ -135,8 +158,8 @@ public sealed partial class VillageGame
             _tutorialBegun = true;
             if (StartLesson == null)
                 StartTutorial(trade.Def);
-            else if (string.Equals(StartLesson, Tutorial.BasicsId, StringComparison.OrdinalIgnoreCase))
-                (_chapters, _chapter) = ([_sim.Defs.Basics], 0);
+            else if (_sim.Defs.Shared(StartLesson) is { } shared)
+                (_chapters, _chapter) = ([shared], 0);
             else if (trade.Def.Lessons.Find(l => string.Equals(l.Id, StartLesson, StringComparison.OrdinalIgnoreCase)) is { } wanted)
                 (_chapters, _chapter) = ([wanted], 0);
             else
@@ -144,6 +167,7 @@ public sealed partial class VillageGame
             if (StartLesson != null && _chapters.Count == 1)
                 BeginLesson(trade.Def, _chapters[0]);
         }
+        StandDownSparring(); // skipped, left, or on to another chapter
         if (_tutorial != TutorialState.Running || _lesson == null)
             return;
 
@@ -170,6 +194,7 @@ public sealed partial class VillageGame
         }
         if (_lessonStage.Done && !was)
         {
+            StandDownSparring();
             RecordLesson(_lesson.Key);
             _tutorial = TutorialState.Between;
             return;
@@ -330,7 +355,7 @@ public sealed partial class VillageGame
             {
                 Gui.Rule();
                 WrappedC(Theme.Parchment, Controls.Keys(step.More ?? "Taking a while? The arrow points where to go next."));
-                if (trade.Lessons.Contains(def))
+                if (HasScene(trade, def))
                 {
                     if (ImGui.Button("Set it up again"u8, in _autoSize))
                     {
@@ -338,7 +363,7 @@ public sealed partial class VillageGame
                         _stepSince = _time;
                     }
                     if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
-                        Tip("Customers sent again, the workplace restocked, the patient brought back: whatever the chapter needs.");
+                        Tip("Customers sent again, the workplace restocked, the patient brought back, your sparring partner fresh: whatever the chapter needs.");
                 }
             }
         }
@@ -404,6 +429,7 @@ public sealed partial class VillageGame
         TextC(Theme.Parchment, "Chapters");
         // Every chapter, the main run's first: any of them again, any time.
         var all = new List<LessonDef> { _sim.Defs.Basics };
+        all.AddRange(_sim.Defs.SharedLessons);
         all.AddRange(trade.Lessons.Where(l => l.Core));
         all.AddRange(Tutorial.Extras(trade));
         foreach (var lesson in all)
@@ -420,7 +446,7 @@ public sealed partial class VillageGame
                 ImGui.SameLine(0, Gui.S(8));
                 TextC(Theme.Good, "learned");
             }
-            else if (!lesson.Core && lesson != _sim.Defs.Basics)
+            else if (!lesson.Core && !Tutorial.IsShared(_sim.Defs, lesson))
             {
                 ImGui.SameLine(0, Gui.S(8));
                 TextC(Theme.Dim, "extra");

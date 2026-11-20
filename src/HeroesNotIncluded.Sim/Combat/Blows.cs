@@ -423,6 +423,12 @@ public static class Blows
             }
             Work.FestivalGames.Loosed(sim, attacker, Entity.Null, 0f); // wide, or into someone: a wasted arrow
         }
+        if (struck.Count == 0 && Reach.TargetInSweep(sim, attacker, attack, windup.Aim) is { IsNull: false } dummy)
+        {
+            // Into a training dummy: a blow landed, and nobody hurt.
+            Report(sim, attacker, dummy, BlowOutcome.Hit, windup.Heavy);
+            return;
+        }
         if (struck.Count == 0)
         {
             // Into the air, or they stepped out of it: dashed clear, it's a dodge.

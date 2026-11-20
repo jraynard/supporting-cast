@@ -198,8 +198,8 @@ public sealed class TradeDef : Def
             item.ThingDef = db.Thing(item.Def);
         foreach (var lesson in Lessons)
         {
-            if (lesson.Id == Scenarios.Lessons.Tutorial.BasicsId)
-                throw new Exception($"Trade '{Name}': lesson id '{lesson.Id}' is the shared basics chapter's");
+            if (lesson.Id == Scenarios.Lessons.Tutorial.BasicsId || db.SharedLessons.Any(l => l.Id == lesson.Id))
+                throw new Exception($"Trade '{Name}': lesson id '{lesson.Id}' is a shared chapter's");
             lesson.Resolve(db, $"Trade '{Name}'");
         }
         foreach (var (skill, level) in Skills)
@@ -241,6 +241,12 @@ public sealed class LessonDef
     /// <summary>Unique within the trade; with it, the id progress is kept under (<c>Blacksmith/sharpen</c>).</summary>
     public string Id { get; set; } = "";
 
+    /// <summary>
+    /// The id by another name: a shared chapter (trades.json's "shared") is a def in a list, which
+    /// the layered loader keys by name (so a mod can <c>$patch</c> it).
+    /// </summary>
+    public string Name { get => Id; set => Id = value; }
+
     public string Title { get; set; } = "";
 
     /// <summary>A line on what it teaches, shown before it's begun.</summary>
@@ -260,6 +266,9 @@ public sealed class LessonDef
 
     /// <summary>The healer's: their mana spent when it begins, to be won back.</summary>
     public bool Spent { get; set; }
+
+    /// <summary>The fight's: a training dummy and a sparring partner set out near the player, whose weapon goes in their pack (<c>Scenarios.Sparring</c>).</summary>
+    public bool Sparring { get; set; }
 
     /// <summary>Put in the player's pack when it begins: what the work needs that the workplace doesn't keep.</summary>
     public List<ThingCount> Supply { get; set; } = [];
