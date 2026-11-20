@@ -64,10 +64,44 @@ Sit on a step for 45 seconds: the fuller hint and "Set it up again" should come 
   - [ ] `curio`
   - [ ] `lock`
   - [ ] `crossbow`
+- **Carpenter**
+  - [ ] `saw`
+  - [ ] `quiver`
+  - [ ] `bow`
+  - [ ] `woods`
+  - [ ] `firewood`
+- **Musician**
+  - [ ] `scale`
+  - [ ] `tune`
+  - [ ] `strings`
+  - [ ] `busk`
 
 ## With friends
 
 A whole round, from the deal to the reveal, everyone from their own home.
+
+### This round, try (2026-11-21)
+
+New since the last round with friends. The miner is off for this one.
+
+- [ ] **The musician** (only if someone plays it): wander in by the road, play at the inn of an evening,
+  tunes from the book, the hat and requests, tuning the lute. Do others hear it from where they stand, and
+  does a listener's dance keep the beat? Is the hat's take worth an evening?
+- [ ] **Work for two, with a real partner.** Call Help! from the quick-say wheel and have a player come,
+  then F at the work (or at the one asking):
+  - [ ] the smith's greatsword, a player on the sledge (watch for "Here it comes!", then "Now!");
+  - [ ] a Calling back, a player holding the body (the pull rising, "Hold them down!");
+  - [ ] a great log at the woodshop, a player in the pit;
+  - [ ] a wagon's axle, a player lifting.
+
+  For each: could the helper tell what the lead was doing, and could the lead tell they were being
+  helped? Over the internet, did the timing still feel fair?
+- [ ] **Materials:** watch the smithy's charcoal (the kiln), planks at the woodshop, and the shrine's
+  cloth and bandages in a raid. Note when any runs out, and for how long.
+- [ ] **Bronze at the smithy:** a piece asked for in bronze, made from the chest's bars or smelted from
+  copper and tin.
+- [ ] **The festival:** shorter, a brisker tale; cheer each honour as well as each toast.
+- [ ] **A late joiner** takes a trade nobody's playing, the musician included.
 
 - [ ] **The link.** On a client, watch the Players window (turns queued, jitter, ran dry). Mid-round:
   - [ ] someone leaves and joins again;

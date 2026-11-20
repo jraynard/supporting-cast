@@ -204,6 +204,17 @@ public sealed partial class VillageGame
 
     private void DrawPreferences(CoopSession session, LobbySeat seat)
     {
+        // The buttons line up in a column past the longest name and its notes ("only if played", the pace).
+        var start = ImGui.GetCursorPosX();
+        var column = Gui.S(220);
+        foreach (var trade in _sim.Defs.AllTrades)
+            if (!trade.Unlimited && RoundSystem.InTown(_sim, trade))
+            {
+                var width = ImGui.CalcTextSize(Capitalized(trade.Label)).X
+                    + (trade.PlayerOnly ? Gui.S(6) + ImGui.CalcTextSize("only if played"u8).X : 0f)
+                    + (trade.Pace is { } p ? Gui.S(6) + ImGui.CalcTextSize(TradePaces.Label(p).ToLowerInvariant()).X : 0f);
+                column = MathF.Max(column, start + width + Gui.S(16));
+            }
         foreach (var trade in _sim.Defs.AllTrades)
         {
             if (trade.Unlimited || !RoundSystem.InTown(_sim, trade))
@@ -225,7 +236,7 @@ public sealed partial class VillageGame
                 TextC(Theme.Dim, TradePaces.Label(pace).ToLowerInvariant());
                 Gui.ItemTip(TradePaces.About(pace));
             }
-            ImGui.SameLine(Gui.S(220), -1);
+            ImGui.SameLine(column, -1);
             if (ImGui.SmallButton(rank >= 0 ? $"Choice {rank + 1}" : "Want"))
             {
                 var wanted = seat.Wanted.ToList();
