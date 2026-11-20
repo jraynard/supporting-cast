@@ -627,20 +627,7 @@ public sealed class FestivalSystem(ulong seed) : ISimSystem, ISaveState
         return bits.Count == 0 ? "Now: eat, drink, and be glad!" : $"Now: eat and drink, {Names(bits)}!";
     }
 
-    private static string CrisisLine(CrisisKind kind, bool met) => (kind, met) switch
-    {
-        (CrisisKind.Raid, true) => "When raiders came down the road, we drove them off.",
-        (CrisisKind.Raid, false) => "When raiders came down the road, they had the better of us.",
-        (CrisisKind.Fire, true) => "When fire took hold, we beat it out.",
-        (CrisisKind.Fire, false) => "When fire took hold, it burned what it would.",
-        (CrisisKind.Shortage, true) => "When the stores ran low, we made do.",
-        (CrisisKind.Shortage, false) => "When the stores ran low, we went hungry.",
-        (CrisisKind.Plague, true) => "When the fever came, we nursed each other through it.",
-        (CrisisKind.Plague, false) => "When the fever came, it took its toll.",
-        (CrisisKind.Dragon, true) => "And the dragon! We stood up to a dragon, friends!",
-        (CrisisKind.Dragon, false) => "And the dragon... we'll not speak of the dragon.",
-        _ => met ? "Trouble came, and we met it." : "Trouble came, and it got the better of us.",
-    };
+    private static string CrisisLine(CrisisKind kind, bool met) => Director.CrisisTypes.FestivalLine(kind, met);
 
     private static readonly string[] Numbers = ["no", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve"];
 

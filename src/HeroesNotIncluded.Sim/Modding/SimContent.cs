@@ -33,6 +33,7 @@ public sealed class SimRegistry
     internal readonly List<IGameMode> Modes = [];
     internal readonly Dictionary<string, Func<Simulation, Entity, Entity>> Drills = new(StringComparer.OrdinalIgnoreCase);
     internal readonly Dictionary<string, string> Formerly = new(StringComparer.Ordinal);
+    internal readonly List<Director.CrisisType> Crises = [];
 
     /// <summary>The game's own registrations (its bundled trades) keep their names unprefixed.</summary>
     internal bool IsCore => ModId.Length == 0;
@@ -59,6 +60,18 @@ public sealed class SimRegistry
     /// carpenter by a pine, axe to hand). Given the player's character; returns what to look at, or Entity.Null.
     /// </summary>
     public void Drill(string name, Func<Simulation, Entity, Entity> stage) => Drills[name] = stage;
+
+    /// <summary>
+    /// A kind of crisis the Director can send (<see cref="Director.CrisisType"/>): weighed by name in
+    /// <c>season.json</c>'s beats, saved by name. A mod's kind is named <c>modId:Name</c>, so it can't
+    /// take a name the game or another mod uses.
+    /// </summary>
+    public void Crisis(Director.CrisisType type)
+    {
+        if (!IsCore && !type.Kind.Name.StartsWith(ModId + ":", StringComparison.Ordinal))
+            throw new ArgumentException($"A mod's crisis kind is named {ModId}:Name, not {type.Kind.Name}");
+        Crises.Add(type);
+    }
 
     /// <summary>A way to play a round (<see cref="IGameMode"/>), listed on the title screen.</summary>
     public void Mode(IGameMode mode) => Modes.Add(mode);
@@ -213,6 +226,23 @@ public static class SimContent
             var modules = Registries.SelectMany(r => r.TradeModules).ToList();
             _trades = (Version, modules);
             return modules;
+        }
+    }
+
+    private static (int Version, List<Director.CrisisType> Types)? _crises;
+
+    internal static IReadOnlyList<Director.CrisisType> CrisisTypes
+    {
+        get
+        {
+            if (_crises is { } c && c.Version == Version)
+                return c.Types;
+            var types = new List<Director.CrisisType>();
+            foreach (var t in Registries.SelectMany(r => r.Crises))
+                if (!types.Any(o => string.Equals(o.Kind.Name, t.Kind.Name, StringComparison.OrdinalIgnoreCase)))
+                    types.Add(t); // the first of a name stands: the game's own can't be taken over
+            _crises = (Version, types);
+            return types;
         }
     }
 

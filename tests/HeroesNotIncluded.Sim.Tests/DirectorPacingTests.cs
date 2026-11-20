@@ -191,7 +191,7 @@ public class DirectorPacingTests
         Every(sim, 1);
         // The first beat can only be a raid.
         Assert.False(sim.Director.Choose(sim, CrisisKind.Plague));
-        sim.ApplyNow(new DirectorChoiceCommand(CrisisKind.Raid, null));
+        sim.ApplyNow(new DirectorChoiceCommand(CrisisKind.Raid.Name, null));
         sim.Clock.Tick = sim.Round.TickAt(sim, 1, 23);
         Every(sim, 1); // the first comes and goes by
         Assert.True(sim.Director.Choose(sim, CrisisKind.Shortage));

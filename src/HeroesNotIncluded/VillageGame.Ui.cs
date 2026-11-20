@@ -1327,13 +1327,13 @@ public sealed partial class VillageGame
             if (ImGui.Button("Break the bridge"u8, in _autoSize))
                 Issue(new DevBreakBridgeCommand());
             // Any crisis on demand, and the next raid's warning (to see the town brace).
-            var kinds = Enum.GetValues<CrisisKind>().Where(HeroesNotIncluded.Sim.Director.Director.CanSend).ToArray();
+            var kinds = HeroesNotIncluded.Sim.Director.CrisisTypes.All.Select(t => t.Kind).ToArray();
             ImGui.SetNextItemWidth(150);
             ImGui.Combo("##crisis"u8, ref _devCrisis, kinds.Select(k => k.ToString()).ToArray(), -1);
             _devCrisis = Math.Clamp(_devCrisis, 0, kinds.Length - 1);
             ImGui.SameLine(0, -1);
             if (ImGui.Button("Send crisis"u8, in _autoSize))
-                Issue(new DevCrisisCommand(kinds[_devCrisis]));
+                Issue(new DevCrisisCommand(kinds[_devCrisis].Name));
             ImGui.SameLine(0, -1);
             if (ImGui.Button("Warn of a raid"u8, in _autoSize))
                 Issue(new DevRaidWarningCommand());

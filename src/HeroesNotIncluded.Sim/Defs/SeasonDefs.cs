@@ -183,14 +183,38 @@ public sealed class SeasonDef : Def
     }
 }
 
-/// <summary>What sort of trouble the Director sends.</summary>
-public enum CrisisKind : byte
+/// <summary>
+/// What sort of trouble the Director sends: a name the crisis registry knows
+/// (<see cref="Director.CrisisTypes"/>, <see cref="Modding.SimRegistry.Crisis"/>), so a mod can add a
+/// kind as the game adds its own. The game's are named here for its code and tests to say.
+/// </summary>
+public readonly record struct CrisisKind
 {
-    Raid,
-    Fire,
-    Shortage,
-    Plague,
-    Dragon,
+    private readonly string? _name;
+
+    public CrisisKind(string name) => _name = name;
+
+    public string Name => _name ?? "";
+
+    public static readonly CrisisKind Raid = new("Raid");
+    public static readonly CrisisKind Fire = new("Fire");
+    public static readonly CrisisKind Shortage = new("Shortage");
+    public static readonly CrisisKind Plague = new("Plague");
+    public static readonly CrisisKind Dragon = new("Dragon");
+    public static readonly CrisisKind Brawl = new("Brawl");
+
+    /// <summary>The game's kinds as saves before format 65 numbered them.</summary>
+    internal static CrisisKind? FromOld(int n) => n switch
+    {
+        0 => Raid,
+        1 => Fire,
+        2 => Shortage,
+        3 => Plague,
+        4 => Dragon,
+        _ => null,
+    };
+
+    public override string ToString() => Name;
 }
 
 /// <summary>
@@ -232,8 +256,8 @@ public sealed class CrisisBeat
     {
         var list = new List<(CrisisKind, float)>();
         foreach (var (name, weight) in Kinds.OrderBy(k => k.Key, StringComparer.Ordinal))
-            if (Enum.TryParse<CrisisKind>(name, ignoreCase: true, out var kind) && weight > 0)
-                list.Add((kind, weight));
+            if (Director.CrisisTypes.Find(name) is { } type && weight > 0)
+                list.Add((type.Kind, weight));
         return list;
     }
 }
@@ -292,7 +316,8 @@ public sealed class PacingDef
             throw new Exception($"Season {season}: pacing's strengthRange is [at most 1, at least 1]");
         AnsweredBy.Clear();
         foreach (var (kind, role) in Answers)
-            AnsweredBy[Enum.Parse<CrisisKind>(kind, ignoreCase: true)] = TownRoles.Parse(role, $"Season {season} pacing");
+            if (Director.CrisisTypes.Find(kind) is { } type) // a kind whose mod is off answers nothing
+                AnsweredBy[type.Kind] = TownRoles.Parse(role, $"Season {season} pacing");
     }
 }
 
