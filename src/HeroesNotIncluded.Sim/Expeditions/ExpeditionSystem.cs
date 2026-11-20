@@ -839,7 +839,11 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
         var w = sim.World;
         var e = sim.SpawnCreature(sim.Defs.Creature("Human"), m.Name, cell, Faction.Adventurer, ageDays: m.AgeDays, rand: _rand);
         w.Add(e, new LookedAs { Id = m.LookId });
-        if (m.Kind.OutfitDef != null)
+        if (m.Kind.KinOf() is { } kin) // the same folk and look they set out with
+            w.Add(e, kin);
+        // They come back in what they went out in. Dressing them in their outfit as well would leave
+        // its pieces lying in the road as each one they wore went back on over it.
+        if (m.Kind.OutfitDef != null && !m.Apparel.Any(a => Clothing.IsClothes(a.Def)))
             Clothing.Dress(sim, e, m.Kind.OutfitDef, Clothing.StreamFor(sim, e));
         foreach (var a in m.Apparel)
             sim.WearItem(e, Remake(sim, a));

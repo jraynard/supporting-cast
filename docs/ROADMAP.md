@@ -402,7 +402,7 @@ word banks in the defs, and answering through what's already there:
 - a dish or a service on the sign, said at the front of a line, taken as the same `Order` F makes
   (`ShopSystem.PlayerOrder`);
 - later, an optional host-side language model reading what was meant, acting only through commands,
-  as the Director's outside mind would (DIRECTOR-PLAN.md, layer 3).
+  as the Director's outside mind would (Backlog, "Crises and the town").
 
 ## Backlog
 
@@ -480,6 +480,14 @@ items into "Now" when a playtest says they matter.
   swings a lot from seed to seed (crises met decide most of it): tune tempers over 24+ seeds.
 
 **Crises and the town**
+- **The Director's outside mind** (an experiment): a host-side language model that every game hour
+  reads a compact summary (tension, who's doing what, quests, what's been said aloud near villagers)
+  and answers with a `DirectorChoiceCommand`: an incident or a beat's kind, plus words in the brand's
+  voice (a shepherd's warning, a stranger's request). It falls back to `RuleMind` offline; solo and
+  bench always use the rules. It can only combine verbs the sim has, so a bigger incident menu is
+  what makes it worth having (a fight at the inn, a curio someone's desperate to sell, a small fire at
+  one forge, quest outcomes that bring trouble).
+- The Reedmere dragon follows its quest (`followsQuest`), the first beat to.
 - Raiders don't bash doors or gates; only the bridge breaks.
 - AI carrying the dead to the shrine, so an AI empath gets a chance without a player's help.
 - Time passes fast only while everyone sleeps, not when the town is otherwise quiet.

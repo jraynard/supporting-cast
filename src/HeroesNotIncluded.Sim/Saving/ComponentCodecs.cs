@@ -807,7 +807,20 @@ internal static class ComponentCodecs
             Model = Appearance.ValidModel(r.NullableString()),
             Folk = r.Version >= 12 && (Folk)r.Int() is var folk && Enum.IsDefined(folk) ? folk : Folk.Human, // the folk came with format 12
         }),
-        Codec("Kin", (w, k) => w.Int((int)k.Folk), r => new Kin { Folk = (Folk)r.Int() is var folk && Enum.IsDefined(folk) ? folk : Folk.Human }),
+        Codec("Kin", (w, k) =>
+        {
+            w.Int(k.Folk is { } f ? (int)f : -1);
+            w.Int(k.Body is { } b ? (int)b : -1);
+            w.Int(k.Hair is { } h ? (int)h : -1);
+            w.Int(k.Beard is { } bd ? (int)bd : -1);
+            w.Int((int)k.HairColor);
+        }, r =>
+        {
+            static T? Of<T>(int v) where T : struct, Enum => v is >= 0 and <= byte.MaxValue && Enum.IsDefined(typeof(T), (byte)v) ? (T)Enum.ToObject(typeof(T), v) : null;
+            if (r.Version < 64) // a fixed look per adventurer kind came with format 64; before, only the folk
+                return new Kin { Folk = Of<Folk>(r.Int()) ?? Folk.Human };
+            return new Kin { Folk = Of<Folk>(r.Int()), Body = Of<BodyType>(r.Int()), Hair = Of<HairStyle>(r.Int()), Beard = Of<BeardStyle>(r.Int()), HairColor = (uint)r.Int() };
+        }),
         Codec("AwaitingSettler", (w, a) => w.Long(a.ArriveTick), r => new AwaitingSettler { ArriveTick = r.Long() }),
         Codec("Avatar", (w, a) =>
         {

@@ -35,7 +35,7 @@ dotnet run --project src/HeroesNotIncluded -- --new-game --screenshot shot.png -
 dotnet run --project src/HeroesNotIncluded -c Release -- --dictate-test clip.wav   # speaking aloud: a clip (or `mic`) through the recognizer, timed (--model small.en)
 dotnet run --project src/HeroesNotIncluded -- --new-game --voice-clip clip.wav       # a clip spoken into a round as if through the microphone
 dotnet run --project src/HeroesNotIncluded -- --replay newest   # watch a kept round again (or a path; --keep-replay-at N keeps one mid-round)
-dotnet run --project src/HeroesNotIncluded -- --art-preview
+dotnet run --project src/HeroesNotIncluded -- --art-preview      # every sheet; --dressed: just people, each adventurer kind as it comes, then every outfit
 dotnet run --project src/HeroesNotIncluded -- --check-art     # headless: every sprite and tag exists
 dotnet run --project src/HeroesNotIncluded -- --check-mod mods/long-season   # headless: a mod over the core, checked (any mode takes --mods a,b)
 dotnet run --project src/HeroesNotIncluded -- --check-gpu

@@ -221,7 +221,7 @@ HeroesNotIncluded.Audio.GameAudio.Open(host);
 if (args.Contains("--render-test"))
     host.Run(new RenderTestGame { StressFromArgs = stress });
 else if (args.Contains("--art-preview"))
-    host.Run(new ArtPreviewGame());
+    host.Run(new ArtPreviewGame { DressedOnly = args.Contains("--dressed") }); // --dressed: just the people in their clothes
 else if (args.Contains("--host"))
 {
     // Co-op host: a saved village (--host <slot or path>), or a new round; as --character if given.

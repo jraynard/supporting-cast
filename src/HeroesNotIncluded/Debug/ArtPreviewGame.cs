@@ -19,6 +19,7 @@ public sealed class ArtPreviewGame : Game
     private bool _markers = true;
     private bool _dressed = true;
     private float _contentEnd;
+    private float _contentMax = 4000f;
     private int _background = 1;
     private float _scroll;
     private ArtReloader _reloader = null!;
@@ -34,6 +35,11 @@ public sealed class ArtPreviewGame : Game
     private string? _shaderError;
 
     private Sim.Defs.DefDatabase? _defs;
+
+    /// <summary>Just the dressed people, not every sheet above them (<c>--art-preview --dressed</c>).</summary>
+    public bool DressedOnly { get => _dressedOnly; set => _dressedOnly = value; }
+
+    private bool _dressedOnly;
 
     public override void Load()
     {
@@ -56,6 +62,8 @@ public sealed class ArtPreviewGame : Game
             _shaderError = ShaderReload.Reload(Host, null);
         if (Host.Input.WasKeyPressed(GlfwKey.F))
             _flip = !_flip;
+        if (!ImGui.GetIO().WantCaptureMouse)
+            _scroll = Math.Clamp(_scroll - Host.Input.ScrollDelta * 160f, 0f, _contentMax);
     }
 
     public override void DrawUi()
@@ -66,10 +74,12 @@ public sealed class ArtPreviewGame : Game
             Narsil.Ui.ImGuiText.Colored(new float4(1f, 0.4f, 0.3f, 1f), $"Shader error: {_shaderError}");
         ImGui.SliderInt("Zoom"u8, ref _zoom, 1, 8);
         ImGui.SliderFloat("Speed"u8, ref _speed, 0f, 2f);
-        ImGui.SliderFloat("Scroll"u8, ref _scroll, 0f, 4000f);
+        ImGui.SliderFloat("Scroll (wheel)"u8, ref _scroll, 0f, _contentMax);
         ImGui.Checkbox("Flip (facing left)"u8, ref _flip);
         ImGui.Checkbox("Pivot & points"u8, ref _markers);
         ImGui.Checkbox("Dressed people"u8, ref _dressed);
+        ImGui.SameLine();
+        ImGui.Checkbox("Only them"u8, ref _dressedOnly);
         ImGui.Combo("Background"u8, ref _background, "Dark\0Grass\0Light\0Night\0"u8);
         if (ImGui.Button("Reload art (F5)"u8))
             Host.Atlas.Reload();
@@ -127,17 +137,18 @@ public sealed class ArtPreviewGame : Game
             if (label != null || sheet == null)
                 return;
             sb.OutlineRect(at, box, 1f, Rgba.Pack(1, 1, 1, 0.15f));
-            foreach (var tag in (string[])["idle_down", "walk_side", "walk_up", "work_side", "sleep"])
+            foreach (var tag in (string[])["idle_down", "walk_downside", "walk_upside", "walk_up", "work_downside"])
             {
                 if (sheet.Find(tag) is not { } anim)
                     continue;
                 var i = anim.Frames[anim.FrameAt(_time)];
                 var index = i.Index;
-                DrawFrame(sb, i, at, Rgba.White);
+                var z = DressedZoom(sheet);
+                DrawFrame(sb, i, at, Rgba.White, z);
                 foreach (var (layer, color) in layers)
                     if (index >= 0 && index < layer.Frames.Length)
-                        DrawFrame(sb, layer.Frames[index], at, color);
-                at.X += sheet.FrameSize.X * _zoom + 4;
+                        DrawFrame(sb, layer.Frames[index], at, color, z);
+                at.X += sheet.FrameSize.X * z + 4;
             }
         });
         sb.End();
@@ -145,9 +156,12 @@ public sealed class ArtPreviewGame : Game
     }
 
     // Trimmed frames (sparse look layers) sit at their offset within the frame.
-    private void DrawFrame(SpriteBatch sb, in SheetFrame f, float2 at, uint color) =>
-        sb.DrawRect(f.Sprite, at + new float2(4, 4) + new float2(f.Offset.X, f.Offset.Y) * _zoom,
-            new float2(f.Sprite.PixelSize.X, f.Sprite.PixelSize.Y) * _zoom, color);
+    private static void DrawFrame(SpriteBatch sb, in SheetFrame f, float2 at, uint color, float z) =>
+        sb.DrawRect(f.Sprite, at + new float2(4, 4) + new float2(f.Offset.X, f.Offset.Y) * z,
+            new float2(f.Sprite.PixelSize.X, f.Sprite.PixelSize.Y) * z, color);
+
+    /// <summary>The dressed rows' scale: the zoom at the size the game draws a sheet (the people's are 4x finer).</summary>
+    private float DressedZoom(SpriteSheet sheet) => _zoom / Math.Max(1f, sheet.Density);
 
     /// <summary>The default villager tints over every look in each apparel set, below the sheets: bare, armor
     /// over a tunic, and every outfit in the defs (clothes as <c>"Def:Dye"</c>, in their first dye).</summary>
@@ -169,7 +183,33 @@ public sealed class ArtPreviewGame : Game
     {
         if (!_dressed || _defs == null)
             return;
-        var y = _contentEnd + 20f;
+        var y = _dressedOnly ? 40f - _scroll : _contentEnd + 20f;
+        // Each adventurer kind as it comes to town: its outfit, its armor, its folk and fixed look (Kin).
+        visit("Adventurers as they come (outfit, armor, folk and fixed look)", null, [], new float2(16, y + 18), default);
+        y += 22;
+        var kx = 16f;
+        var kindBox = default(float2);
+        var seed = 1;
+        foreach (var kind in _defs.AllAdventurerKinds)
+        {
+            var kin = kind.KinOf();
+            var derived = HumanLook.Derived(seed++ * 7919, folk: kin?.Folk);
+            var look = kin is { } k ? HumanLook.Fixed(derived, k) : derived;
+            if (HumanLook.Sheet(Host.Atlas, look) is not { } sheet)
+                continue;
+            kindBox = new float2((sheet.FrameSize.X * DressedZoom(sheet) + 4) * 5 + 4, sheet.FrameSize.Y * DressedZoom(sheet) + 8);
+            if (kx + kindBox.X > Host.Renderer.Swapchain.Extent.X)
+            {
+                kx = 16;
+                y += kindBox.Y + 22;
+            }
+            var pieces = (kind.OutfitDef?.Pieces.Select(p => p.MaterialDefs.Count > 0 ? $"{p.Def}:{p.MaterialDefs[0].Name}" : p.Def) ?? [])
+                .Concat(kind.Apparel).ToArray();
+            visit($"{kind.Name} ({kind.Outfit ?? "no outfit"})", null, [], new float2(kx, y + 18), kindBox);
+            visit(null, sheet, HumanLook.Layers(Host.Atlas, look, Rgba.White, WornOf(pieces)), new float2(kx, y + 18), kindBox);
+            kx += kindBox.X + 12;
+        }
+        y += kindBox.Y + 40;
         visit("Dressed (worn apparel over each look)", null, [], new float2(16, y + 18), default);
         y += 22;
         foreach (var body in Enum.GetValues<Sim.Components.BodyType>())
@@ -178,7 +218,7 @@ public sealed class ArtPreviewGame : Game
                 var look = HumanLook.Default with { Body = body, Hair = hair };
                 if (HumanLook.Sheet(Host.Atlas, look) is not { } sheet)
                     continue;
-                var box = new float2((sheet.FrameSize.X * _zoom + 4) * 5 + 4, sheet.FrameSize.Y * _zoom + 8);
+                var box = new float2((sheet.FrameSize.X * DressedZoom(sheet) + 4) * 5 + 4, sheet.FrameSize.Y * DressedZoom(sheet) + 8);
                 var x = 16f;
                 foreach (var outfit in Outfits())
                 {
@@ -194,6 +234,7 @@ public sealed class ArtPreviewGame : Game
                 }
                 y += box.Y + 40;
             }
+        _contentMax = Math.Max(0f, y + _scroll - Host.Renderer.Swapchain.Extent.Y * 0.5f);
     }
 
     private static void Cross(SpriteBatch sb, float2 c, uint color)
@@ -206,6 +247,11 @@ public sealed class ArtPreviewGame : Game
     private void Layout(Action<SpriteSheet, string?, float2, float2> visit)
     {
         var y = 40f - _scroll;
+        if (_dressedOnly)
+        {
+            _contentEnd = y;
+            return;
+        }
         foreach (var sheet in Host.Atlas.Sheets.Values.OrderBy(s => s.Name, StringComparer.Ordinal))
         {
             var box = new float2(sheet.FrameSize.X, sheet.FrameSize.Y) * _zoom + new float2(8, 8);
@@ -225,5 +271,6 @@ public sealed class ArtPreviewGame : Game
             y += box.Y + 40;
         }
         _contentEnd = y;
+        _contentMax = Math.Max(0f, y + _scroll - Host.Renderer.Swapchain.Extent.Y * 0.5f); // Dressed's rows add theirs
     }
 }

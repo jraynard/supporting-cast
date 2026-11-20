@@ -295,8 +295,48 @@ def bolt(cloth):
     return selective_outline(img)
 
 
+def robe(cloth):
+    """The grey wanderer's robe laid flat: to the ankle, flaring, bell sleeves, a rope belt."""
+    img = Image.new("RGBA", SIZE, (0, 0, 0, 0))
+    body = [(10, 4), (13, 3), (16, 6), (19, 3), (22, 4), (30, 17), (27, 19), (22, 12), (26, 30), (6, 30), (10, 12), (5, 19), (2, 17)]
+    shape(img, lambda d: d.polygon(body, fill=255), cloth, tex=lambda x, y: wool(x, y) + (-0.12 if (x + y // 6) % 4 == 0 and y > 16 else 0))
+    px(img, [(x, 28) for x in range(7, 26)] + [(x, 29) for x in range(6, 27)], cloth[1])
+    px(img, [(x, 17) for x in range(4, 30) if (x, 17) != (0, 0)], cloth[2])
+    px(img, [(x, 14) for x in range(11, 22)], (176, 150, 108, 255))
+    px(img, [(12, 15), (12, 16), (13, 17), (12, 18)], (150, 124, 86, 255))                  # the rope's knot and ends
+    px(img, [(14, 5), (15, 6), (16, 7), (17, 6), (18, 5)], cloth[0])
+    return selective_outline(img)
+
+
+def pointed_hat(cloth):
+    """A wide brim, and a tall crown whose point has flopped over."""
+    img = Image.new("RGBA", SIZE, (0, 0, 0, 0))
+    shape(img, lambda d: d.ellipse([2, 19, 30, 28], fill=255), cloth, radius=1.2, tex=wool)
+    crown = ribbon([(16, 23), (16, 15), (17, 8), (21, 4), (26, 5), (28, 9)], [13, 10, 7, 4, 2.6, 1], steps=6)
+    shape(img, lambda d: d.polygon(crown, fill=255), cloth, tex=wool)
+    for x in range(10, 23):
+        if img.getpixel((x, 20))[3]:
+            px(img, [(x, 20), (x, 21)], (84, 80, 86, 255))
+    px(img, [(18, 9), (20, 7), (22, 6)], cloth[1])
+    return selective_outline(img)
+
+
+def hood(cloth):
+    """A close hood, the face's opening dark, its long tail hanging to a tassel."""
+    img = Image.new("RGBA", SIZE, (0, 0, 0, 0))
+    tail = ribbon([(21, 5), (28, 9), (30, 18), (28, 26)], [5, 4, 3, 2.4], steps=6)
+    shape(img, lambda d: d.polygon(tail, fill=255), cloth[:4], radius=1.0, tex=wool)
+    shape(img, lambda d: (d.ellipse([5, 3, 25, 25], fill=255), d.polygon([(5, 18), (25, 18), (27, 28), (3, 28)], fill=255)), cloth, tex=wool)
+    shape(img, lambda d: d.ellipse([10, 9, 20, 23], fill=255), [(52, 40, 44, 255), (66, 52, 54, 255), (80, 64, 64, 255)], radius=1.0)
+    px(img, [(x, 8 + abs(x - 15) // 3) for x in range(10, 21)], cloth[1])
+    for x in range(24, 29):
+        px(img, [(x - 1, 27), (x - 1, 28), (x - 1, 29)], LINEN[3] if x % 2 else LINEN[1])
+    return selective_outline(img)
+
+
 DYED = (("tunic", lambda c: tunic(c)), ("kaftan", lambda c: tunic(c, long_=True)), ("apron_dress", apron_dress), ("trousers", trousers),
-        ("skirt", skirt), ("cloak", lambda c: cloak(c, False)), ("hooded_cloak", lambda c: cloak(c, True)), ("scarf", scarf), ("mantle", wool_mantle), ("cloth", bolt))
+        ("skirt", skirt), ("cloak", lambda c: cloak(c, False)), ("hooded_cloak", lambda c: cloak(c, True)), ("scarf", scarf), ("mantle", wool_mantle), ("cloth", bolt),
+        ("wizard_robe", robe), ("wizard_hat", pointed_hat), ("dwarf_hood", hood))
 
 
 def save(img, name):

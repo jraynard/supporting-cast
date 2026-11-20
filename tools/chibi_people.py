@@ -2530,13 +2530,16 @@ GARMENTS = {
     "steel_sallet": lambda G, F: g_helm(G, F, "steel_sallet"),
     "horned_helm": lambda G, F: g_helm(G, F, "horned_helm"),
     "musician_hat": lambda G, F: g_musician_hat(G, F),
+    "wizard_hat": lambda G, F: g_hat(G, F, "wizard_hat"),
+    "dwarf_hood": lambda G, F: g_hat(G, F, "dwarf_hood"),
+    "wizard_robe": lambda G, F: g_wizard_robe(G, F),
     "leather_jerkin": lambda G, F: g_armor(G, F, "leather_jerkin"),
     "studded_jerkin": lambda G, F: g_armor(G, F, "studded_jerkin"),
     "chain_shirt": lambda G, F: g_armor(G, F, "chain_shirt"),
     "bronze_cuirass": lambda G, F: g_armor(G, F, "bronze_cuirass"),
     "steel_plate": lambda G, F: g_armor(G, F, "steel_plate"),
 }
-HEAD_ITEMS = ("leather_cap", "iron_helm", "bronze_helm", "steel_sallet", "horned_helm", "musician_hat")
+HEAD_ITEMS = ("leather_cap", "iron_helm", "bronze_helm", "steel_sallet", "horned_helm", "musician_hat", "wizard_hat", "dwarf_hood")
 
 FELT = ramp((118, 74, 52), 5)
 HAT_BAND = ramp((160, 58, 46), 4)
@@ -2560,6 +2563,116 @@ def g_musician_hat(G, F):
     side = -1 if F.t < 0 else 1
     quill = strip([(cx + side * 7, 11.6 + hy), (cx + side * 10.5, 6 + hy), (cx + side * 12.5, 0.4 + hy)], [2.6, 2.2, 0.4], steps=6)
     part(G.plain, quill, FEATHER, INK, radius=0.6)
+
+
+ROPE = ramp((176, 150, 108), 4)
+
+
+def g_wizard_robe(G, F):
+    """The grey wanderer's robe: ankle-length and flaring at the hem, wide bell sleeves, a rope belt
+    knotted at the hip, and a darker band of the same cloth at the hem and cuffs."""
+    by = F.by
+    hem_y = 54.6
+    hem = [(10.4, hem_y), (13.4, hem_y + 0.8), (16.6, hem_y + 0.2), (20, hem_y + 0.9), (23.4, hem_y + 0.2), (26.6, hem_y + 0.8), (29.6, hem_y)]
+    robe = poly([(14.4, 31 + by), (25.6, 31 + by), (26.4, 38.6 + by)] + [(x, y + by) for x, y in reversed(hem)] + [(13.6, 38.6 + by)])
+    body = G.body(robe)
+    bells = [F.arm_mask(s, 0.84, (3.6, 4.2, 5.8)) for s in (0, 1)]
+    cloth = union(body, *bells)
+    part(G.dye, cloth, DYE, DYE_LINE, radius=1.8, tex=lambda x, y: bayer(x, y) * 0.04)
+    for x, bend in ((15.4, -1.6), (18.4, -0.6), (21.6, 0.6), (24.6, 1.6)):     # folds falling from the belt
+        curve(G.dye, [(x, 40 + by), (x + bend * 0.5, 46 + by), (x + bend, hem_y - 0.6 + by)], DYE[1], 2, body)
+        curve(G.dye, [(x - 0.8, 41 + by), (x - 0.8 + bend * 0.7, 49 + by)], DYE[3], 1, body)
+    band = both(body, poly([(0, hem_y - 1.6 + by), (40, hem_y - 1.6 + by), (40, 60), (0, 60)]))
+    fill(G.dye, band, DYE[1])
+    curve(G.dye, [(10.8, hem_y - 1.6 + by), (29.2, hem_y - 1.6 + by)], DYE[0], 1, body)
+    for s in (0, 1):                                                         # the bell's turned-back cuff
+        fill(G.dye, minus(F.arm_mask(s, 0.84, (3.6, 4.2, 5.8)), F.arm_mask(s, 0.72, (3.6, 4.2, 5.4))), DYE[1])
+    if F.front:
+        nx = 20 + F.t * 0.8
+        neck = G.body(poly([(nx - 2.6, 31 + by), (nx + 2.6, 31 + by), (nx, 35.4 + by)]))
+        fill(G.dye, neck, DYE[0], cloth)
+    # the rope belt, its knot at one hip and the ends hanging
+    rope = G.body(strip([(13.8, 38.2 + by), (20, 38.8 + by), (26.2, 38.2 + by)], [1.3, 1.3, 1.3], steps=4))
+    part(G.over, rope, ROPE, INK, radius=0.5, width=1)
+    for k in range(7):
+        x = 14.6 + k * 1.7
+        curve(G.over, [(x, 37.8 + by), (x + 0.7, 39.2 + by)], ROPE[0], 1, rope)
+    if F.front:
+        kx = 17.0 + F.t
+        knot = G.body(ellipse([kx - 1.2, 37.4 + by, kx + 1.2, 39.8 + by]))
+        part(G.over, knot, ROPE, INK, radius=0.5, width=1)
+        for dx, end in ((-0.6, 44.6), (0.7, 43.4)):
+            tail = G.body(strip([(kx + dx, 39.4 + by), (kx + dx * 1.6, end + by)], [0.9, 0.8], steps=3))
+            part(G.over, tail, ROPE, INK, radius=0.4, width=1)
+
+
+HAT_BAND = ramp((84, 80, 86), 4)
+
+
+def g_hat(G, F, kind):
+    """Cloth on the head, dyed: the grey wanderer's pointed hat, or a dwarf's hood."""
+    if not F.pose.helm:
+        return
+    {"wizard_hat": g_wizard_hat, "dwarf_hood": g_dwarf_hood}[kind](G, F)
+
+
+def g_wizard_hat(G, F):
+    """A wide floppy brim, then a crown that climbs off the head and gives up: its point flops over
+    to the wearer's left (the frame has no room above for a cone standing straight). It covers the
+    head's own outline above the brow (where under_helm keeps the hair), so no hair shows past it."""
+    hy = F.hy
+    cx = 20 + F.t
+    s = 1 if F.front else -1                                       # the wearer's left: screen right facing us
+    brim = ellipse([cx - 15.6, 10.6 + hy, cx + 15.6, 17.6 + hy])
+    part(G.dye, brim, DYE, DYE_LINE, radius=1.2, bias=0.1)
+    dome = minus(ellipse([cx - 12.4, 1.8 + hy, cx + 12.4, 27 + hy]), rect([0, 13.6 + hy, 40, 60]))
+    point = strip([(cx + 0.4 * s, 7 + hy), (cx + 3 * s, 3.4 + hy), (cx + 8 * s, 2.3 + hy), (cx + 12.6 * s, 3.9 + hy), (cx + 15.2 * s, 7.8 + hy)],
+                  [13, 7, 4.2, 2.6, 0.8], steps=6)
+    crown = union(dome, point)
+    part(G.dye, crown, DYE, DYE_LINE, radius=2.0, bias=0.05, tex=lambda x, y: bayer(x, y) * 0.04)
+    curve(G.dye, [(cx + 1.4 * s, 4.6 + hy), (cx + 6 * s, 4.4 + hy), (cx + 11 * s, 5.2 + hy)], DYE[1], 2, crown)   # the crease where it folds
+    curve(G.dye, [(cx - 6 * s, 5.4 + hy), (cx - 8.6 * s, 10 + hy)], DYE[3], 2, crown)
+    band = both(crown, rect([0, 10.8 + hy, 40, 13.4 + hy]))
+    part(G.over, band, HAT_BAND, INK, radius=0.4, width=1)
+    curve(G.dye, [(cx - 14.6, 15 + hy), (cx, 16.6 + hy), (cx + 14.6, 15 + hy)], DYE[1], 1, brim)        # the brim's soft droop
+
+
+def g_dwarf_hood(G, F):
+    """A close cowl over the crown and cheeks, the face and the beard left out, spreading a little
+    over the shoulders. Its long tail hangs from the back of the crown: from behind, down the back
+    to a tassel; facing us, behind the far shoulder, the tassel peeking out by the arm."""
+    hy, by = F.hy, F.by
+    cx = 20 + F.t
+    cowl = union(ellipse([cx - 12.8, 1.4 + hy, cx + 12.8, 29.6 + hy]),
+                 poly([(cx - 12.2, 22 + hy), (cx + 12.2, 22 + hy), (cx + 13.4, 31 + by), (cx + 9.6, 33 + by), (cx - 9.6, 33 + by), (cx - 13.4, 31 + by)]))
+    tex = lambda x, y: bayer(x, y) * 0.04
+    if F.front:
+        face = union(ellipse([cx - 8.8, 10.2 + hy, cx + 8.8, 32 + hy]), rect([cx - 7.2, 22 + hy, cx + 7.2, 40]))
+        cowl = minus(cowl, face)
+        # the tail, behind: out past the crown on the wearer's right, down behind that shoulder
+        tail = strip([(cx - 9, 5 + hy), (cx - 13.4, 10 + hy), (cx - 14.8, 20 + hy), (cx - 14.2, 31 + by)], [5, 3.6, 2.8, 2.2], steps=6)
+        tassel = poly([(cx - 15.4, 30.6 + by), (cx - 13, 30.6 + by), (cx - 12.6, 34.6 + by), (cx - 15.8, 34.6 + by)])
+        part(G.back_dye, tail, DYE, DYE_LINE, radius=1.0, bias=-0.15)
+        part(G.back, tassel, LINEN, INK, radius=0.6, width=1)
+        part(G.dye, cowl, DYE, DYE_LINE, radius=1.6, bias=0.05, tex=tex)
+        rim = both(dilate(face, 6), cowl)                          # the turned-back edge round the face
+        fill(G.dye, rim, DYE[1])
+        ink(G.dye, rim, DYE_LINE, 1)
+        curve(G.dye, [(cx - 7.4, 12 + hy), (cx, 9.4 + hy), (cx + 7.4, 12 + hy)], DYE[3], 1, rim)
+        for side in (-1, 1):
+            curve(G.dye, [(cx + side * 11.4, 25 + hy), (cx + side * 12.2, 31 + by)], DYE[1], 2, cowl)
+    else:
+        part(G.dye, cowl, DYE, DYE_LINE, radius=1.8, bias=0.05, tex=tex)
+        for side in (-1, 1):
+            curve(G.dye, [(cx + side * 9, 22 + hy), (cx + side * 11.6, 31 + by)], DYE[1], 2, cowl)
+        tail = strip([(cx + 1.6, 3 + hy), (cx + 4.4, 9 + hy), (cx + 3.6, 20 + hy), (cx + 1.6, 30 + by), (cx + 1.2, 38.6 + by)], [6, 4.4, 3.2, 2.6, 2.2], steps=6)
+        part(G.dye, tail, DYE, DYE_LINE, radius=1.0, bias=0.1)
+        curve(G.dye, [(cx + 3.4, 9 + hy), (cx + 2.6, 20 + hy)], DYE[1], 1, tail)
+        tassel = poly([(cx - 0.4, 38 + by), (cx + 2.8, 38 + by), (cx + 3.2, 42 + by), (cx - 0.8, 42 + by)])
+        part(G.over, tassel, LINEN, INK, radius=0.6, width=1)
+        for k in range(3):
+            curve(G.over, [(cx + k, 39.6 + by), (cx + k, 41.6 + by)], LINEN[0], 1, tassel)
+
 
 DARK_LEATHER = ramp((92, 76, 74), 5)
 WRAP_C = ramp((122, 118, 116), 4)
@@ -2852,13 +2965,13 @@ def figure(body, pose, hair="long", eyes="round", beard=None, wear=(), dyes=None
     cut(back, both_bases(pose))
     dye_of = lambda item: tuple(min(255, int(v * 1.275)) for v in dyes.get(item, colors["dye"])[:3]) + (255,)
     for item in wear:
-        if item in ("cloak", "hooded_cloak", "scarf"):
+        if item in ("cloak", "hooded_cloak", "scarf") or item in HEAD_ITEMS:
             order += [worn[item]["_back"], tint(worn[item]["_back_dye"], dye_of(item))]
     order.append(tint(back, hairc))
     order.append(tint(skin_layer(F, folk), colors["skin"]))
     e, f = eyes_layers(F, eyes)
     order += [tint(e, colors["eyes"]), f]
-    slots = ["trousers", "skirt", "turnshoes", "boots", "tunic", "kaftan", "apron_dress", "vest", "leather_jerkin", "studded_jerkin",
+    slots = ["trousers", "skirt", "turnshoes", "boots", "tunic", "kaftan", "wizard_robe", "apron_dress", "vest", "leather_jerkin", "studded_jerkin",
              "chain_shirt", "bronze_cuirass", "steel_plate", "satchel", "cloak", "hooded_cloak", "fur_mantle", "mantle", "scarf"]
     for item in slots:
         if item in wear:
@@ -2869,7 +2982,7 @@ def figure(body, pose, hair="long", eyes="round", beard=None, wear=(), dyes=None
     order.append(tint(ears_layer(F, folk), colors["skin"]))
     for item in HEAD_ITEMS:
         if item in wear:
-            order.append(worn[item][""])
+            order += [worn[item][""], tint(worn[item]["_dye"], dye_of(item))]
     order.append(tint(coin_hand_layer(F, folk), colors["skin"]))
     order.append(coin_layer(F))
     for layer in order:
@@ -3062,6 +3175,11 @@ if __name__ == "__main__":
                  colors={"skin": (226, 214, 196, 255), "hair": (214, 214, 220, 255), "eyes": (96, 176, 140, 255)}),
             dict(body="male", hair="swept", eyes="narrow", folk="elf", wear=("tunic", "trousers", "boots", "cloak"),
                  colors={"skin": (150, 116, 96, 255), "hair": (40, 36, 44, 255), "eyes": (196, 160, 72, 255), "dye": (60, 96, 70, 255)}),
+            # the rare companies (adventurers.json): the grey wanderer, and a dwarf in a hood
+            dict(body="male", hair="long", eyes="sleepy", beard="full", wear=("wizard_robe", "turnshoes", "wizard_hat"),
+                 colors={"hair": (184, 184, 180, 255), "dye": (153, 158, 171, 255)}),
+            dict(body="male", hair="short", eyes="round", beard="full", wear=("tunic", "trousers", "boots", "dwarf_hood"),
+                 dyes={"tunic": (108, 80, 56, 255), "trousers": (58, 54, 64, 255)}, colors={"hair": (150, 70, 46, 255), "dye": (156, 60, 52, 255)}),
         ])
     else:
         generate(only)

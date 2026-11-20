@@ -389,8 +389,13 @@ icons come once per dye (`items/tunic_woad`; the plain `items/tunic` is undyed, 
 Today's set: tunic, kaftan, apron dress (hangerok with tortoise brooches and beads), leather vest,
 trousers with leg wraps, skirt, turnshoes, fur-topped boots, cloak (pinned at the right shoulder),
 hooded cloak (hood down as a cowl), fur mantle, a short mantle (over the near shoulder and the front,
-the far arm free), a leather vest over the tunic (a `garment` in the Body slot, with bracers) and a
-scarf (a `garment` in the Neck slot, wound over the cloak or mantle).
+the far arm free), a leather vest over the tunic (a `garment` in the Body slot, with bracers), a
+scarf (a `garment` in the Neck slot, wound over the cloak or mantle), and for the rare companies the
+grey wanderer's robe (ankle-length, bell sleeves, a rope belt) and pointed hat (its point flopped over:
+the frame has no room above the head for one standing up) and a dwarf's close hood (the face and beard
+left out, its tail hanging behind to a tassel). Cloth on the head is a `garment` in the Head slot, dyed
+like the rest; a helm put on over it takes the slot. A Head item's `_back` layers (the hood's tail,
+seen from the front) go behind the body, as a cloak's do.
 
 **Worn armor** is a layer the same way: an apparel def's `worn` names a sheet (`apparel/iron_helm`); the
 game uses `<worn>_<body>` if it exists, else `<worn>`. Badly worn items
