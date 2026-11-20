@@ -2797,3 +2797,10 @@ From the user's playing on a Deck:
   `musician_hat`, written into mods/musician with its dwarf and halfling builds; `chibi_builds.py` now builds a mod's
   garments where they are). Put on from the kit (a kit's garment goes on if the slot's empty), taken off and set down
   upturned to play, and back on the head after. The playing panel draws it upside down, the coins in its opening.
+- **The musician hears things** (from play): an adventurer settled in at the music may talk of a quest (`Rumours`,
+  half the time, nearer the truth than the tavern's idle talk), and the playing panel lists the talk you've heard.
+  F at the innkeeper passes it on, said aloud: whoever hears it clearly takes it in. Only the musician, once in two
+  game hours.
+- **The playing panel shows the instrument in your hands** (a first pass, to be played and changed): the pipe's holes
+  fingered for the note and breath leaving its end, the lute's and fiddle's strings fretted and ringing (the fiddle's
+  bow moving), the drum's head struck where the stroke is played.

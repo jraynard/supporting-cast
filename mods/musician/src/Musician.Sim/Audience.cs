@@ -274,8 +274,8 @@ public sealed class AudienceJob(Entity musician, int3 spot, bool dance, int most
     /// <summary>Ticks spent hearing the music, and dancing to it, and the sour stretch now, and hearing the tune they asked for.</summary>
     private int _heard, _danced, _sour, _theirs;
 
-    /// <summary>Tipped this time (or had nothing to give), and their tune answered.</summary>
-    private bool _tipped, _answered;
+    /// <summary>Tipped this time (or had nothing to give), their tune answered, and (an adventurer) talked of a quest.</summary>
+    private bool _tipped, _answered, _gossiped;
 
     public override bool Interruptible => true;
 
@@ -318,6 +318,13 @@ public sealed class AudienceJob(Entity musician, int3 spot, bool dance, int most
         {
             _tipped = true;
             Takings.Tip(Sim, Pawn, musician, _danced >= Remembered / 2);
+        }
+        // An adventurer settled in at the music talks: of a quest, aloud, nearer the truth than idle tavern talk (Rumours).
+        if (!_gossiped && _heard >= Remembered / 2 && Sim.World.Has<Adventurer>(Pawn))
+        {
+            _gossiped = true;
+            if (Sim.Rand.NextFloat() < Rumours.GossipChance)
+                Sim.Expeditions.Gossip(Sim, Pawn, Rumours.GossipSpread);
         }
         if (!_answered && Takings.Wants(Sim, Pawn, musician) is { } tune
             && Sim.World.Get<WorkSession>(musician) is PlaySession { Carrying: { } playing } && playing.Name == tune && ++_theirs >= Remembered / 2)

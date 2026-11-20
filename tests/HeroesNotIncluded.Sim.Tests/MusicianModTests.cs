@@ -1236,6 +1236,39 @@ public class MusicianModTests
     });
 
     [Fact]
+    public void TheMusicianPassesWhatTheyveHeardOnToTheInnkeeper() => WithMusician(() =>
+    {
+        var sim = Round(MusicianDefs(), (Arin, "Musician"), (Bea, "Blacksmith"));
+        var w = sim.World;
+        var me = Players.CharacterOf(sim, Arin);
+        var keeper = sim.Creatures().First(e => w.TryGet<Trade>(e, out var t) && t.Def.Brokers);
+        for (var t = 0; t < SimClock.TicksPerHour * 12 && !sim.Expeditions.Quests.Any(q => sim.Expeditions.IntelOf(keeper, q.Id) != null); t += 60)
+            sim.TickMany(60); // the quests come with the first party
+        var quest = sim.Expeditions.Quests.First(q => q.Status != Sim.Expeditions.QuestStatus.Cleared && sim.Expeditions.IntelOf(keeper, q.Id) != null);
+        var before = sim.Expeditions.IntelOf(keeper, quest.Id)!.Danger;
+        var word = before * 2f + 5f; // the talk at the music: well off what the innkeeper thinks
+        sim.Expeditions.Hear(me, quest.Id, word, null, 1f);
+        Array.Fill(w.Get<Mind>(keeper).WorkPriority, 0);
+        var at = w.Get<Position>(keeper).Cell;
+        var by = Sim.Ai.AiQueries.RandomReachableNear(sim, me, at, 1, reject: c => c == at)!.Value;
+        FireDrill.MoveTo(sim, me, by);
+        var module = new MusicianModule();
+        var offered = module.EarlyActionAt(sim, me, at, by);
+        Assert.NotNull(offered);
+        Assert.Contains("what you've heard", offered!.Value.Label);
+        module.Perform(sim, me, offered.Value with { By = module });
+        var after = sim.Expeditions.IntelOf(keeper, quest.Id)!.Danger;
+        Assert.True(Math.Abs(after - word) < Math.Abs(before - word), $"the innkeeper took it in: {before} to {after}, told {word}");
+        Assert.Contains(sim.Speech.Kept, u => u.Speaker == me && u.Text.StartsWith("Word at the music"));
+        // Not again straight away, and nobody else may.
+        Assert.Null(module.EarlyActionAt(sim, me, at, by) is { } again && again.Label.Contains("heard") ? again : null);
+        var smith = Players.CharacterOf(sim, Bea);
+        sim.Expeditions.Hear(smith, quest.Id, word, null, 1f);
+        Assert.False(Rumours.CanTell(sim, smith, keeper));
+        return 0;
+    });
+
+    [Fact]
     public void AnyoneCanTossACoinInTheHatButTheMusician() => WithMusician(() =>
     {
         // From the co-op test's list: another player should be able to tip too, not only the villagers.

@@ -14,7 +14,7 @@ namespace HeroesNotIncluded.Musician;
 /// The musician's game half: the note keys, the playing window, and the notes heard, your own the moment
 /// they're pressed (from the predicted session) and anyone else's from where they stand.
 /// </summary>
-public sealed class MusicianGame : IGameMod
+public sealed partial class MusicianGame : IGameMod
 {
     /// <summary>The note keys' controls, the scale's first degree first.</summary>
     private static string[] _notes = [];
@@ -97,6 +97,7 @@ public sealed class MusicianGame : IGameMod
                 (Controls.Pair(Act.WalkUp, Act.WalkDown), "pick out a tune"),
                 (WorkView.Glyph(Act.WorkAct), "back to free play"),
                 (WorkView.Glyph(Act.Back), "put it away"));
+            DrawHands(s);
             ImGuiText.Colored(Theme.Accent, "From the book.");
             ImGuiText.Colored(Theme.Dim, s.Slipped > 0 && s.StepsDone - s.LastJudged < 4 * 60
                 ? "You've lost the tune. Start it again from its opening."
@@ -130,6 +131,7 @@ public sealed class MusicianGame : IGameMod
                 hints.Add((WorkView.Glyph(Act.WorkAct), "play from the book"));
             hints.Add((WorkView.Glyph(Act.Back), "put it away"));
             view.Begin(s.Title, [.. hints]);
+            DrawHands(s);
             ImGuiText.Colored(Theme.Accent, "Free play.");
             ImGuiText.Colored(Theme.Dim, s.Def.IsDrum ? "Keep the town's feet moving: no tunes from the book on the drum yet."
                 : s.Def.Chords && s.Chord >= 0 ? $"Holding {s.Def.ChordName(s.Chord)}: strum it with {WorkView.Glyph(Act.Use)}, down and up on the beat."
@@ -463,6 +465,22 @@ public sealed class MusicianGame : IGameMod
                 (var d, 0) => $"{d} {(d == 1 ? "is" : "are")} dancing.",
                 var (d, l) => $"{d} dancing, {l} listening.",
             });
+        DrawHeard(view);
+    }
+
+    /// <summary>
+    /// What you've heard of the quests (your own beliefs, through Perception): talk from the adventurers at the music,
+    /// to carry to the innkeeper with F.
+    /// </summary>
+    private static void DrawHeard(WorkView view)
+    {
+        var heard = view.Perceived.Quests().Where(q => q.Status != Sim.Expeditions.QuestStatus.Cleared).OrderByDescending(q => q.Confidence).Take(Rumours.AtOnce).ToList();
+        if (heard.Count == 0)
+            return;
+        ImGuiText.Colored(Theme.Dim, "Talk you've heard:");
+        foreach (var q in heard)
+            ImGuiText.Colored(Theme.Parchment, $"  {q.Label}: {Sim.Expeditions.ExpeditionSystem.DangerWord(q.Danger)}{(q.Confidence < 0.4f ? " (or so they say)" : "")}");
+        ImGuiText.Colored(Theme.Dim, $"Tell the innkeeper: {WorkView.Glyph(Act.Use)} at them, once you've put the instrument away.");
     }
 
     private static void DrawCarried(WorkView view, PlaySession s, SongDef tune)
@@ -474,6 +492,7 @@ public sealed class MusicianGame : IGameMod
         hints.Add((WorkView.Glyph(Act.WorkAct), "let it go, back to free play"));
         hints.Add((WorkView.Glyph(Act.Back), "put it away"));
         view.Begin(s.Title, [.. hints]);
+        DrawHands(s);
         var (part, time) = tune.SectionAt(s.Section);
         var round = tune.Form.Count > 1 ? $": the {part.ToLowerInvariant()}{(time > 1 ? $", the {Ordinals[Math.Min(time, Ordinals.Length) - 1]} time" : "")}" : "";
         ImGuiText.Colored(Theme.Good, $"Your hands take over: {tune.Label}{round}.");

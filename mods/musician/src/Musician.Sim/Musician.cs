@@ -36,6 +36,7 @@ public sealed class MusicianMod : ISimMod
         registry.Lesson([.. MusicianLessons.All]);
         registry.Bot(bot => new MusicianBot(bot));
         registry.Pastime(new Listening()); // the audience: whoever's free goes to hear the music, or dance to it
+        registry.Component<ToldRumours>("ToldRumours", (w, t) => w.Long(t.Tick), r => new ToldRumours { Tick = r.Long() });
         registry.Component<Tipped>("Tipped", (w, t) => w.Int(t.Day), r => new Tipped { Day = r.Int() });
         registry.Component<Entertained>("Entertained", (w, e) =>
         {
@@ -1142,6 +1143,9 @@ public sealed class MusicianModule : ITradeModule
     /// <summary>F where you stand: with an instrument, play it; without one, and music in earshot, dance to it (anyone, any trade).</summary>
     public AvatarAction? EarlyActionAt(Simulation sim, Entity avatar, int3 cell, int3 here)
     {
+        // The musician at the innkeeper, with talk from the music to pass on.
+        if (!sim.World.Has<WorkSession>(avatar) && Rumours.BrokerAt(sim, cell) is { IsNull: false } broker && Rumours.CanTell(sim, avatar, broker))
+            return new AvatarAction(AvatarActionKind.Custom, $"Tell {sim.World.Get<Creature>(broker).Name} what you've heard", cell, broker);
         // A musician's hat set down in reach, and silver on you: toss a coin in (anyone but its musician).
         if (!sim.World.Has<WorkSession>(avatar) && AvatarSystem.InReach(here, cell) && Takings.HatAt(sim, cell) is { Hat.IsNull: false } inHat
             && inHat.Musician != avatar && Sim.Shops.Coin.Count(sim, avatar) >= Takings.Tossing)
@@ -1165,6 +1169,8 @@ public sealed class MusicianModule : ITradeModule
             return;
         if (w.Has<Thing>(action.Target) && Takings.HatAt(sim, sim.LocationOf(action.Target)).Hat == action.Target) // a hat: a coin in it
             Takings.Toss(sim, avatar, action.Target);
+        else if (Rumours.BrokerAt(sim, sim.LocationOf(action.Target)) == action.Target && Rumours.CanTell(sim, avatar, action.Target))
+            Rumours.Tell(sim, avatar, action.Target); // the innkeeper: what's been heard at the music
         else if (w.Has<Creature>(action.Target)) // a musician: to dance to
         {
             if (DanceSession.MusicHeard(sim, avatar) == action.Target)
