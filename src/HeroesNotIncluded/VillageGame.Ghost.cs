@@ -52,6 +52,14 @@ public sealed partial class VillageGame
             var leadTrade = Sim.Scenarios.PairsLead.LeadTrade(_sim, HelpAs);
             var leader = _sim.World.Query<Avatar>().FirstOrDefault(e => e != _avatar && _sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == leadTrade, Entity.Null);
             Issue(new Sim.Scenarios.DevPairsLeadCommand(HelpAs, leader, _avatar));
+            _helpLead = leader;
+        }
+        // --auto-help: F at the work for you, whenever it wants a hand (for screenshots and quick looks).
+        if (AutoHelp && HasAvatar && !_sim.World.Has<Sim.Work.WorkSession>(_avatar) && Sim.Work.Pairs.WantsHand(_sim, _helpLead)
+            && _sim.World.Get<Sim.Work.WorkSession>(_helpLead).Focus(_sim) is { } work)
+        {
+            Issue(new AvatarWorkCommand(_avatar, true, work));
+            Issue(new AvatarWorkCommand(_avatar, false));
         }
         else if (PairsTest && !_pairsStaged && InRound && _sim.Round.Live)
         {

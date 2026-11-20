@@ -19,7 +19,7 @@ public sealed partial class VillageGame
     {
         BeginWork(s.Title, ("F|Hold the button", "heave the sledge up and hold it; let go on the smith's tap"), ("Esc", "step away"));
         var dl = ImGui.GetWindowDrawList();
-        var size = Gui.S(420, 190);
+        var size = Gui.S(420, 240);
         var min = ImGui.GetCursorScreenPos();
         ImGui.Dummy(in size);
         var max = min + size;
@@ -75,7 +75,7 @@ public sealed partial class VillageGame
         dl.AddRectFilled(new float2(g0.X - Gui.S(4), now - Gui.S(3)), new float2(g1.X + Gui.S(4), now + Gui.S(3)), Theme.U8(heaveColour), Gui.S(1), ImDrawFlags.None);
 
         // What to do now, big across the top: the call, the smith's swing coming, or the heave.
-        var centre = new float2((min.X + max.X) * 0.5f, min.Y + Gui.S(26));
+        var centre = new float2((min.X + max.X) * 0.5f, min.Y + Gui.S(18));
         string word;
         float4 colour;
         var big = false;

@@ -329,6 +329,7 @@ else
         // --help-as KIND (striker, keeper, pitman, lifter): a job for two played as the second player, alone. A bot
         // takes the lead's trade and waits at the work for you (PairsLead); you're dealt another trade, stood beside it.
         HelpAs = ParseString(args, "--help-as"),
+        AutoHelp = args.Contains("--auto-help"), // with --help-as: F at the work for you as soon as it wants a hand
         // --practice TRADE: the practice yard (Practice): your trade's games, no season, customers when sent for.
         Practice = args.Contains("--practice"),
         // --lesson ID (with --practice): straight into one of the trade's lessons (trades.json "lessons").

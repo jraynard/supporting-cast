@@ -115,6 +115,29 @@ public static class Pairs
         return Entity.Null;
     }
 
+    /// <summary>
+    /// Whose work wanting a hand is at or right beside this cell (its focus, or the lead), with the work in the helper's
+    /// reach, or Entity.Null. F near work for two lends the hand before anything else there: a busy workshop's stacks,
+    /// benches and seats kept offering themselves to a would-be pitman.
+    /// </summary>
+    public static Entity WantsHandNear(Simulation sim, Entity helper, int3 cell, int3 here)
+    {
+        var w = sim.World;
+        if (w.Has<WorkSession>(helper))
+            return Entity.Null;
+        foreach (var e in w.Query<WorkSession>())
+        {
+            var s = w.Get<WorkSession>(e);
+            if (e == helper || !s.TakesHelper || Linked(sim, s) || s.Focus(sim) is not { } at || at.Z != cell.Z)
+                continue;
+            var near = Math.Max(Math.Abs(at.X - cell.X), Math.Abs(at.Y - cell.Y)) <= 1
+                || w.TryGet<Position>(e, out var p) && p.Cell == cell;
+            if (near && AvatarSystem.InReach(here, at))
+                return e;
+        }
+        return Entity.Null;
+    }
+
     /// <summary>Lend a hand to this lead's work: the helper's session begins, and the two are partners.</summary>
     public static bool Join(Simulation sim, Entity helper, Entity lead)
     {

@@ -439,13 +439,22 @@ public sealed partial class VillageGame
             TextC(Theme.Warn, $"The runes won't take till someone holds {s.CallingFor}. Call Help! from the quick-say wheel, or ask whoever's near to kneel at the body.");
             return;
         }
+        // The keeper at the body, as you see them: the pull on it and their hands pressing it down.
+        var hold = w.TryGet<Sim.Work.WorkSession>(s.Partner, out var ks) ? ks as Sim.Afterlife.HoldSession : null;
+        if (hold != null)
+        {
+            var min = ImGui.GetCursorScreenPos();
+            var size = Gui.S(360, 120);
+            ImGui.Dummy(in size);
+            DrawHoldScene(ImGui.GetWindowDrawList(), min, min + size, hold, hold.Held);
+        }
         var recent = s.LastHoldStep >= 0 && s.StepsDone - s.LastHoldStep < Sim.Afterlife.HoldSession.WordSteps;
         if (recent && s.LastSlipped)
             TextC(Theme.Bad, $"{keeper.Name}'s hold slipped: that rune's lost its worth.");
         else if (recent)
             TextC(Theme.Good, $"{keeper.Name} held them through the pull.");
         else if (s.StillPulling && s.Woven.Count > 0)
-            TextC(Theme.Dim, $"The grave pulls; {keeper.Name} is holding them.");
+            TextC(hold is { Held: true } ? Theme.Good : Theme.Dim, hold is { Held: true } ? $"The grave pulls; {keeper.Name} is pressing them down." : $"The grave pulls; {keeper.Name} is easing off.");
         else
             TextC(Theme.Dim, $"{keeper.Name} is holding {s.CallingFor}: each rune you key, the grave pulls back.");
         if (s.Slips > 0)

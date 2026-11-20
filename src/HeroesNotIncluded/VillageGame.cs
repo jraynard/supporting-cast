@@ -270,6 +270,11 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
     /// </summary>
     public string? HelpAs { get; init; }
 
+    /// <summary>Debug (<c>--auto-help</c>, with <c>--help-as</c>): lend the hand for the player as soon as it's wanted.</summary>
+    public bool AutoHelp { get; init; }
+
+    private Entity _helpLead = Entity.Null;
+
     private bool _pairsStaged;
 
     /// <summary>Debug (<c>--die-at SECONDS</c>): your character drops dead this long in, to try being a ghost. Negative: never.</summary>

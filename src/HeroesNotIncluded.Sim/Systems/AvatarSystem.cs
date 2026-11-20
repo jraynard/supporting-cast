@@ -407,6 +407,9 @@ public sealed class AvatarSystem : ISimSystem
             if (held.IsNull && Rescues.CanCarry(sim, avatar, dead) && !Afterlife.Revival.OnShrinePallet(sim, dead))
                 return new(AvatarActionKind.Carry, $"Pick up {w.Get<Creature>(dead).Name}'s body", cell, dead);
         }
+        // Work for two wanting a hand, pointed at or beside: that before the stacks and seats around it.
+        if (tool == AvatarTool.Use && Work.Pairs.WantsHandNear(sim, avatar, cell, here) is { IsNull: false } wanting)
+            return new(AvatarActionKind.LendAHand, $"Lend {w.Get<Creature>(wanting).Name} a hand", cell, wanting);
         // Anyone downed and small enough to carry to a bed.
         if (tool == AvatarTool.Use && held.IsNull && InReach(here, cell) && Rescues.DownedAt(sim, cell, avatar) is { IsNull: false } hurt
             && Rescues.CanCarry(sim, avatar, hurt))

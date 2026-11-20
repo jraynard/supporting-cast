@@ -156,10 +156,17 @@ public sealed class CarpenterViews
             return;
         }
         var recent = s.LastLiftStep >= 0 && s.StepsDone - s.LastLiftStep < LiftSession.WordSteps;
+        var lift = V.Sim.World.TryGet<Sim.Work.WorkSession>(s.Partner, out var helper) ? helper as LiftSession : null;
         if (recent && s.LastLift < 0f)
             ImGuiText.Colored(Theme.Bad, $"{lifter.Name} let it tip: the hub's jolted back!");
         else if (recent)
             ImGuiText.Colored(Theme.Good, $"{lifter.Name} held it level: the blow went home.");
+        else if (lift is { Up: false })
+            ImGuiText.Colored(Theme.Warn, $"{lifter.Name} has set it down{(lift.Spent ? " to rest their arms" : "")}: wait for them to lift it.");
+        else if (lift is { Level: true })
+            ImGuiText.Colored(Theme.Good, $"{lifter.Name} has it up and level: strike now.");
+        else if (lift != null)
+            ImGuiText.Colored(Theme.Warn, $"{lifter.Name} has it up, but it's tipping: wait for it to level.");
         else
             ImGuiText.Colored(Theme.Dim, $"{lifter.Name} has the wagon's weight: strike when it's level.");
     }
@@ -423,6 +430,16 @@ public sealed class CarpenterViews
                 dl.AddTriangleFilled(in h0, in h1, in a1, colour);
                 var label = new float2(a1.X + (way > 0 ? Gui.S(4) : -Gui.S(14)), ay - Gui.S(8));
                 dl.AddText(in label, colour, way < 0 ? "A" : "D");
+            }
+            // A great log's pitman, under the beam on the box handle: pulling (lit) or waiting.
+            if (s.Great && V.Sim.World.TryGet<Sim.Work.WorkSession>(s.Partner, out var helper) && helper is PitSession pit && helper.Partner == V.Me)
+            {
+                var feet = new float2(bx - Gui.S(18), bottom.Y + Gui.S(46));
+                var head = new float2(feet.X, bottom.Y + Gui.S(10));
+                var who = pit.Held || pit.Down > 0f ? Theme.Accent : Theme.Text;
+                dl.AddCircleFilled(in head, Gui.S(6), Theme.U8(who), 12);
+                dl.AddLine(head + Gui.S(0, 7), feet, Theme.U8(who), Gui.S(4));
+                dl.AddLine(head + Gui.S(0, 7), bottom, Theme.U8(who), Gui.S(3));
             }
             // Sawdust falling from under the beam on the downstroke.
             if (s.Cutting)
@@ -1441,99 +1458,216 @@ public sealed class CarpenterViews
         V.End();
     }
 
+    /// <summary>
+    /// The pitman's view, from above: the great log across the pit, the cut run along it, the long saw through the kerf
+    /// moving with the top sawyer's stroke (read from their session), the two of them on its handles, sawdust as it
+    /// cuts. Above it, what to do now: wait as they lift it, pull as the stroke starts.
+    /// </summary>
     internal void DrawPit(PitSession s)
     {
-        V.Begin(s.Title, ("F|Hold the button", "pull the saw down when the top sawyer starts a stroke; let go between"), ("Esc", "climb out"));
+        V.Begin(s.Title, ("F|Hold the button", "pull the saw down as the top sawyer starts a stroke; let go between"), ("Esc", "climb out"));
         var dl = ImGui.GetWindowDrawList();
-        var size = Gui.S(360, 140);
+        var size = Gui.S(420, 260);
         var min = ImGui.GetCursorScreenPos();
         ImGui.Dummy(in size);
         var max = min + size;
         Gui.Frame(dl, min, max, UiTheme.Current.Frames.Inset, Theme.Well);
+        var top = V.Sim.World.TryGet<Sim.Work.WorkSession>(s.Partner, out var lead) ? lead as SawSession : null;
+        var sawyer = s.LeadName;
 
-        // The saw down the left: how far it's pulled this stroke.
-        var g0 = new float2(min.X + Gui.S(18), min.Y + Gui.S(12));
-        var g1 = new float2(min.X + Gui.S(30), max.Y - Gui.S(12));
-        Gui.Trough(dl, g0, g1);
-        var y = g0.Y + (g1.Y - g0.Y) * Math.Clamp(s.Down, 0f, 1f);
-        dl.AddRectFilled(new float2(g0.X - Gui.S(4), y - Gui.S(3)), new float2(g1.X + Gui.S(4), y + Gui.S(3)), Theme.U8(s.Down >= 1f ? Theme.Good : Theme.Text), Gui.S(1), ImDrawFlags.None);
+        // From above: the great log across the pit's mouth, its cut run along it so far, the long saw upright through
+        // the kerf, the top sawyer on the far side of it (on the log), you below in the pit, a hand each on its handles.
+        var cx = (min.X + max.X) * 0.5f;
+        var logY = min.Y + Gui.S(150);
+        var logHalf = Gui.S(26);
+        var log0 = new float2(min.X + Gui.S(40), logY - logHalf);
+        var log1 = new float2(max.X - Gui.S(44), logY + logHalf);
+        // The pit's mouth under the log, dark, the pitman's side.
+        dl.AddRectFilled(new float2(log0.X + Gui.S(30), logY), new float2(log1.X - Gui.S(30), max.Y - Gui.S(8)), Theme.U8(Theme.Cellar), Gui.S(3), ImDrawFlags.None);
+        dl.AddRectFilled(log0 - Gui.S(0, 4), log1 + Gui.S(0, 4), Theme.U8(new float4(0.3f, 0.2f, 0.13f, 1f)), Gui.S(12), ImDrawFlags.None); // the bark
+        dl.AddRectFilled(log0, log1, Theme.U8(Theme.Barrel), Gui.S(10), ImDrawFlags.None);
+        for (var g = 1; g <= 3; g++) // the grain along it
+        {
+            var gy = log0.Y + (log1.Y - log0.Y) * g / 4f + MathF.Sin(g * 1.3f) * Gui.S(2);
+            dl.AddLine(new float2(log0.X + Gui.S(8), gy), new float2(log1.X - Gui.S(8), gy), Theme.U8(new float4(Theme.OakLight.XYZ, 0.35f)), Gui.S(1));
+        }
+        // How far it's cut: the kerf from the near end to where the saw is now, the chalk line on ahead.
+        var progress = Math.Clamp(top?.Progress ?? 0.3f, 0f, 1f);
+        var kerfX = log0.X + Gui.S(10) + (log1.X - log0.X - Gui.S(20)) * progress;
+        dl.AddLine(new float2(log0.X + Gui.S(6), logY), new float2(kerfX, logY), Theme.U8(Theme.Inset), Gui.S(3));
+        for (var x = kerfX + Gui.S(6); x < log1.X - Gui.S(8); x += Gui.S(10))
+            dl.AddLine(new float2(x, logY), new float2(Math.Min(x + Gui.S(5), log1.X - Gui.S(8)), logY), Theme.U8(Theme.Parchment, 0.5f), Gui.S(1));
 
-        var centre = new float2((g1.X + max.X) * 0.5f, min.Y + size.Y * 0.4f);
+        // The saw, upright through the kerf: seen from above, its blade a short bar along the cut, its frame's two
+        // handles out either side; the whole of it rides toward the top sawyer as they lift and toward you on the stroke.
+        var stroke = top?.Stroke ?? 0.5f;
+        var shift = (stroke - 0.5f) * Gui.S(36);
+        var tiller = new float2(kerfX, log0.Y - Gui.S(30) + shift);
+        var box = new float2(kerfX, log1.Y + Gui.S(30) + shift);
+        dl.AddLine(tiller, box, Theme.U8(Theme.Iron), Gui.S(4));
+        dl.AddRectFilled(new float2(kerfX - Gui.S(2), logY - Gui.S(18)), new float2(kerfX + Gui.S(2), logY + Gui.S(18)), Theme.U8(Theme.Iron), 0f, ImDrawFlags.None);
+        dl.AddRectFilled(tiller - Gui.S(18, 3), tiller + Gui.S(18, 3), Theme.U8(Theme.Oak), Gui.S(3), ImDrawFlags.None);
+        dl.AddRectFilled(box - Gui.S(14, 3), box + Gui.S(14, 3), Theme.U8(Theme.Oak), Gui.S(3), ImDrawFlags.None);
+
+        // The two of them from above: shoulders and a head, both arms to their handle; each leans the way they work.
+        void Figure(float2 hands, float2 at, float4 colour, bool lit)
+        {
+            var c = Theme.U8(colour);
+            dl.AddLine(new float2(at.X - Gui.S(14), at.Y), hands - Gui.S(8, 0), c, Gui.S(4));
+            dl.AddLine(new float2(at.X + Gui.S(14), at.Y), hands + Gui.S(8, 0), c, Gui.S(4));
+            dl.AddEllipseFilled(at, Gui.S(17, 8), c, 0f, 20);
+            dl.AddCircleFilled(at, Gui.S(8), Theme.U8(new float4(colour.XYZ * 0.75f, 1f)), 14);
+            if (lit)
+                dl.AddEllipse(at, Gui.S(22, 13), Theme.U8(Theme.Good, 0.5f), 0f, 20, Gui.S(1.5f));
+        }
+        var lifting = top != null && !top.Cutting && top.Pace > 0f;
+        Figure(tiller, new float2(kerfX, tiller.Y - Gui.S(26)), Theme.Parchment, top is { Cutting: true });
+        var pulling = s.Held || s.Down > 0f;
+        Figure(box, new float2(kerfX, box.Y + Gui.S(24)), pulling ? Theme.Accent : Theme.Text, pulling);
+        if (lifting) // which way the saw's going: an arrow beside it
+            dl.AddTriangleFilled(new float2(kerfX + Gui.S(28), tiller.Y + Gui.S(4)), new float2(kerfX + Gui.S(22), tiller.Y + Gui.S(14)), new float2(kerfX + Gui.S(34), tiller.Y + Gui.S(14)), Theme.U8(Theme.Dim));
+        else if (top is { Cutting: true })
+            dl.AddTriangleFilled(new float2(kerfX + Gui.S(28), box.Y - Gui.S(4)), new float2(kerfX + Gui.S(22), box.Y - Gui.S(14)), new float2(kerfX + Gui.S(34), box.Y - Gui.S(14)), Theme.U8(Theme.Good));
+        // Sawdust spilling from the kerf as it cuts.
+        if (top is { Cutting: true })
+            for (var k = 0; k < 8; k++)
+            {
+                var f = (V.Time * 2.5f + k / 8f) % 1f;
+                var d = new float2(kerfX + MathF.Sin(k * 2.3f + V.Time * 3f) * Gui.S(14), logY + f * Gui.S(40));
+                dl.AddCircleFilled(in d, Gui.S(1.6f), Theme.U8(new float4(Theme.Parchment.XYZ, 1f - f)), 6);
+            }
+        var groundY = min.Y + Gui.S(60);
+
+        // What to do now, across the top.
+        var centre = new float2((min.X + max.X) * 0.5f, min.Y + Gui.S(10));
+        string word;
+        float4 colour;
+        var big = false;
         if (s.CallOpen)
         {
+            (word, colour, big) = ("Pull!", Theme.Good, true);
             var left = 1f - s.CallAge / (float)Math.Max(1, s.Window);
-            using (Gui.HeaderFont())
-            {
-                const string word = "Pull!";
-                var ts = ImGui.CalcTextSize(word);
-                dl.AddText(centre - ts * 0.5f, Theme.U8(left > 0.66f ? Theme.Good : Theme.Warn), word);
-            }
-            var b0 = new float2(centre.X - Gui.S(90), centre.Y + Gui.S(22));
-            var b1 = new float2(centre.X + Gui.S(90), centre.Y + Gui.S(30));
+            var b0 = new float2(min.X + Gui.S(16), min.Y + Gui.S(44));
+            var b1 = new float2(min.X + Gui.S(120), min.Y + Gui.S(51));
             Gui.Trough(dl, b0, b1);
-            dl.AddRectFilled(b0, new float2(b0.X + (b1.X - b0.X) * Math.Clamp(left, 0f, 1f), b1.Y), Theme.U8(Theme.Good, 0.8f), 0f, ImDrawFlags.None);
+            dl.AddRectFilled(b0, new float2(b0.X + (b1.X - b0.X) * Math.Clamp(left, 0f, 1f), b1.Y), Theme.U8(left > 0.33f ? Theme.Good : Theme.Warn, 0.85f), 0f, ImDrawFlags.None);
         }
         else if (s.LastStep >= 0 && s.StepsDone - s.LastStep < PitSession.WordSteps)
-        {
-            var (word, colour) = s.LastWas switch
+            (word, colour) = s.LastWas switch
             {
                 PitResult.WithIt when s.LastGrade >= 0.7f => ("With the stroke!", Theme.Good),
                 PitResult.WithIt => ("Short, or late", Theme.Warn),
                 PitResult.Bound => ("Against the saw: it binds!", Theme.Bad),
                 _ => ("Missed the stroke", Theme.Warn),
             };
-            var ts = ImGui.CalcTextSize(word);
-            dl.AddText(centre - ts * 0.5f, Theme.U8(colour), word);
-        }
+        else if (top != null && top.Stroke < 0.25f && !top.Cutting)
+            (word, colour) = ($"{sawyer}'s at the top: the stroke's coming", Theme.Accent);
+        else if (top != null && !top.Cutting && top.Pace > 0f)
+            (word, colour) = ($"{sawyer}'s lifting it: let it go up", Theme.Dim);
+        else
+            (word, colour) = ($"Wait for {sawyer} to start the stroke", Theme.Dim);
+        if (big)
+            using (Gui.HeaderFont())
+            {
+                var ts = ImGui.CalcTextSize(word);
+                dl.AddText(new float2(min.X + Gui.S(14), centre.Y), Theme.U8(colour), word);
+            }
         else
         {
-            var wait = $"Wait for {s.LeadName} to start the stroke";
-            var ts = ImGui.CalcTextSize(wait);
-            dl.AddText(centre - ts * 0.5f, Theme.U8(Theme.Dim), wait);
+            var ts = ImGui.CalcTextSize(word);
+            dl.AddText(new float2(min.X + Gui.S(14), centre.Y), Theme.U8(colour), word);
         }
+
+        // Your pull, up the right edge.
+        var g0 = new float2(max.X - Gui.S(24), groundY);
+        var g1 = new float2(max.X - Gui.S(14), max.Y - Gui.S(12));
+        Gui.Trough(dl, g0, g1);
+        var y = g0.Y + (g1.Y - g0.Y) * Math.Clamp(s.Down, 0f, 1f);
+        dl.AddRectFilled(new float2(g0.X - Gui.S(4), y - Gui.S(3)), new float2(g1.X + Gui.S(4), y + Gui.S(3)), Theme.U8(s.Down >= 1f ? Theme.Good : Theme.Text), Gui.S(1), ImDrawFlags.None);
         ImGuiText.Colored(Theme.Dim, $"With the stroke {s.Pulls}, against it {s.Binds}, missed {s.Missed}.");
         V.End();
     }
 
+    /// <summary>
+    /// The lifter's view: the wagon side on, its near end held up (or down), tipping with its sway; the carpenter's
+    /// mallet over the hub as they hold it (read from their session); a level on top with the band to keep it in.
+    /// </summary>
     internal void DrawLift(LiftSession s)
     {
-        V.Begin(s.Title, ("F|Hold the button", "keep the wagon up"), ("A/D", "lean against the sway to hold it level"), ("Esc", "set it down and step away"));
+        V.Begin(s.Title, ("F|Hold the button", "keep the wagon up"), ("A/D", "lean against the tip to hold it level"), ("Esc", "set it down and step away"));
         var dl = ImGui.GetWindowDrawList();
-        var size = Gui.S(360, 140);
+        var size = Gui.S(420, 200);
         var min = ImGui.GetCursorScreenPos();
         ImGui.Dummy(in size);
         var max = min + size;
         Gui.Frame(dl, min, max, UiTheme.Current.Frames.Inset, Theme.Well);
+        var join = V.Sim.World.TryGet<Sim.Work.WorkSession>(s.Partner, out var lead) ? lead as JoinSession : null;
+        var carpenter = s.LeadName;
 
-        // A level: the bubble is the wagon's lean, the band in the middle is level enough.
-        var t0 = new float2(min.X + Gui.S(20), min.Y + Gui.S(46));
-        var t1 = new float2(max.X - Gui.S(20), min.Y + Gui.S(62));
+        // The ground, and the wagon on it: pivoting on its far wheel, the near end up while you hold it, rocked by the tilt.
+        var groundY = max.Y - Gui.S(22);
+        dl.AddRectFilled(new float2(min.X + Gui.S(4), groundY), new float2(max.X - Gui.S(4), max.Y - Gui.S(4)), Theme.U8(Theme.Cellar), Gui.S(3), ImDrawFlags.None);
+        var pivot = new float2(max.X - Gui.S(110), groundY - Gui.S(22));
+        var length = Gui.S(200);
+        var lift = s.Up ? 0.16f : 0f;
+        var angle = lift + s.Tilt * 0.12f;  // up at the near end; the tip rocks it
+        var dir = new float2(-MathF.Cos(angle), -MathF.Sin(angle)); // from the far wheel toward the near end
+        var up = new float2(dir.Y, -dir.X);
+        if (up.Y > 0)
+            up = -up;
+        var near = pivot + dir * length;
+        float2 P(float along, float above) => pivot + dir * along + up * above;
+        var body = Theme.U8(Theme.Oak);
+        dl.AddQuadFilled(P(-Gui.S(14), Gui.S(10)), P(length + Gui.S(10), Gui.S(10)), P(length + Gui.S(10), Gui.S(46)), P(-Gui.S(14), Gui.S(46)), body);
+        dl.AddCircleFilled(in pivot, Gui.S(20), Theme.U8(Theme.Barrel), 20);                // the far wheel, on the ground
+        dl.AddCircle(in pivot, Gui.S(20), Theme.U8(Theme.OakLight), 20, Gui.S(2));
+        // The near axle's end: the hub going on (seated so far by the carpenter's blows).
+        var hub = P(length - Gui.S(16), 0f);
+        dl.AddCircleFilled(in hub, Gui.S(9), Theme.U8(Theme.Iron), 16);
+        if (join != null)
+        {
+            var seat = Math.Clamp(join.Seat, 0f, 1f);
+            dl.AddCircle(in hub, Gui.S(12), Theme.U8(Theme.Good, 0.4f + 0.6f * seat), 16, Gui.S(2f + 3f * seat));
+            // The carpenter's mallet over the hub, raised as they raise it.
+            V.DrawToolSwing(dl, "ui/work/hammer", 26f / 32f, join.Raised, hub - Gui.S(0, 10), MathF.Max(1f, MathF.Round(2.5f * Gui.Scale)), Gui.White);
+        }
+        // You at the near end, under its weight: lit while you're holding it.
+        var you = Theme.U8(s.Spent ? Theme.Bad : s.Up ? Theme.Accent : Theme.Text);
+        var hands = P(length + Gui.S(6), Gui.S(14));
+        var feet = new float2(near.X - Gui.S(26), groundY);
+        var head = new float2(feet.X, Math.Min(hands.Y, groundY - Gui.S(60)) - Gui.S(8));
+        dl.AddCircleFilled(in head, Gui.S(7), you, 12);
+        dl.AddLine(head + Gui.S(0, 8), feet, you, Gui.S(5));
+        dl.AddLine(head + Gui.S(0, 10), hands, you, Gui.S(3));
+
+        // The level, across the top: the bubble's the wagon's lean, the band is level enough.
+        var t0 = new float2(min.X + Gui.S(20), min.Y + Gui.S(34));
+        var t1 = new float2(max.X - Gui.S(20), min.Y + Gui.S(48));
         Gui.Trough(dl, t0, t1);
         var mid = (t0.X + t1.X) * 0.5f;
         var half = (t1.X - t0.X) * 0.5f;
         dl.AddRectFilled(new float2(mid - half * s.BandWidth, t0.Y), new float2(mid + half * s.BandWidth, t1.Y), Theme.U8(Theme.Good, 0.35f), 0f, ImDrawFlags.None);
-        var bx = mid + half * s.Tilt;
-        var bubble = new float2(bx, (t0.Y + t1.Y) * 0.5f);
+        var bubble = new float2(mid + half * s.Tilt, (t0.Y + t1.Y) * 0.5f);
         dl.AddCircleFilled(in bubble, Gui.S(7), Theme.U8(!s.Up ? Theme.Dim : s.Level ? Theme.Good : Theme.Warn), 20);
 
-        var centre = new float2((min.X + max.X) * 0.5f, min.Y + Gui.S(24));
+        // What to do now.
         var (word, colour) = s.LastStep >= 0 && s.StepsDone - s.LastStep < LiftSession.WordSteps
-            ? s.LastLevel ? ("Level: it went home", Theme.Good) : ("It tipped: the hub jolted!", Theme.Bad)
-            : s.Spent ? ("Your arms gave: rest them", Theme.Bad)
+            ? s.LastLevel ? ("Level: the blow went home", Theme.Good) : ("It tipped: the hub jolted!", Theme.Bad)
+            : s.Spent ? ("Your arms gave: set it down and rest them", Theme.Bad)
             : !s.Up ? ("Lift it (hold F)", Theme.Text)
-            : s.Level ? ($"Hold it there for {s.LeadName}'s blow", Theme.Dim) : ("It's tipping: lean against it", Theme.Warn);
+            : !s.Level ? (s.Tilt > 0f ? "It's tipping: lean back with A" : "It's tipping: lean back with D", Theme.Warn)
+            : join is { Raised: > 0.1f } ? ($"Steady: {carpenter}'s mallet is up", Theme.Accent)
+            : ($"Level. Hold it for {carpenter}'s blow", Theme.Dim);
         var ts = ImGui.CalcTextSize(word);
-        dl.AddText(centre - ts * 0.5f, Theme.U8(colour), word);
+        dl.AddText(new float2((min.X + max.X) * 0.5f - ts.X * 0.5f, min.Y + Gui.S(10)), Theme.U8(colour), word);
 
         // The arms: they tire holding it up and rest with it down.
-        var g0 = new float2(min.X + Gui.S(20), max.Y - Gui.S(30));
-        var g1 = new float2(max.X - Gui.S(20), max.Y - Gui.S(20));
-        Gui.Trough(dl, g0, g1);
+        var a0 = new float2(min.X + Gui.S(14), min.Y + Gui.S(60));
+        var a1 = new float2(min.X + Gui.S(24), groundY - Gui.S(8));
+        Gui.Trough(dl, a0, a1);
         var left = 1f - s.Strain;
-        dl.AddRectFilled(g0, new float2(g0.X + (g1.X - g0.X) * left, g1.Y), Theme.U8(left < 0.2f ? Theme.Bad : left < 0.5f ? Theme.Warn : Theme.Good, 0.85f), 0f, ImDrawFlags.None);
-        const string arms = "Arms";
-        dl.AddText(new float2(g0.X, g0.Y - ImGui.CalcTextSize(arms).Y - Gui.S(2)), Theme.U8(Theme.Dim), arms);
-        ImGuiText.Colored(Theme.Dim, $"Level for {s.Holds} blows, tipped for {s.Jolts}. Set it down between blows to rest your arms.");
+        dl.AddRectFilled(new float2(a0.X, a1.Y - (a1.Y - a0.Y) * left), a1, Theme.U8(left < 0.2f ? Theme.Bad : left < 0.5f ? Theme.Warn : Theme.Good, 0.85f), 0f, ImDrawFlags.None);
+        ImGuiText.Colored(Theme.Dim, $"Level for {s.Holds} blows, tipped for {s.Jolts}. Arms: the bar on the left. Set it down between blows to rest them.");
         V.End();
     }
 }

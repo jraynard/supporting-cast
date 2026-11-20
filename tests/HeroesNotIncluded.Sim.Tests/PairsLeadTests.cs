@@ -133,6 +133,32 @@ public class PairsLeadTests
         Assert.IsType<SledgeSession>(w.Get<WorkSession>(helper));
     }
 
+    [Theory]
+    [InlineData("pitman")]
+    [InlineData(PairsLead.Striker)]
+    public void FAnywhereAroundTheWorkLendsTheHand(string kind)
+    {
+        // A co-op try: in the busy woodshop, F near the great log kept offering the stacks and benches round it.
+        var (sim, lead, helper, leadBot) = Staged(kind);
+        var w = sim.World;
+        for (var t = 0; t < SimClock.TicksPerHour * 2 && !Pairs.WantsHand(sim, lead); t++)
+        {
+            sim.Tick();
+            leadBot.Tick();
+        }
+        Assert.True(Pairs.WantsHand(sim, lead));
+        var at = w.Get<WorkSession>(lead).Focus(sim)!.Value;
+        var here = w.Get<Position>(helper).Cell;
+        Assert.True(AvatarSystem.InReach(here, at), $"the helper stood by the work: {here} and {at}");
+        for (var dx = -1; dx <= 1; dx++)
+            for (var dy = -1; dy <= 1; dy++)
+            {
+                var cell = at + new int3(dx, dy, 0);
+                if (sim.Map.InBounds(cell))
+                    Assert.Equal(AvatarActionKind.LendAHand, AvatarSystem.ActionAt(sim, helper, cell).Kind);
+            }
+    }
+
     private static int Greatswords(Simulation sim) =>
         sim.World.Query<Thing>().Count(e => sim.World.Get<Thing>(e).Def.Name == "Greatsword");
 
