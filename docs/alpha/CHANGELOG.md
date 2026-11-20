@@ -7,6 +7,40 @@ Write it for testers: what they'll notice, not how it's done.
 Playing together always needs everyone on the same build. Saves and characters carry over
 between builds unless a section's **Compatibility** line says otherwise.
 
+## 0.1.0-playtest.30
+
+A brawl at the inn, a chapter on fighting, and the rare companies dressed as themselves.
+
+**The brawl at the inn** (a new crisis, on the second day)
+- A rowdy crowd comes up the road already singing. Once they're in the inn, one of them throws the first
+  punch, and it spreads: a guest who gets hit joins in if they're rowdy or drunk enough. Left alone it
+  boils over into the street, and the round counts it against you.
+- **No steel in the inn:** inside, everyone fights with fists, you included (unless raiders are in town).
+  A brawler you knock down is out of it and sleeps it off where they fall.
+- One of the crowd started it. Work out who and put them down, and the rest may lose heart.
+- Once it gets going they smash tables and stools, shove each other into them, and throw stools. What's
+  broken is the carpenter's to make again.
+- **Throw a stool yourself:** fists up (R), F at a stool picks it up. Hold right-click to draw it back, then
+  left-click to throw. It's a stool, not a bow: it goes roughly where you aim. F sets it down again.
+- There are other ways to settle it, for whoever thinks of them. A few to try: a bucket of well water, a
+  tune on the right instrument, a ghost's fright, and the right words at the right time (your quick-line
+  wheel has some while a brawl is on).
+
+**Fighting**
+- **A new tutorial chapter, "Standing your ground":** put your fists up, hit the training dummy, then block,
+  parry and dodge a slow, friendly punch. Every trade gets it after the basics.
+- A swing that hits nobody lands harmlessly in a training dummy if one's in the way.
+
+**And**
+- The grey wanderer comes in a robe and a pointed hat, always old, grey and bearded. The dwarves wear
+  tasselled hoods, and the other rare companies have outfits of their own.
+- A party back from a quest no longer leaves a set of clothes lying in the road.
+- **Mending** is refused before you start if you're missing the material, and tells you what it takes and
+  where it's made. Before, a smith could heat and hammer a blade over and over for nothing.
+- **The carpenter's joins** split only when the mallet's gauge shows past the mark. Before, a blow just
+  under the mark could still split the joint.
+- Coins show as silver everywhere (the price icon and the coin you flip were gold).
+
 ## 0.1.0-playtest.29
 
 More for the musician.
