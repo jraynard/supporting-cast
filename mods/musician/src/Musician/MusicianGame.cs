@@ -382,31 +382,33 @@ public sealed class MusicianGame : IGameMod
         var min = ImGui.GetCursorScreenPos();
         var size = new float2(Gui.S(LaneWidth), Gui.S(64));
         var hatW = Gui.S(90);
-        var brimTop = min.Y + Gui.S(40);
-        // The coins, piled in the crown: a few for a little, more as it fills.
+        // Upside down to take coins: the brim's rim on top, open to us, the crown hanging below it as a bowl.
+        var rimC = new float2(min.X + hatW * 0.5f, min.Y + Gui.S(22));
+        var brimTop = rimC.Y;
+        var crown0 = new float2(min.X + Gui.S(16), rimC.Y);
+        var crown1 = new float2(min.X + hatW - Gui.S(16), min.Y + Gui.S(60));
+        dl.AddRectFilled(in crown0, in crown1, Theme.U8(Theme.Oak), Gui.S(14), ImDrawFlags.RoundCornersBottom); // the crown, below
+        var band0 = new float2(crown0.X, rimC.Y + Gui.S(5));
+        var band1 = new float2(crown1.X, rimC.Y + Gui.S(10));
+        dl.AddRectFilled(in band0, in band1, Theme.U8(Theme.HearthRed), 0f, ImDrawFlags.None); // the band, by the brim
+        dl.AddEllipseFilled(rimC, new float2(hatW * 0.5f, Gui.S(9)), Theme.U8(Theme.OakLight), 0f, 32);          // the brim, flat on top
+        dl.AddEllipseFilled(rimC, new float2(hatW * 0.5f - Gui.S(16), Gui.S(5.5f)), Theme.U8(Theme.Cellar), 0f, 28); // the opening
+        // The coins in it, heaped in the opening: a few for a little, more as it fills.
         var shown = Math.Min(silver, 14);
         for (var i = 0; i < shown; i++)
         {
-            var c = new float2(min.X + Gui.S(24) + i % 7 * Gui.S(7), brimTop - Gui.S(4) - i / 7 * Gui.S(5));
+            var row = i / 7;
+            var c = new float2(rimC.X - Gui.S(21) + i % 7 * Gui.S(7) + row * Gui.S(3), rimC.Y + Gui.S(1) - row * Gui.S(4));
             dl.AddCircleFilled(in c, Gui.S(4), Theme.U8(new float4(0.86f, 0.84f, 0.76f, 1f)), 12);
             dl.AddCircle(in c, Gui.S(4), Theme.U8(Theme.Cellar), 12, Gui.S(1));
         }
-        var c0 = new float2(min.X + Gui.S(16), min.Y + Gui.S(20));
-        var c1 = new float2(min.X + hatW - Gui.S(16), brimTop + Gui.S(4));
-        dl.AddRect(in c0, in c1, Theme.U8(Theme.Oak), Gui.S(8), ImDrawFlags.None, Gui.S(3)); // the crown, open to us
-        var b0 = new float2(min.X, brimTop);
-        var b1 = new float2(min.X + hatW, brimTop + Gui.S(10));
-        dl.AddRectFilled(in b0, in b1, Theme.U8(Theme.Oak), Gui.S(5), ImDrawFlags.None); // the brim
-        var band0 = new float2(c0.X, brimTop - Gui.S(6));
-        var band1 = new float2(c1.X, brimTop - Gui.S(2));
-        dl.AddRectFilled(in band0, in band1, Theme.U8(Theme.HearthRed), 0f, ImDrawFlags.None);
         // The newest tip: a coin dropping in, and who it was.
         var x = min.X + hatW + Gui.S(14);
         if (s.Tips.Count > 0 && s.Tips[^1] is var tip && (sim.Clock.Tick - tip.Tick) / (float)SimClock.TicksPerSecond is var age && age < TipNews)
         {
             if (age < 0.6f)
             {
-                var fall = new float2(min.X + hatW * 0.5f, min.Y + (brimTop - min.Y - Gui.S(6)) * (age / 0.6f) * (age / 0.6f));
+                var fall = new float2(min.X + hatW * 0.5f, min.Y + (brimTop - min.Y) * (age / 0.6f) * (age / 0.6f));
                 dl.AddCircleFilled(in fall, Gui.S(5), Theme.U8(Theme.Accent), 12);
             }
             var who = w.IsAlive(tip.From) && view.Perceived.CanSee(tip.From) ? w.Get<Creature>(tip.From).Name : "Someone";

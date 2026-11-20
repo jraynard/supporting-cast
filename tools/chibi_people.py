@@ -2529,13 +2529,37 @@ GARMENTS = {
     "bronze_helm": lambda G, F: g_helm(G, F, "bronze_helm"),
     "steel_sallet": lambda G, F: g_helm(G, F, "steel_sallet"),
     "horned_helm": lambda G, F: g_helm(G, F, "horned_helm"),
+    "musician_hat": lambda G, F: g_musician_hat(G, F),
     "leather_jerkin": lambda G, F: g_armor(G, F, "leather_jerkin"),
     "studded_jerkin": lambda G, F: g_armor(G, F, "studded_jerkin"),
     "chain_shirt": lambda G, F: g_armor(G, F, "chain_shirt"),
     "bronze_cuirass": lambda G, F: g_armor(G, F, "bronze_cuirass"),
     "steel_plate": lambda G, F: g_armor(G, F, "steel_plate"),
 }
-HEAD_ITEMS = ("leather_cap", "iron_helm", "bronze_helm", "steel_sallet", "horned_helm")
+HEAD_ITEMS = ("leather_cap", "iron_helm", "bronze_helm", "steel_sallet", "horned_helm", "musician_hat")
+
+FELT = ramp((118, 74, 52), 5)
+HAT_BAND = ramp((160, 58, 46), 4)
+FEATHER = ramp((214, 196, 150), 4)
+
+
+def g_musician_hat(G, F):
+    """The musician's felt hat (mods/musician): a round crown, a wide soft brim, a red band and a feather in it."""
+    if not F.pose.helm:
+        return
+    hy = F.hy
+    cx = 20 + F.t
+    brim = ellipse([cx - 15.5, 10.6 + hy, cx + 15.5, 17.4 + hy])
+    part(G.plain, brim, FELT, INK, radius=1.2, bias=0.1)
+    crown = union(minus(ellipse([cx - 9.4, 0.4 + hy, cx + 9.4, 22 + hy]), rect([0, 12.4 + hy, 40, 60])),
+                  rect([cx - 9.4, 9 + hy, cx + 9.4, 13.6 + hy]))
+    part(G.plain, crown, FELT, INK, radius=2.0)
+    curve(G.plain, [(cx - 3, 2.4 + hy), (cx, 4.6 + hy), (cx + 3, 2.4 + hy)], FELT[1], 2, crown)  # the dent in the crown
+    band = rect([cx - 9.4, 10 + hy, cx + 9.4, 12.8 + hy])
+    part(G.plain, band, HAT_BAND, INK, radius=0.4)
+    side = -1 if F.t < 0 else 1
+    quill = strip([(cx + side * 7, 11.6 + hy), (cx + side * 10.5, 6 + hy), (cx + side * 12.5, 0.4 + hy)], [2.6, 2.2, 0.4], steps=6)
+    part(G.plain, quill, FEATHER, INK, radius=0.6)
 
 DARK_LEATHER = ramp((92, 76, 74), 5)
 WRAP_C = ramp((122, 118, 116), 4)
@@ -2759,10 +2783,21 @@ def jobs():
     return out
 
 
+# Garments a mod owns (docs/MODDING.md): their sheets go to its textures, not the game's.
+MOD_GARMENTS = {"musician_hat": "musician"}
+
+
+def root_of(job):
+    kind, args = job
+    mod = MOD_GARMENTS.get(args[0]) if kind == "worn" else None
+    return os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "mods", mod, "textures")) if mod else A_ROOT
+
+
 def run(item):
     name, job = item
     frames = job_frames(job)
-    path = os.path.join(A_ROOT, name)
+    root = root_of(job)
+    path = os.path.join(root, name)
     is_base = name.startswith("creatures/person_") and name.count("_") == 1
     if not is_base and not any(f.getbbox() for f in frames):
         for ext in (".png", ".anim.json"):
@@ -2770,7 +2805,7 @@ def run(item):
                 os.remove(path + ext)
         return name, False
     ms = [m for _, m in FRAMES]
-    write_sheet(name, [(img, m) for img, m in zip(frames, ms)], TAGS, PIVOT, trim=True, density=K)
+    write_sheet(name, [(img, m) for img, m in zip(frames, ms)], TAGS, PIVOT, trim=True, density=K, root=None if root == A_ROOT else root)
     if name == "creatures/person_male":                                     # the def's own sprite: a plain villager
         write_sheet("creatures/human", [(img, m) for img, m in zip(frames, ms)], TAGS, PIVOT, trim=True, force=True, density=K)
     return name, True

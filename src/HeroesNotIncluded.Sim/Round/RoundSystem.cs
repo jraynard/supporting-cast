@@ -634,6 +634,9 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
             var made = sim.CreateItem(item.ThingDef, item.Count, Simulation.MaterialFor(item.ThingDef, null));
             if (item.Count == 1 && item.ThingDef.Weapon != null && !(w.TryGet<Equipment>(e, out var eq) && w.IsAlive(eq.Weapon)))
                 sim.EquipItem(e, made);
+            // Something to wear (the musician's hat): put on, if they've nothing on there already.
+            else if (item.Count == 1 && item.ThingDef.Apparel is { } wear && !(w.TryGet<Apparel>(e, out var worn) && w.IsAlive(worn[wear.Slot])))
+                sim.WearItem(e, made);
             else if (item.Count != 1 || item.ThingDef.Tool == null || Toolbelt.PutOn(sim, e, made).IsNull)
             {
                 // An AI villager's pack is emptied after every job, which would leave the kit's stock

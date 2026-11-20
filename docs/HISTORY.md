@@ -2793,3 +2793,7 @@ From the user's playing on a Deck:
   it was made; it still wants a dressing). A town all put down by a raid wakes hurt rather than bled out; the deepest
   wounds still kill. Six bots, 16 seeds: deaths 1.4 to 0.5 a round, won 11 to 13; solo musician deaths 0.6 to 0.4.
   The panels show bleeding as it is now.
+- **The musician's hat is worn** (from play): a felt hat with a wide brim and a feather (`tools/chibi_people.py`'s
+  `musician_hat`, written into mods/musician with its dwarf and halfling builds; `chibi_builds.py` now builds a mod's
+  garments where they are). Put on from the kit (a kit's garment goes on if the slot's empty), taken off and set down
+  upturned to play, and back on the head after. The playing panel draws it upside down, the coins in its opening.

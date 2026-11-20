@@ -63,10 +63,10 @@ def source_map(size, density, drop, widen):
 
 def warp_sheet(job):
     """One sheet into one build: every frame rebuilt full size, warped, written trimmed."""
-    src, dst, build, hair_only = job
-    with open(os.path.join(ROOT, src + ".anim.json")) as f:
+    src, dst, build, hair_only, root = job
+    with open(os.path.join(root, src + ".anim.json")) as f:
         man = json.load(f)
-    sheet = Image.open(os.path.join(ROOT, src + ".png")).convert("RGBA")
+    sheet = Image.open(os.path.join(root, src + ".png")).convert("RGBA")
     fw, fh = man["frameSize"]
     density = man.get("density", 1)
     b = BUILDS[build]
@@ -86,28 +86,36 @@ def warp_sheet(job):
         frames.append((Image.fromarray(out, "RGBA"), fr["ms"]))
     tags = {name: (t["from"], t["to"], t["loop"], t.get("event", -1)) for name, t in man["tags"].items()}
     pivot = tuple(man["pivot"])
-    write_sheet(dst, frames, tags, pivot, man.get("points") or None, trim=True, force=True, density=density)
+    write_sheet(dst, frames, tags, pivot, man.get("points") or None, trim=True, force=True, density=density,
+                root=None if root == ROOT else root)
     return dst
+
+
+MODS = os.path.join(os.path.dirname(__file__), "..", "mods")
 
 
 def jobs():
     out = []
     names = []
-    for folder in ("creatures", "apparel"):
-        for fn in sorted(os.listdir(os.path.join(ROOT, folder))):
-            if fn.endswith(".anim.json"):
-                names.append(f"{folder}/{fn[:-len('.anim.json')]}")
+    # The game's sheets, and any a mod's own textures hold (a mod's garment, mods/musician's hat): built where they are.
+    roots = [ROOT] + [os.path.join(MODS, m, "textures") for m in sorted(os.listdir(MODS)) if os.path.isdir(os.path.join(MODS, m, "textures"))]
+    for root in roots:
+        for folder in ("creatures", "apparel"):
+            if os.path.isdir(os.path.join(root, folder)):
+                for fn in sorted(os.listdir(os.path.join(root, folder))):
+                    if fn.endswith(".anim.json"):
+                        names.append((f"{folder}/{fn[:-len('.anim.json')]}", root))
     built = re.compile(r"_(" + "|".join(BUILDS) + r")(_|$)")
-    for name in names:
+    for name, root in names:
         if built.search(name):
             continue                                                 # a build's own sheet
         for build in BUILDS:
             if m := re.fullmatch(r"creatures/person_(male|female)((?:_(?:skin|coin_hand|coin|eyes_\w+|face_\w+))?)", name):
-                out.append((name, f"creatures/person_{m.group(1)}_{build}{m.group(2)}", build, False))
+                out.append((name, f"creatures/person_{m.group(1)}_{build}{m.group(2)}", build, False, root))
             elif re.fullmatch(r"creatures/person_(hair|beard)_\w+", name):
-                out.append((name, f"{name}_{build}", build, True))
+                out.append((name, f"{name}_{build}", build, True, root))
             elif m := re.fullmatch(r"apparel/(\w+)_(male|female)", name):
-                out.append((name, f"apparel/{m.group(1)}_{m.group(2)}_{build}", build, False))
+                out.append((name, f"apparel/{m.group(1)}_{m.group(2)}_{build}", build, False, root))
     return out
 
 

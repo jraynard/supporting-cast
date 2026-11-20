@@ -49,15 +49,29 @@ public static class Takings
     /// <summary>The hat out of <paramref name="musician"/>'s pack and down at their feet, if they've one: where the tips go.</summary>
     public static void SetDown(Simulation sim, Entity musician, PlaySession s)
     {
-        if (sim.Defs.AllThings.FirstOrDefault(t => t.Name == HatDef) is not { } def
-            || Inventory.CarriedOf(sim, musician, def).FirstOrDefault(Entity.Null) is not { IsNull: false } hat)
+        if (sim.Defs.AllThings.FirstOrDefault(t => t.Name == HatDef) is not { } def)
             return;
-        var item = Inventory.TakeFromPerson(sim, musician, hat, 1);
+        Entity item;
+        if (Worn(sim, musician, def) is { IsNull: false } worn)
+        {
+            // Off the head and down, upturned, at their feet.
+            sim.World.Get<Apparel>(musician)[def.Apparel!.Slot] = Entity.Null;
+            item = worn;
+        }
+        else if (Inventory.CarriedOf(sim, musician, def).FirstOrDefault(Entity.Null) is { IsNull: false } hat)
+            item = Inventory.TakeFromPerson(sim, musician, hat, 1);
+        else
+            return;
         s.Hat = sim.PlaceItemNear(item, sim.World.Get<Position>(musician).Cell, byHand: true);
         // Theirs, set down on purpose: no labourer tidies it off to the barn (a playtest's hat went that way).
         if (sim.World.IsAlive(s.Hat))
             sim.World.Add(s.Hat, new SetDownBy { Who = musician });
     }
+
+    /// <summary>The musician's hat on their head, or Entity.Null.</summary>
+    private static Entity Worn(Simulation sim, Entity musician, Sim.Defs.ThingDef def) =>
+        def.Apparel is { } a && sim.World.TryGet<Apparel>(musician, out var worn) && sim.World.IsAlive(worn[a.Slot])
+        && sim.World.Get<Thing>(worn[a.Slot]).Def == def ? worn[a.Slot] : Entity.Null;
 
     /// <summary>Silver tossed by the hat: the musician's, left lying where it fell till they take it up.</summary>
     private static void Claim(Simulation sim, Entity musician, Entity hat)
@@ -82,7 +96,12 @@ public static class Takings
             Inventory.Stow(sim, musician, sim.TakeFromStack(coins, w.Get<Stack>(coins).Count));
         }
         w.Remove<SetDownBy>(hat);
-        Inventory.Stow(sim, musician, sim.TakeFromStack(hat, 1));
+        var up = sim.TakeFromStack(hat, 1);
+        // Back on the head, if there's nothing on it; else into the pack.
+        if (w.Get<Thing>(up).Def.Apparel is { } a && !(w.TryGet<Apparel>(musician, out var worn) && w.IsAlive(worn[a.Slot])))
+            sim.WearItem(musician, up);
+        else
+            Inventory.Stow(sim, musician, up);
     }
 
     /// <summary>The silver lying by a hat set down (its cell and those round it): what's been tossed to the musician.</summary>

@@ -60,9 +60,11 @@
       "flammability": 0.8, "maxHp": 5, "description": "A coil of gut string, for a lute or a fiddle." },
     // Set down at the musician's feet as they play (Takings): listeners toss silver down by it, and it's all taken up
     // when they stop. Not a container: a pack can't carry one, and it's the silver lying there that's real.
+    // Worn on the head between tunes (its own art: tools/chibi_people.py's musician_hat, written into this mod).
     { "name": "Hat", "label": "musician's hat", "category": "Item", "mass": 0.2, "sprite": "items/hat", "stackLimit": 1,
       "flammability": 0.8, "maxHp": 20,
-      "description": "A felt hat with a wide brim, turned up to take coins." }
+      "apparel": { "slot": "Head", "covers": [ "Head" ], "sharp": 0.04, "blunt": 0.04, "heat": 0.1, "worn": "apparel/musician_hat" },
+      "description": "A felt hat with a wide brim and a feather in its band. Worn between tunes, and turned up to take coins while you play." }
   ],
   // What the audience remembers of an evening's music (Audience.cs: AudienceJob), as memories (mood.json's format).
   "thoughts": [

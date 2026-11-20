@@ -1210,6 +1210,32 @@ public class MusicianModTests
     });
 
     [Fact]
+    public void TheHatIsWornBetweenTunesAndSetDownUpturnedToPlay() => WithMusician(() =>
+    {
+        var sim = Round(MusicianDefs(), (Arin, "Musician"));
+        var w = sim.World;
+        var me = Players.CharacterOf(sim, Arin);
+        Entity OnHead() => w.TryGet<Apparel>(me, out var a) && w.IsAlive(a.Head) ? a.Head : Entity.Null;
+        var hat = OnHead();
+        Assert.False(hat.IsNull, "worn from the deal");
+        Assert.Equal(Takings.HatDef, w.Get<Thing>(hat).Def.Name);
+        // Playing: off the head and down at their feet.
+        var module = new MusicianModule();
+        var here = w.Get<Position>(me).Cell;
+        FireDrill.PutInHand(sim, me, MusicianModule.InstrumentOf(sim, me));
+        var play = module.EarlyActionAt(sim, me, here, here)!.Value;
+        module.Perform(sim, me, play with { By = module });
+        var session = (PlaySession)w.Get<WorkSession>(me);
+        Assert.Equal(hat, session.Hat);
+        Assert.True(OnHead().IsNull);
+        Assert.True(w.Get<Thing>(hat).Spawned);
+        // Put away: back on the head.
+        WorkSystem.Stop(sim, me, null);
+        Assert.Equal(hat, OnHead());
+        return 0;
+    });
+
+    [Fact]
     public void AnyoneCanTossACoinInTheHatButTheMusician() => WithMusician(() =>
     {
         // From the co-op test's list: another player should be able to tip too, not only the villagers.
