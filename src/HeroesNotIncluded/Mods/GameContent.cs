@@ -24,8 +24,15 @@ public sealed class GameContent
     /// Where mods are looked for, first first: the game's own <c>mods/</c> (the checkout's when running
     /// from one, so edits apply without a rebuild), then the user's.
     /// </summary>
-    public static IReadOnlyList<string> ModRoots =>
-        [DevPaths.Mods ?? Path.Combine(AppContext.BaseDirectory, "mods"), UserModsDirectory];
+    public static IReadOnlyList<string> ModRoots => BuildInfo.IsDemo
+        ? [DevPaths.Mods ?? Path.Combine(AppContext.BaseDirectory, "mods")] // the demo shares the full game's config folder, not its mods
+        : [DevPaths.Mods ?? Path.Combine(AppContext.BaseDirectory, "mods"), UserModsDirectory];
+
+    /// <summary>
+    /// The demo's mods, and only these, whatever's installed or saved (docs/NEXT-FEST.md): the carpenter
+    /// for the sixth trade, and <c>demo</c>, its shorter season in Millbrook alone.
+    /// </summary>
+    public static readonly IReadOnlyList<string> DemoMods = ["carpenter", "demo"];
 
     private static ModCatalog? _catalog;
 

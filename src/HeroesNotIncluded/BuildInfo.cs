@@ -21,6 +21,17 @@ public static class BuildInfo
     /// </summary>
     public const string Community = "https://discord.gg/GxkCEQ8N2h";
 
+    /// <summary>
+    /// This copy is the Next Fest demo (docs/NEXT-FEST.md): its <c>steam.json</c> says so, or <c>--demo</c>
+    /// from a checkout. Told at runtime, not compiled in, so the demo and the full game stay the same
+    /// bytes (<see cref="Platforms.SteamConfig"/>). It plays only the demo's mods (<see cref="Mods.GameContent.DemoMods"/>)
+    /// and hides the Mods panel, the other ways to play and the dev modes (<see cref="DemoGate"/>).
+    /// </summary>
+    public static bool IsDemo { get; set; }
+
+    /// <summary>What the title's footer and the credits call this build.</summary>
+    public static string Kind => IsDemo ? "Demo" : "Playtest build";
+
     /// <summary>"0.1.0-alpha.1".</summary>
     public static string Version => Informational.Split('+')[0];
 

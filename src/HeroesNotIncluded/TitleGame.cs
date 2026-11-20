@@ -162,7 +162,7 @@ public sealed class TitleGame : Game
                 : new("Tutorial", "Learn a trade, step by step, with nobody waiting.", null, MenuAction.Practice),
             new("Play with friends", "Open the doors, or pull up a stool.", null, MenuAction.Friends),
             // A mod's ways to play (a night of raids to see through), when there are any.
-            .. (OtherModes().Count > 0 ? new[] { new MenuItem("Other ways to play", string.Join(", ", OtherModes().Select(m => m.Label)) + ".", null, Then: () => OpenSubmenu(ModeItems(), "How will you play?")) } : Array.Empty<MenuItem>()),
+            .. (OtherModes().Count > 0 && !BuildInfo.IsDemo ? new[] { new MenuItem("Other ways to play", string.Join(", ", OtherModes().Select(m => m.Label)) + ".", null, Then: () => OpenSubmenu(ModeItems(), "How will you play?")) } : Array.Empty<MenuItem>()),
             // The demo's way to the full game's page (Platforms.IGamePlatform.HasStore).
             .. (Platforms.GamePlatform.Current.HasStore
                 ? new[] { new MenuItem("Wishlist on Steam", "The full season, and more of the town. We'll tell you when the doors open.", null, Then: Platforms.GamePlatform.Current.OpenStore) }
@@ -193,7 +193,7 @@ public sealed class TitleGame : Game
             new("Characters", "Who you've been.", null, MenuAction.Characters),
             new("Load game", anySave ? "Pick up where you left off." : "Nothing saved yet.", null, anySave ? MenuAction.LoadGame : MenuAction.Start),
             new("Replays", Replay.ReplayLibrary.List().Count == 0 ? "Finish a round and it's kept here." : "Watch a season again, from anywhere.", null, MenuAction.Replays),
-            new("Mods", Mods.GameContent.Current.HasMods ? $"On: {string.Join(", ", Mods.GameContent.Current.Mods.Mods.Select(m => m.Name))}." : "New trades, towns and ways to play, made by others.", null, MenuAction.Mods),
+            .. (BuildInfo.IsDemo ? Array.Empty<MenuItem>() : new[] { new MenuItem("Mods", Mods.GameContent.Current.HasMods ? $"On: {string.Join(", ", Mods.GameContent.Current.Mods.Mods.Select(m => m.Name))}." : "New trades, towns and ways to play, made by others.", null, MenuAction.Mods) }),
             new("Report a bug", "Something broke? Tell us how.", null, MenuAction.Report),
             new("Credits", "Everyone who swept up.", null, MenuAction.Credits),
             new("Back", "Back to the main menu.", null, MenuAction.Back),
@@ -359,9 +359,9 @@ public sealed class TitleGame : Game
         return saved;
     }
 
-    /// <summary>The towns a round can be played in: maps with an inn (the practice ring isn't one), Millbrook first.</summary>
+    /// <summary>The towns a round can be played in: maps with an inn (the practice ring isn't one) that are offered, Millbrook first.</summary>
     private List<Sim.Defs.MapDef> Towns() => _defs.AllMaps
-        .Where(m => m.Buildings.Exists(b => b.BuildingDef.Has(Sim.Defs.TownRole.Tavern)))
+        .Where(m => m.Offered && m.Buildings.Exists(b => b.BuildingDef.Has(Sim.Defs.TownRole.Tavern)))
         .OrderBy(m => m.Name == VillageRound.DefaultMap ? 0 : 1).ToList();
 
     /// <summary>
@@ -717,11 +717,16 @@ public sealed class TitleGame : Game
         }
 
         ImGui.Dummy(in gap);
-        ImGui.TextColored(dim with { W = 0.7f }, $"Playtest build {BuildInfo.Label}. Built with BRUTAL.");
+        if (BuildInfo.IsDemo)
+        {
+            ImGui.TextColored(Ui.Theme.Accent, "Demo"u8); // the one ember thing on the title
+            ImGui.SameLine();
+        }
+        ImGui.TextColored(dim with { W = 0.7f }, $"{(BuildInfo.IsDemo ? "" : "Playtest build ")}{BuildInfo.Label}. Built with BRUTAL.");
         ImGui.End();
         ImGui.PopStyleVar(1);
         _settings.Draw();
-        _credits.Draw(ref _showCredits, $"Playtest build {BuildInfo.Label}");
+        _credits.Draw(ref _showCredits, $"{BuildInfo.Kind} {BuildInfo.Label}");
 
         if (AutoPick != null && _time > 3f && (_submenu ?? _items).FirstOrDefault(i => i.Label.Equals(AutoPick, StringComparison.OrdinalIgnoreCase)) is { } pick)
         {

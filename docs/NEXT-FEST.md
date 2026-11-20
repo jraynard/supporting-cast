@@ -57,7 +57,7 @@ submitted by 1 Feb. Everything else can slip a little.
       their own page and depots).
 - [x] The Steam integration, tried with the test app (below, "Steamworks").
 - [ ] Capsule art, part 1 (below).
-- [ ] A `Demo` build property, and the `mods/demo` content gate (below).
+- [x] The demo marked at runtime (`BuildInfo.IsDemo`), and the `mods/demo` content gate (below). *20 Nov.*
 
 ### Week of 30 Nov: the page's pieces
 - [ ] The in-house capsule set, in every size Steam requires (STEAM-PAGE.md, "Capsules and media").
@@ -131,8 +131,21 @@ doors as every other mod (CLAUDE.md, Moddability):
 - Keeps the practice yard and every lesson, which matter more in a demo than anywhere.
 
 **The build.**
-- A `Demo` MSBuild property sets `BuildInfo.IsDemo`. It turns `mods/demo` on, and hides the Mods
-  panel, the arena and the dev modes (`--raid-test` and friends).
+- *Built, 20 Nov.* **The demo is the same build, told at runtime**, not a `Demo` MSBuild property: a
+  compiled-in flag would change the assemblies, so the demo and the full game would stop being the same
+  bytes, and CI would need a second publish. The demo depot's `steam.json` says `"demo": true` (`--demo`
+  from a checkout), which sets `BuildInfo.IsDemo`:
+  - Only `carpenter` and `demo` are on (`GameContent.DemoMods`), whatever's installed or saved. The user's
+    mods folder isn't read.
+  - Launch flags pass an allow-list (`DemoGate`), so the drills, the arena, the demos, `--map`, `--mods`
+    and `--dev` are dropped.
+  - The title has no Mods entry and no other ways to play, and a "Demo" mark by the version.
+  - `tools/steam_package.sh demo` writes the flag and leaves the other mods out of the Windows and Linux
+    depots. The Mac's keep them inside the signed `.app`, where they're never turned on.
+- `mods/demo`: two days, not three (about 25 minutes to the festival's end): one crisis on the first
+  afternoon or evening, the dragon on the second morning, and a Renown target of 40. The bots' sweep
+  (`--season-sweep --seeds 8 --mods demo,-musician`) won 7 of 8, at 1.57 times the target against the
+  full season's 1.52. Reedmere is loaded but not offered (`MapDef.Offered`).
 - A **Wishlist** button on the title screen and at the reveal, opening the Steam overlay to the
   store page, with the Discord link beside it. The reveal is where a good round ends, so ask there.
 - Saved characters carry over into the full game for free: it uses the same config folder and the
@@ -141,8 +154,8 @@ doors as every other mod (CLAUDE.md, Moddability):
 **Solo has to be good.** In a demo, bots are most of the town:
 - [ ] The bot smith's heat stall (`BotPlayer.Forge.TooHotToForge`).
 - [ ] Bot keepers answering asked-for pieces (`Order.Wants`).
-- [ ] `SeasonScenario` and `--season-sweep` run on the demo's season, to check it plays through and
-      lands about right.
+- [x] `--season-sweep` on the demo's season (`--mods demo,-musician`): it plays through and lands about
+      right (above). A `SeasonScenario` on it is still to add.
 
 **The first ten minutes** are where the demo is won or lost (ROADMAP, Now 1):
 - [ ] A newcomer plays each trade's tutorial, a non-gamer among them.
@@ -207,7 +220,7 @@ Still to do:
 - [ ] Two Steam accounts on two machines: Join game, Invite, an invite with the game closed, an
       invite mid-round, Wishlist.
 - [ ] The Deck: the overlay, an invite, the on-screen keyboard in text fields.
-- [ ] The demo's own content (`mods/demo`, above). Until then, a demo depot is the game's.
+- [x] The demo's own content (`mods/demo`, above): `steam_package.sh demo` marks it and strips the other mods.
 
 Later, for Early Access: lobbies, Steam Datagram Relay, Steam Cloud for `characters.json`,
 achievements, the Workshop.

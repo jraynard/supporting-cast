@@ -1,0 +1,6 @@
+// The demo is played in Millbrook alone: the other towns stay loaded but aren't offered.
+{
+  "maps": [
+    { "name": "Reedmere", "$patch": "merge", "offered": false }
+  ]
+}

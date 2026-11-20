@@ -29,6 +29,8 @@ dotnet run --project src/HeroesNotIncluded -- --host --name Arin --pairs-test  #
 dotnet run --project src/HeroesNotIncluded -- --new-game --name Arin --help-as striker  # be the second pair of hands alone: a bot leads and waits for you (striker, keeper, pitman, lifter)
 dotnet run --project src/HeroesNotIncluded -- --new-game --die-at 5            # your character drops dead: try being a ghost
 dotnet run --project src/HeroesNotIncluded -- --new-game --festival-at 5       # the season's festival, now, you by the well
+dotnet run --project src/HeroesNotIncluded -- --demo                       # as the Next Fest demo plays (BuildInfo.IsDemo, DemoGate: its mods, its flags only)
+dotnet run --project src/HeroesNotIncluded -- --practice Empath          # the tutorial in the practice yard: no season, customers on request (--lesson ID: straight into a chapter, `basics` too)
 dotnet run --project src/HeroesNotIncluded -- --practice Empath          # the tutorial in the practice yard: no season, customers on request (--lesson ID: straight into a chapter, `basics` and `combat` too)
 dotnet run --project src/HeroesNotIncluded -- --arena Swordsman --weapon IronSpear  # the practice ring: one foe a bout (any raider kind, or Dragon; Enter for the next)
 dotnet run --project src/HeroesNotIncluded -- --furniture-demo --zoom 80    # also --building-demo

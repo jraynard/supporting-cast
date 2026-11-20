@@ -12,17 +12,32 @@ using HeroesNotIncluded.Sim.Defs;
 using HeroesNotIncluded.Sim.Saving;
 using HeroesNotIncluded.Sim.Scenarios;
 
+// The demo (docs/NEXT-FEST.md): its steam.json says so, or --demo from a checkout. It's started only as a demo may be
+// (DemoGate), plays only its own mods, and never the dev tools.
+List<string> notInDemo = [];
+if (args.Contains("--demo") || HeroesNotIncluded.Platforms.SteamConfig.Find(args, AppContext.BaseDirectory)?.Demo == true)
+{
+    BuildInfo.IsDemo = true;
+    VillageGame.DevMode = false;
+    args = DemoGate.Arguments(args, out notInDemo);
+}
+
 // Headless runs (bench, checks) log to the console only; the game also writes a file testers can send.
 var headless = args.Any(a => a is "--bench" or "--combat-sweep" or "--season-sweep" or "--check-art" or "--check-mod" or "--check-save" or "--check-gpu" or "--version" or "--dictate-test");
 Log.Initialize(logDirectory: headless ? null : BuildInfo.LogDirectory, appName: TitleGame.AppId);
 string? buildTag = null;
 Log.CrashContext = () => BuildInfo.Describe(buildTag);
+if (BuildInfo.IsDemo)
+{
+    Log.Engine.Info(notInDemo.Count > 0 ? $"The demo; not in it, so left out: {string.Join(' ', notInDemo)}" : "The demo");
+    GameContent.Use(GameContent.DemoMods);
+}
 
 // Mods for this run (docs/MODDING.md): --mods a,b, else the player's own list once the settings are read.
 // Headless runs (bench, sweeps, checks) see only the defaults and --mods, so their results don't depend on a player's setup.
 // --mods musician,-carpenter: the musician on, the carpenter (on by default) off.
-var modsGiven = args.Contains("--mods");
-if (modsGiven || headless)
+var modsGiven = args.Contains("--mods") || BuildInfo.IsDemo;
+if (!BuildInfo.IsDemo && (modsGiven || headless))
     GameContent.Use(GameContent.FromArgument(ParseString(args, "--mods")));
 
 if (args.Contains("--version"))
@@ -164,7 +179,7 @@ SaveSlots.Directory = SaveSlots.DefaultDirectory;
 VillageGame.OpenProfiler = args.Contains("--profiler");
 VillageGame.VoiceClip = ParseString(args, "--voice-clip");
 TitleGame.OpenSettingsTab = ParseString(args, "--settings-tab");
-if (args.Contains("--dev"))
+if (args.Contains("--dev")) // never in the demo (DemoGate)
     VillageGame.DevMode = true;
 HeroesNotIncluded.Net.CoopRelay.Override = ParseString(args, "--relay");
 CharacterRoster.PickOverride = ParseString(args, "--character");

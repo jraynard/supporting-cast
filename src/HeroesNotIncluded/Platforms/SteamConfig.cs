@@ -9,9 +9,10 @@ namespace HeroesNotIncluded.Platforms;
 /// not compiled in: co-op's build tag hashes the game's assemblies, so an itch build and a Steam
 /// build of the same version stay the same bytes and can play together. <c>--steam N</c> tries a
 /// checkout against an app (480, Valve's Spacewar, before ours exists) without restarting through
-/// Steam.
+/// Steam. The demo's depot says so here too (<c>"demo": true</c>, <see cref="BuildInfo.IsDemo"/>): the
+/// same build, told it's the demo by the file beside it.
 /// </summary>
-public sealed record SteamConfig(uint AppId, uint StoreAppId, bool Dev = false)
+public sealed record SteamConfig(uint AppId, uint StoreAppId, bool Dev = false, bool Demo = false)
 {
     public const string FileName = "steam.json";
 
@@ -22,6 +23,7 @@ public sealed record SteamConfig(uint AppId, uint StoreAppId, bool Dev = false)
     {
         [JsonPropertyName("appId")] public uint AppId { get; set; }
         [JsonPropertyName("storeAppId")] public uint StoreAppId { get; set; }
+        [JsonPropertyName("demo")] public bool Demo { get; set; }
     }
 
     /// <summary>A <c>steam.json</c>'s text, or null if it isn't one (no app ID, or not JSON).</summary>
@@ -30,7 +32,7 @@ public sealed record SteamConfig(uint AppId, uint StoreAppId, bool Dev = false)
         try
         {
             var file = JsonSerializer.Deserialize<File>(json);
-            return file is { AppId: > 0 } ? new SteamConfig(file.AppId, file.StoreAppId > 0 ? file.StoreAppId : file.AppId) : null;
+            return file is { AppId: > 0 } ? new SteamConfig(file.AppId, file.StoreAppId > 0 ? file.StoreAppId : file.AppId, Demo: file.Demo) : null;
         }
         catch (JsonException)
         {
