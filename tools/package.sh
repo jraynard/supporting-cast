@@ -190,10 +190,18 @@ for rid in "${rids[@]:1}"; do
     diff -r -q "$a/data/defs" "$b/data/defs" > /dev/null || fail "data/defs differs between ${rids[0]} and $rid"
 done
 
+find "$dist" -name '*.pdb' -delete # the runtime's own and stale mod builds'; ours are embedded
+
 echo "==> smoke test (linux-x64, headless)"
-linux="$dist/$name-linux-x64"
+# Run from a copy outside the checkout: inside it the game finds HeroesNotIncluded.sln above itself
+# (DevPaths) and reads the checkout's data/defs and mods/ (sources, obj/ and all) instead of its own,
+# so its build tag wouldn't be the package's and the other platforms' checks against version.txt fail.
+smoke="$(mktemp -d)"
+cp -a "$dist/$name-linux-x64" "$smoke/"
+linux="$smoke/$name-linux-x64"
 "$linux/HeroesNotIncluded" --version | tee "$dist/version.txt"
 "$linux/HeroesNotIncluded" --check-art > /dev/null || fail "--check-art failed"
+rm -rf "$smoke"
 
 echo "==> macOS app bundle"
 mac="$dist/$name-osx-arm64"
@@ -211,7 +219,6 @@ else
 fi
 
 echo "==> archive"
-find "$dist" -name '*.pdb' -delete # the runtime's own; ours are embedded
 if command -v zip > /dev/null; then
     (cd "$dist" && zip -qr "$name-win-x64.zip" "$name-win-x64")
 else
