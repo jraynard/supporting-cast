@@ -291,7 +291,11 @@ public sealed class AiSystem : ISimSystem
 
     private void RunJob(Simulation sim, Entity e, Mind mind, long now)
     {
-        var status = mind.Job!.Tick();
+        var job = mind.Job!;
+        var status = job.Tick();
+        // Already ended by what it did this step (an empath downed by a wound they drew in): nothing left to end.
+        if (mind.Job != job)
+            return;
         if (status == JobStatus.Running)
             return;
         if (status == JobStatus.Failed)
@@ -524,6 +528,7 @@ public sealed class NeedsSystem : ISimSystem
         c.Hp = 0;
         AiSystem.EndJob(sim, e, sim.World.Get<Mind>(e), false);
         sim.World.Get<Mover>(e).Stop();
+        Combat.Plunders.Drop(sim, e);
         // Foes are stripped where they fall (their arms are the town's loot); the town's own keep what they wear.
         sim.DropGear(e, keepWorn: c.Faction is not (Faction.Raider or Faction.Captors or Faction.Prisoner));
         Afterlife.Ghosts.OnDeath(sim, e, cause);

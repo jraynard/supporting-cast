@@ -106,6 +106,9 @@ public abstract class Job
             return JobStatus.Failed;
         if (!more)
             return JobStatus.Succeeded;
+        // Ended by what it did this step (an empath drawing in a wound that downs them ends their own job): it's over.
+        if (_routine == null)
+            return JobStatus.Failed;
         return _routine.Current;
     }
 

@@ -53,7 +53,7 @@ public sealed class RaidCrisis : ICrisis
     }
 
     private static float PointsFor(Simulation sim, DifficultyDef? difficulty, float strength) =>
-        Raids.Points(sim) * sim.Defs.Season.RaidPointsFactor * (difficulty?.PointsFactor ?? 1f) * strength;
+        Raids.Points(sim, sim.Director.RaidAiShare ?? sim.Defs.Season.RaidAiShare) * sim.Defs.Season.RaidPointsFactor * (difficulty?.PointsFactor ?? 1f) * strength;
 
     private static RaidCrisis? Start(Simulation sim, SimRandom rand, List<Entity> raiders, float strength)
     {

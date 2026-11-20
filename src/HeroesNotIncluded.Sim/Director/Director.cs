@@ -71,6 +71,12 @@ public sealed class Director(ulong seed) : ISimSystem, ISaveState
     /// <summary>Sending crises in rounds. Set by the game when it starts a village for a round.</summary>
     public bool Enabled { get; private set; }
 
+    /// <summary>
+    /// What an AI villager counts toward a raid's size, over the season's <c>raidAiShare</c>: the combat sweep's trials
+    /// stand a town of AI in for a town of players, and size its raids as for players. Not saved: only trials set it.
+    /// </summary>
+    public float? RaidAiShare { get; set; }
+
     /// <summary>How hard it pushes (raid size); null for the default. Peaceful sends nothing.</summary>
     public DifficultyDef? Difficulty { get; private set; }
 

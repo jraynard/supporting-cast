@@ -1049,6 +1049,7 @@ public sealed class LeaveMapJob(int3 edge, string report = "Fleeing") : Job
         Report = report;
         foreach (var s in GoTo(edge, PathEnd.OnTile)) yield return s;
         if (HasFailed) yield break;
+        Combat.Plunders.GotAway(Sim, Pawn);
         Sim.Depart(Pawn);
     }
 }

@@ -50,7 +50,7 @@ public static class Raids
     /// How big a raid the village has earned: it grows with the days survived, the people (armed
     /// ones count extra). Before any difficulty's factor.
     /// </summary>
-    public static float Points(Simulation sim)
+    public static float Points(Simulation sim, float aiShare = 1f)
     {
         var w = sim.World;
         var points = 40f + 10f * (sim.Clock.Day - 1);
@@ -61,11 +61,14 @@ public static class Raids
                 continue;
             if (c.Def.Race == Race.Human)
             {
-                points += 20f;
+                // A character a player is playing counts in full; an AI villager (in a round, aiShare) for less: the
+                // band's sized to who'll fight it, and a town of one player is mostly tradesfolk.
+                var share = Systems.Players.Steered(sim, e) ? 1f : aiShare;
+                points += 20f * share;
                 // The town's own arms (Militia) are handed out after the band is sized: they don't
                 // count, and nor does a trade's makeshift weapon (the cook's knife).
                 if (Militia.MilitiaSystem.ArmedProperly(sim, e) && !w.Has<Militia.TownArms>(w.Get<Equipment>(e).Weapon))
-                    points += 15f;
+                    points += 15f * share;
             }
         }
         return points;

@@ -2773,3 +2773,17 @@ From the user's playing on a Deck:
   (with `--mods miner`, unchanged from before).
 - **The musician is comped a room at the inn** (from play): a trade's `lodgesAtInn` makes its home a room there,
   kept for them and never let, while one's free (a cottage if not; `Homes.Give`). Bench unchanged.
+
+### Raiders rob the downed; raids sized by the players (2026-11-19)
+- **A raider who puts a player down cuts half their purse and runs for it** (`Combat/Plunders`, `RobJob`, `Plunder`):
+  it isn't `Leaving`, so the town may still chase it, and downed or killed before it's off the map it drops the silver
+  where it falls ("Caught!"). Off the map, it's gone. Only players' characters are robbed.
+- **A round's raid grows with its players more than its town** (`season.json` `raidAiShare` 0.5, `Raids.Points`): an
+  AI villager counts half of a character a player's playing. The six-bot sweep is unchanged by it (bots are players);
+  the combat sweep's trials size raids as for players (`Director.RaidAiShare`). Solo, one bot, 16 seeds: as the
+  musician won 8 to 13, deaths 2.4 to 0.6 a round; as the smith won 8 to 10, deaths 1.2 to 1.1.
+- From a solo round lost on day 2: the first evening's raid was two, an archer soon down and a skilled spearman
+  (melee 9, bronze helm) who took one blow in the whole fight and put down all seven AI villagers one at a time, then
+  the player. Everyone down, nobody was left to bind anyone, and all bled out by morning.
+- **Fixed: a sweep crashed when an AI empath was downed by a wound it drew in.** The job ended inside its own step,
+  and the AI then ended it again (`Job.Tick`, `AiSystem.RunJob`).

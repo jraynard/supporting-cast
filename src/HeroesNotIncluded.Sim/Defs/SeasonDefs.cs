@@ -77,6 +77,12 @@ public sealed class SeasonDef : Def
     /// </summary>
     public float RaidPointsFactor { get; set; } = 0.4f;
 
+    /// <summary>
+    /// What an AI villager counts toward a round's raid against a player's character (<c>Raids.Points</c>): the band
+    /// grows with the players, who do the fighting, more than with the town.
+    /// </summary>
+    public float RaidAiShare { get; set; } = 1f;
+
     /// <summary>Dread each game hour while something a crisis broke (the bridge) stays down.</summary>
     public float DreadPerBreachHour { get; set; } = 0.5f;
 

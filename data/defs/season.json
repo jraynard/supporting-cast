@@ -44,6 +44,9 @@
       // one (at 1 it was wiped out): it needs its players. At 1.6 the combat sweep's sixteen
       // seeds meet about ten raids with heroes in town and five without (CombatBalanceTests).
       "raidPointsFactor": 1.6,
+      // An AI villager counts this much of a character a player's playing toward a raid's size: raids grow with the players
+      // (bots in the sweep are players, so it's unchanged by this). A solo town of seven AI is sized as about 4.5 people.
+      "raidAiShare": 0.5,
       "raidBreaksBridge": 0.6,
       "dreadPerBreachHour": 0.5,
       // Word of a raid comes this many game hours ahead (Director/Director.cs), and the town calls

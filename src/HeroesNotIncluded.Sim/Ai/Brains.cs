@@ -507,6 +507,12 @@ public sealed class RaiderBrain : IBrain
             w.Add(pawn, new Combat.Leaving());
         if (WantsToFlee(sim, pawn) || w.Has<Combat.Leaving>(pawn) || w.Has<Escaping>(pawn))
             return sim.NearestEdge(tile) is { } edge ? new LeaveMapJob(edge) : null;
+        // A purse cut: off with it, though the town may yet catch them (not Leaving, so still fair game).
+        if (w.Has<Combat.Plunder>(pawn))
+            return sim.NearestEdge(tile) is { } off ? new LeaveMapJob(off, "Making off with silver") : null;
+        // A player put down near by, silver on them: cut their purse.
+        if (creature.Faction == Faction.Raider && Combat.Plunders.Mark(sim, pawn) is { IsNull: false } mark)
+            return new Combat.RobJob(mark);
 
         // The nearest they can get at: someone with room for another attacker (Engagement) before
         // someone who's already pressed as hard as they can be, and whoever's just hurt them before

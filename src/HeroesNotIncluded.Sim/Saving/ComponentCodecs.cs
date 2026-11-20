@@ -361,6 +361,11 @@ internal static class ComponentCodecs
         Tag<ForPrisoners>("ForPrisoners"),
         Tag<NonViolent>("NonViolent"),
         Tag<Leaving>("Leaving"),
+        Codec("Plunder", (w, p) =>
+        {
+            w.Entity(p.From);
+            w.Int(p.Coins);
+        }, r => new Combat.Plunder { From = r.Entity(), Coins = Math.Max(0, r.Int()) }),
         Tag<Militia.TownArms>("TownArms"),
         Tag<Combat.Loaded>("Loaded"),
         Tag<Escaping>("Escaping"),

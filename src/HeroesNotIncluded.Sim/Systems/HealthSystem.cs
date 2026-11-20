@@ -173,6 +173,7 @@ public sealed class HealthSystem : ISimSystem
             mind.Asleep = false;
             sim.World.Get<Mover>(e).Stop();
             sim.Messages.Add(c.Faction == Faction.Village ? MessageKind.Danger : MessageKind.Info, $"{c.Name} has collapsed.", cell);
+            Combat.Plunders.Drop(sim, e);
         }
         else if (c.Faction == Faction.Raider && sim.World.Has<Combat.Leaving>(e))
         {

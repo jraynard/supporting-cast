@@ -66,6 +66,7 @@ public static class CombatSweep
         sim.Presets.PresetMode = true;
         VillageRound.Setup(sim);
         sim.Director.Enable(defs.Difficulty(difficulty));
+        sim.Director.RaidAiShare = 1f; // the AI here stands in for a town of players: raids sized as for them
         sim.Round.OpenLobby();
         sim.ApplyNow(new JoinLobbyCommand(Guid.Empty, "Arin", default));
         sim.ApplyNow(new StartRoundCommand());

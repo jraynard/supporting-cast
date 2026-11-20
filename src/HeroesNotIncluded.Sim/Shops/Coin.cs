@@ -58,7 +58,8 @@ public static class Coin
         return paid;
     }
 
-    private static List<Entity> Stacks(Simulation sim, Entity who)
+    /// <summary>The silver stacks someone has: in hand first, then the pack.</summary>
+    public static List<Entity> Stacks(Simulation sim, Entity who)
     {
         var w = sim.World;
         var stacks = new List<Entity>();
