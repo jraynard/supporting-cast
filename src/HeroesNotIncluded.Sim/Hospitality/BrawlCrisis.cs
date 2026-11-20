@@ -145,6 +145,9 @@ public sealed class BrawlCrisis : ICrisis
             sim.Messages.Add(MessageKind.Danger, "The brawl boils over and spills out into the street!", w.Get<PresetBuilding>(_inn).Anchor);
             if (_brawlers.FirstOrDefault(e => Fighting(sim, e), Entity.Null) is { IsNull: false } shouter)
                 Barks.Say(sim, shouter, "brawl_spill", Volume.Shout, "Outside! The lot of you!");
+            // A lamp goes over in the scuffle, now and then: the inn's alight as well.
+            if (sim.Rand.NextFloat() < brawl.FireOnBoil && sim.Director.SendFire(sim, _inn) != null)
+                sim.Messages.Add(MessageKind.Danger, "A lamp goes over in the scuffle, and the inn's alight!", w.Get<PresetBuilding>(_inn).Anchor);
             return Over(sim, met: false);
         }
         if (fighting == 0)
@@ -303,6 +306,7 @@ public sealed class BrawlCrisis : ICrisis
         w.Entity(Ringleader);
         w.Bool(Begun);
         w.Float(Heat);
+        w.Int(Smashed);
         w.Int(_crowd.Count);
         foreach (var e in _crowd)
             w.Entity(e);
@@ -316,7 +320,7 @@ public sealed class BrawlCrisis : ICrisis
         var crisis = new BrawlCrisis
         {
             Started = r.Long(), _deadline = r.Long(), _lastCheck = r.Long(), _deadBefore = r.Int(), _inn = r.Entity(),
-            Ringleader = r.Entity(), Begun = r.Bool(), Heat = r.Float(),
+            Ringleader = r.Entity(), Begun = r.Bool(), Heat = r.Float(), Smashed = r.Int(),
         };
         for (var n = r.Count(100); n > 0; n--)
             crisis._crowd.Add(r.Entity());
@@ -324,6 +328,54 @@ public sealed class BrawlCrisis : ICrisis
             crisis._brawlers.Add(r.Entity());
         return crisis;
     }
+
+    /// <summary>Hot enough that they're going for the furniture.</summary>
+    public bool Smashing(Simulation sim) => Begun && Heat >= sim.Defs.Season.Brawl.BreakAt;
+
+    /// <summary>A piece the inn's brawl can smash, standing in the inn.</summary>
+    public bool Breakable(Simulation sim, Entity thing) =>
+        sim.World.TryGet<Thing>(thing, out var t) && t.Def.BreaksInBrawls && Buildings.At(sim, t.Cell) == _inn;
+
+    /// <summary>The nearest piece to smash within <paramref name="reach"/> cells of a brawler, or Entity.Null.</summary>
+    public Entity FurnitureNear(Simulation sim, Entity e, int reach)
+    {
+        var w = sim.World;
+        if (!w.TryGet<Position>(e, out var p))
+            return Entity.Null;
+        foreach (var c in sim.SpiralFrom(p.Cell, reach))
+            if (c.Z == p.Cell.Z && sim.Map.InBounds(c) && sim.Map.Structure[sim.Map.Idx(c)] is { IsNull: false } s && Breakable(sim, s))
+                return s;
+        return Entity.Null;
+    }
+
+    /// <summary>
+    /// A brawler's blow that found nobody (<see cref="Blows"/>): once it's hot enough, the table or
+    /// stool in its sweep takes it, and a few such and it's matchwood: gone, and the carpenter's to
+    /// make again (<see cref="Modding.Trades.Lost"/>). The piece struck, or Entity.Null.
+    /// </summary>
+    public static Entity Smash(Simulation sim, Entity attacker, AttackDef attack, float aim)
+    {
+        var w = sim.World;
+        if (!w.Has<Brawler>(attacker) || Of(sim) is not { } brawl || !brawl.Smashing(sim))
+            return Entity.Null;
+        var piece = Reach.ThingInSweep(sim, attacker, attack, aim, d => d.BreaksInBrawls);
+        if (piece.IsNull || !brawl.Breakable(sim, piece))
+            return Entity.Null;
+        ref var t = ref w.Get<Thing>(piece);
+        t.Hp -= t.MaxHp / Math.Max(1, sim.Defs.Season.Brawl.BlowsToBreak) + 0.01f;
+        if (t.Hp > 0)
+            return piece;
+        var (def, cell, facing) = (t.Def, t.Cell, t.Facing);
+        sim.Messages.Add(MessageKind.Warning, $"{w.Get<Creature>(attacker).Name} smashes a {def.Label} to matchwood!", cell);
+        sim.DestroyThing(piece);
+        sim.Map.MarkStructureChanged();
+        Modding.Trades.Lost(sim, def, cell, facing); // the carpenter's to set back
+        brawl.Smashed++;
+        return piece;
+    }
+
+    /// <summary>Pieces smashed so far.</summary>
+    public int Smashed { get; private set; }
 
     /// <summary>The brawl under way, if any.</summary>
     public static BrawlCrisis? Of(Simulation sim) => sim.Director.Active.OfType<BrawlCrisis>().FirstOrDefault();
@@ -337,6 +389,9 @@ public sealed class BrawlerJob : Job
 {
     /// <summary>Ticks between swings.</summary>
     public const int Between = 80;
+
+    /// <summary>How far (cells) a brawler will go for a table to smash.</summary>
+    public const int SmashReach = 8;
 
     private Entity _foe;
 
@@ -352,6 +407,23 @@ public sealed class BrawlerJob : Job
         }
         while (BrawlCrisis.Fighting(Sim, Pawn) && BrawlCrisis.Of(Sim) is { } brawl)
         {
+            // Hot enough, now and then they take it out on the furniture.
+            if (brawl.Smashing(Sim) && Sim.Rand.NextFloat() < Sim.Defs.Season.Brawl.SmashChance
+                && brawl.FurnitureNear(Sim, Pawn, SmashReach) is { IsNull: false } piece)
+            {
+                var at = Get<Thing>(piece).Cell;
+                Report = $"Smashing a {Get<Thing>(piece).Def.Label}";
+                foreach (var s in GoTo(at, PathEnd.Touch)) yield return s;
+                if (HasFailed)
+                    yield break;
+                if (Sim.World.IsAlive(piece))
+                {
+                    var me = Get<Position>(Pawn).Pos;
+                    Blows.Begin(Sim, Pawn, Entity.Null, fists, aim: DetMath.Atan2(at.Y + 0.5f - me.Y, at.X + 0.5f - me.X));
+                    foreach (var s in Wait(Between)) yield return s;
+                }
+                continue;
+            }
             _foe = brawl.FoeFor(Sim, Pawn);
             if (_foe.IsNull)
             {

@@ -8,7 +8,7 @@ using HeroesNotIncluded.Sim.Work;
 
 namespace HeroesNotIncluded.Sim.Carpentry;
 
-/// <summary>A piece of furniture a fire took from a town building: where it stood and how it faced, so the carpenter can set one back.</summary>
+/// <summary>A piece of furniture a fire (or a brawl) took from a town building: where it stood and how it faced, so the carpenter can set one back.</summary>
 public sealed class FurnitureLoss
 {
     public int Id;
@@ -24,7 +24,7 @@ public sealed class FurnitureLoss
     public string Label => Def.Label;
 }
 
-/// <summary>A piece of furniture made at the bench to set back where one burned (<see cref="Refurnishing"/>): what it is, and how well it's joined.</summary>
+/// <summary>A piece of furniture made at the bench to set back where one was lost (<see cref="Refurnishing"/>): what it is, and how well it's joined.</summary>
 public struct Furnishing
 {
     public ThingDef Def;
@@ -32,11 +32,11 @@ public struct Furnishing
     public Entity Maker;
 }
 
-/// <summary>A lost piece as anyone sees it (<c>PerceptionView.Losses</c>): what burned, where, and in which building.</summary>
+/// <summary>A lost piece as anyone sees it (<c>PerceptionView.Losses</c>): what was lost, where, and in which building.</summary>
 public readonly record struct KnownLoss(int Id, string Label, string Piece, int3 Cell, string Where, int Planks);
 
 /// <summary>
-/// Furniture lost to fire, and the carpenter's setting it back (docs/DESIGN.md, "Carpenter"). When
+/// Furniture lost to fire or smashed in a brawl, and the carpenter's setting it back (docs/DESIGN.md, "Carpenter"). When
 /// the fire (or the dragon's) burns a joined piece in one of the town's buildings (a stool, a table,
 /// a shelf: a def with <see cref="ThingDef.Joinery"/>), the town remembers it. The carpenter makes a
 /// new one at the bench from planks, joint by joint (<see cref="JoinSession"/>), carries it over,
@@ -80,10 +80,11 @@ public sealed class Refurnishing : ISimSystem, ISaveState
     }
 
     /// <summary>
-    /// A thing burned (<see cref="Environment.FireSystem"/>): if it was a joined piece in one of the
-    /// town's buildings, in a round, the town remembers where it stood.
+    /// A thing lost (burned, <see cref="Environment.FireSystem"/>; smashed in a brawl,
+    /// <c>Hospitality.BrawlCrisis</c>): if it was a joined piece in one of the town's buildings, in a
+    /// round, the town remembers where it stood.
     /// </summary>
-    public static void Burned(Simulation sim, ThingDef def, int3 cell, byte facing)
+    public static void Lost(Simulation sim, ThingDef def, int3 cell, byte facing)
     {
         if (def.Joinery == null || !sim.Round.Live || Buildings.At(sim, cell) is not { IsNull: false } building)
             return;
@@ -179,7 +180,7 @@ public sealed class Refurnishing : ISimSystem, ISaveState
     public static string? SetProblem(Simulation sim, Entity who, FurnitureLoss? loss)
     {
         if (loss == null)
-            return "nothing burned there";
+            return "nothing was lost there";
         var held = Held(sim, who);
         if (held.IsNull)
             return $"you need a new {loss.Label} in your arms";
@@ -302,7 +303,7 @@ public sealed class FurnishJob(int loss, Entity bench, Entity chest) : Job
     }
 }
 
-/// <summary>Make a piece of furniture at the carpenter's bench, to set back where one burned (<see cref="JoinSession"/>): planks from what's to hand.</summary>
+/// <summary>Make a piece of furniture at the carpenter's bench, to set back where one was lost (<see cref="JoinSession"/>): planks from what's to hand.</summary>
 public sealed record MakeFurnitureCommand(Entity Avatar, Entity Bench, string Piece) : ISimCommand, Core.IActorCommand
 {
     public Entity Actor => Avatar;

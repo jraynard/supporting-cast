@@ -46,13 +46,20 @@ public class BrawlCrisisTests(ITestOutputHelper output)
         for (var h = 0; h < 12 && sim.Director.Active.Contains(brawl); h++)
         {
             sim.TickMany(SimClock.TicksPerHour / 2);
-            output.WriteLine($"{h / 2f:0.0}h heat {brawl.Heat:0.00}, fighting {brawl.Brawlers.Count(e => BrawlCrisis.Fighting(sim, e))}/{brawl.Brawlers.Count}, "
+            if (brawl.Heat < sim.Defs.Season.Brawl.BreakAt && sim.Director.Active.Contains(brawl))
+                Assert.Equal(0, brawl.Smashed); // not till it's hot
+            output.WriteLine($"{h / 2f:0.0}h heat {brawl.Heat:0.00}, smashed {brawl.Smashed}, fighting {brawl.Brawlers.Count(e => BrawlCrisis.Fighting(sim, e))}/{brawl.Brawlers.Count}, "
                 + $"down {brawl.Brawlers.Count(e => sim.World.IsAlive(e) && sim.World.Get<Creature>(e).Downed)}, gone {brawl.Brawlers.Count(e => !sim.World.IsAlive(e))}, "
                 + $"in the inn {brawl.Brawlers.Count(e => sim.World.IsAlive(e) && brawl.InInn(sim, e))}");
         }
         Assert.DoesNotContain(brawl, sim.Director.Active);
         Assert.Equal(unmetBefore + 1, sim.Director.Unmet);
         Assert.Equal(1f, brawl.Heat);
+        // Tables and stools smashed on the way: the carpenter's to make again.
+        Assert.True(brawl.Smashed > 0, "nothing was smashed");
+        var losses = Carpentry.Refurnishing.Of(sim).Losses;
+        Assert.Equal(brawl.Smashed, losses.Count);
+        Assert.All(losses, l => Assert.True(l.Def.BreaksInBrawls && l.Building == brawl.Inn));
         Assert.All(brawl.Crowd.Where(sim.World.IsAlive), e => Assert.True(sim.World.Has<Combat.Leaving>(e), "the crowd goes off sour"));
         Assert.All(brawl.Brawlers, e => Assert.False(sim.World.IsAlive(e) && sim.World.Get<Creature>(e).Dead, "nobody dies of fists"));
     }

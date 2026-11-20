@@ -16,7 +16,7 @@
       "building": { "isBed": true, "work": 40, "cost": [ { "def": "Planks", "count": 2 } ] }
     },
     {
-      "name": "Table", "category": "Building", "joinery": { "planks": 2, "joints": 4 }, "solid": true, "climbable": true, "sprite": "buildings/table",
+      "name": "Table", "category": "Building", "breaksInBrawls": true, "joinery": { "planks": 2, "joints": 4 }, "solid": true, "climbable": true, "sprite": "buildings/table",
       "description": "A sturdy plank table for one. Pick a longer or a square one from the table's shapes.",
       "maxHp": 100, "flammability": 1.0, 
       "building": { "work": 120, "surfaceHeight": 0.66, "cost": [ { "def": "Planks", "count": 8 } ] },
@@ -32,7 +32,7 @@
       ]
     },
     {
-      "name": "LongTable", "label": "long table", "shapeOf": "Table", "size": [1, 2], "category": "Building", "joinery": { "planks": 3, "joints": 4 }, "solid": true, "climbable": true, "sprite": "buildings/table",
+      "name": "LongTable", "label": "long table", "breaksInBrawls": true, "shapeOf": "Table", "size": [1, 2], "category": "Building", "joinery": { "planks": 3, "joints": 4 }, "solid": true, "climbable": true, "sprite": "buildings/table",
       "description": "A plank table two cells long: room for a meal and the bread.",
       "maxHp": 140, "flammability": 1.0, 
       "building": { "work": 180, "surfaceHeight": 0.66, "cost": [ { "def": "Planks", "count": 12 } ] },
@@ -69,7 +69,7 @@
       ]
     },
     {
-      "name": "SquareTable", "label": "square table", "shapeOf": "Table", "size": [2, 2], "category": "Building", "joinery": { "planks": 3, "joints": 4 }, "solid": true, "climbable": true, "sprite": "buildings/table",
+      "name": "SquareTable", "label": "square table", "breaksInBrawls": true, "shapeOf": "Table", "size": [2, 2], "category": "Building", "joinery": { "planks": 3, "joints": 4 }, "solid": true, "climbable": true, "sprite": "buildings/table",
       "description": "A broad table two cells square, for the whole household.",
       "maxHp": 180, "flammability": 1.0, 
       "building": { "work": 240, "surfaceHeight": 0.66, "cost": [ { "def": "Planks", "count": 16 } ] },
@@ -128,7 +128,7 @@
       ]
     },
     {
-      "name": "Stool", "category": "Building", "joinery": { "planks": 1, "joints": 3 }, "sprite": "buildings/stool",
+      "name": "Stool", "category": "Building", "breaksInBrawls": true, "joinery": { "planks": 1, "joints": 3 }, "sprite": "buildings/stool",
       "description": "Somewhere to sit by the fire.",
       "maxHp": 60, "flammability": 1.0,
       "building": { "work": 60, "surfaceHeight": 0.42, "seat": true, "cost": [ { "def": "Planks", "count": 3 } ] },

@@ -43,7 +43,12 @@
       // with drink. Heat climbs risePerHour for every perBrawlers still at it and eases coolPerHour;
       // at 1 it boils over (not met). Settling the ringleader takes ringleaderCools off.
       "brawl": { "risePerHour": 0.4, "perBrawlers": 4, "coolPerHour": 0.1, "ringleaderCools": 0.3,
-        "arriveTipsy": 0.55, "joinTipsy": 0.5, "crowd": 4, "sourSatisfaction": -3 },
+        "arriveTipsy": 0.55, "joinTipsy": 0.5, "crowd": 4, "sourSatisfaction": -3,
+        // From breakAt, each turn a brawler may (smashChance) take it out on a table or a stool
+        // ("breaksInBrawls" furniture) instead: blowsToBreak and it's matchwood, the carpenter's to make again.
+        "breakAt": 0.4, "smashChance": 0.2, "blowsToBreak": 3,
+        // Boiling over, a lamp may go over (fireOnBoil): the inn's alight as well, a fire to meet of its own.
+        "fireOnBoil": 0.35 },
       // Raid points (storyteller.json's formula) times this: at 0.85 a town of six meets a bandit or
       // two on the first evening and three on the second day. Left to itself the town loses that
       // one (at 1 it was wiped out): it needs its players. At 1.6 the combat sweep's sixteen

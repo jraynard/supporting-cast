@@ -293,6 +293,18 @@ public sealed class BrawlDef
     /// <summary>Crowd members at strength 1 (more or fewer with the beat's strength), at least 3.</summary>
     public int Crowd { get; set; } = 4;
 
+    /// <summary>Heat from which brawlers go for the furniture (<see cref="ThingDef.BreaksInBrawls"/>).</summary>
+    public float BreakAt { get; set; } = 0.4f;
+
+    /// <summary>The chance, each turn past <see cref="BreakAt"/>, a brawler takes it out on a table or a stool instead.</summary>
+    public float SmashChance { get; set; } = 0.2f;
+
+    /// <summary>Blows a piece takes before it breaks.</summary>
+    public int BlowsToBreak { get; set; } = 3;
+
+    /// <summary>The chance a brawl boiling over knocks a lamp over: the inn's alight too (a fire crisis of its own).</summary>
+    public float FireOnBoil { get; set; } = 0.35f;
+
     /// <summary>What a crowd that boiled over, or was never settled, thinks of the town as it goes.</summary>
     public float SourSatisfaction { get; set; } = -3f;
 }

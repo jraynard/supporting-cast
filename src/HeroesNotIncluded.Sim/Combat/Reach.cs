@@ -152,7 +152,11 @@ public static class Reach
     /// <summary>How far a blow's edge counts into a target prop: a solid one fills its cell.</summary>
     public const float PropRadius = 0.5f;
 
-    public static Entity TargetInSweep(Simulation sim, Entity attacker, AttackDef attack, float aim)
+    public static Entity TargetInSweep(Simulation sim, Entity attacker, AttackDef attack, float aim) =>
+        ThingInSweep(sim, attacker, attack, aim, d => d.Building is { Target: true });
+
+    /// <summary>The nearest structure in a melee blow's sweep whose def is <paramref name="which"/>, or Entity.Null.</summary>
+    public static Entity ThingInSweep(Simulation sim, Entity attacker, AttackDef attack, float aim, Func<Defs.ThingDef, bool> which)
     {
         if (attack.Ranged)
             return Entity.Null;
@@ -167,7 +171,7 @@ public static class Reach
             {
                 var c = new int3(me.Cell.X + dx, me.Cell.Y + dy, me.Cell.Z);
                 if (!sim.Map.InBounds(c) || sim.Map.Structure[sim.Map.Idx(c)] is not { IsNull: false } s
-                    || !w.TryGet<Thing>(s, out var t) || t.Def.Building is not { Target: true })
+                    || !w.TryGet<Thing>(s, out var t) || !which(t.Def))
                     continue;
                 var d = new float2(t.Cell.X + 0.5f - me.Pos.X, t.Cell.Y + 0.5f - me.Pos.Y);
                 var dist = MathF.Sqrt(d.X * d.X + d.Y * d.Y);

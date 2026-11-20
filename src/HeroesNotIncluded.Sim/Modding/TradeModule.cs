@@ -64,8 +64,8 @@ public interface ITradeModule
     /// <summary>Stock a building if it's this trade's workplace (its chest, its stations): as a round's town is set up, or one is rebuilt.</summary>
     void Stock(Simulation sim, Entity building) { }
 
-    /// <summary>A piece of furniture burned away (the fire's done with it; its thing is already gone).</summary>
-    void Burned(Simulation sim, ThingDef def, int3 cell, byte facing) { }
+    /// <summary>A piece of furniture lost (burned away, smashed in a brawl): its thing is already gone.</summary>
+    void Lost(Simulation sim, ThingDef def, int3 cell, byte facing) { }
 
     /// <summary>A customer sent to the practice yard for this trade's player: make them want what the trade sells.</summary>
     void PracticeCustomer(Simulation sim, Entity player, Entity customer, int index) { }
@@ -146,9 +146,9 @@ public static class Trades
             m.Stock(sim, building);
     }
 
-    public static void Burned(Simulation sim, ThingDef def, int3 cell, byte facing)
+    public static void Lost(Simulation sim, ThingDef def, int3 cell, byte facing)
     {
         foreach (var m in All(sim))
-            m.Burned(sim, def, cell, facing);
+            m.Lost(sim, def, cell, facing);
     }
 }
