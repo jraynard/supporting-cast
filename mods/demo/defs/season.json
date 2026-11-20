@@ -1,0 +1,20 @@
+// The demo's season: two days, not three, so a round is about twenty-five real minutes from the deal to
+// the end of the festival. Only the fields given change; the rest of data/defs/season.json stands, but a
+// list (the beats) is replaced whole. Tuned with --season-sweep --mods demo.
+{
+  "seasons": [
+    {
+      "name": "Season",
+      "$patch": "merge",
+      "days": 2,
+      "renownTarget": 40,
+      "beats": [
+        // One crisis on the first afternoon or evening, once the town's found its feet: a raid most
+        // likely, the demo's loudest moment.
+        { "day": 1, "fromHour": 14, "toHour": 21, "strength": 0.8, "kinds": { "Raid": 4, "Fire": 2, "Shortage": 1, "Plague": 1 } },
+        // The dragon on the last morning, gone before the festival goes up at festivalSetupHour.
+        { "day": 2, "fromHour": 6, "toHour": 8, "strength": 1.2, "kinds": { "Dragon": 1 } }
+      ]
+    }
+  ]
+}

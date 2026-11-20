@@ -23,6 +23,12 @@ public sealed class MapDef : Def
     public int Width { get; set; }
     public int Height { get; set; }
 
+    /// <summary>
+    /// Offered on the title's town picker. False keeps a town loaded (<c>--map</c>, tests) but not chosen
+    /// there: the demo's mod sets it on every town but Millbrook.
+    /// </summary>
+    public bool Offered { get; set; } = true;
+
     /// <summary>Z levels: ground to dig into below, headroom for storeys and roofs above.</summary>
     public int Depth { get; set; } = Maps.MapGenerator.RecommendedDepth;
 

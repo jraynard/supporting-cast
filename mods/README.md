@@ -13,5 +13,7 @@ turns one off). Check one with `dotnet run --project src/HeroesNotIncluded -- --
   candles dipped layer by layer, lumpy if dipped before the wax has set. A first pass, to be fleshed out.
 - `siege`: Siege Night, a game mode: dusk, three waves of raiders, held till dawn.
 - `long-season`: the example data mod, a single `$patch` on the season.
+- `demo`: the Next Fest demo's content (docs/NEXT-FEST.md): a two-day season, Millbrook alone. On only in a
+  demo copy (`BuildInfo.IsDemo`), which plays it and the carpenter and no other mod; `--mods demo` tries its season.
 
 A new mod adds itself here. Templates for new ones: `modkit/`.

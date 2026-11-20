@@ -50,6 +50,8 @@ is loaded):
   (none named: all of them); `seams`, ore bodies it's sure of (`{ block, at, radius, levels }`, their edge the
   seed's); `tunnels`, passages carved at a level (`{ level, cells }`, with rock two levels above them).
   Millbrook's mine is the worked example (`tools/village_map.py`, `tools/mapkit.py`'s `seam` and `tunnel`).
+  `"offered": false` keeps a town loaded (`--map`, tests) but off the title's town picker: `mods/demo` patches
+  it onto Reedmere.
 - **Overriding:** a def with the same name replaces the earlier one.
 - **Patching:** `"$patch": "merge"` merges only the fields given into the existing def (objects merge
   field by field; arrays and values are replaced whole), and `"$patch": "remove"` drops it, so a mod

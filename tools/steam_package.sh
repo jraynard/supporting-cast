@@ -19,7 +19,9 @@
 #   STEAM_BRANCH       the branch set live, default "testing"; never "default" (going live is by hand)
 #   VERSION            for the build's description, default from the archives' names
 #
-# The demo's own content (mods/demo, docs/NEXT-FEST.md) isn't built yet: for now a demo depot is the game's.
+# The demo is the same build told it's the demo: steam.json says "demo": true (BuildInfo.IsDemo), which turns on
+# only its mods (carpenter, demo) and hides the rest (DemoGate). Its Windows and Linux depots leave out the mods it
+# doesn't play; the Mac's keep them, inside the signed .app, where removing anything would break the signature.
 set -euo pipefail
 
 kind="${1:-}"; dist="${2:-}"; out="${3:-}"
@@ -65,9 +67,20 @@ for lib in windows/steam_api64.dll linux/libsteam_api.so mac/HeroesNotIncluded.a
     [[ -f "$out/content/$lib" ]] || fail "$lib missing: is external/steamworks/ in the build?"
 done
 
-# Which app this copy is. On the Mac it sits beside the .app, not in it: the bundle is signed.
+# The demo plays only these of the game's mods (Mods/GameContent.cs, DemoMods); the rest stay out of its depots.
+if [[ "$kind" == demo ]]; then
+    for p in windows linux; do
+        [[ -f "$out/content/$p/mods/demo/mod.json" ]] || fail "$p has no mods/demo"
+        for mod in "$out/content/$p/mods"/*/; do
+            case "$(basename "$mod")" in carpenter|demo) ;; *) rm -rf "$mod" ;; esac
+        done
+    done
+fi
+
+# Which app this copy is, and whether it's the demo. On the Mac it sits beside the .app, not in it: the bundle is signed.
+demo=false; [[ "$kind" == demo ]] && demo=true
 for p in windows linux mac; do
-    printf '{ "appId": %s, "storeAppId": %s }\n' "$app" "$store" > "$out/content/$p/steam.json"
+    printf '{ "appId": %s, "storeAppId": %s, "demo": %s }\n' "$app" "$store" "$demo" > "$out/content/$p/steam.json"
 done
 
 cat > "$out/app_build.vdf" << EOF

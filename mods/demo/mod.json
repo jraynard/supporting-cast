@@ -1,0 +1,8 @@
+{
+  "id": "demo",
+  "name": "The Demo",
+  "version": "1.0.0",
+  "authors": ["Heroes Not Included"],
+  "description": "Steam Next Fest's demo (docs/NEXT-FEST.md): a two-day season in Millbrook, about twenty-five minutes to the festival. On only in a demo copy (BuildInfo.IsDemo, with the carpenter), or --mods demo to try its season.",
+  "gameVersion": "0.1"
+}
