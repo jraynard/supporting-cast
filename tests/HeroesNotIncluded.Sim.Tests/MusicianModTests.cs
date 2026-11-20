@@ -1210,6 +1210,38 @@ public class MusicianModTests
     });
 
     [Fact]
+    public void AnyoneCanTossACoinInTheHatButTheMusician() => WithMusician(() =>
+    {
+        // From the co-op test's list: another player should be able to tip too, not only the villagers.
+        var defs = MusicianDefs();
+        var (sim, me, session, listener) = Busking(defs);
+        var module = new MusicianModule();
+        var hat = session.Hat;
+        var at = sim.World.Get<Thing>(hat).Cell;
+        var spot = Sim.Ai.AiQueries.RandomReachableNear(sim, listener, at, 1, reject: c => c == at || c == sim.World.Get<Position>(me).Cell)!.Value;
+        FireDrill.MoveTo(sim, listener, spot);
+        Purse(sim, listener);
+        var offered = module.EarlyActionAt(sim, listener, at, spot);
+        Assert.NotNull(offered);
+        Assert.Contains("Toss a coin", offered!.Value.Label);
+        Assert.Equal(hat, offered.Value.Target);
+        module.Perform(sim, listener, offered.Value with { By = module });
+        module.Perform(sim, listener, offered.Value with { By = module }); // and again: as often as they like
+        Assert.Equal(2, Takings.InHat(sim, hat));
+        Assert.Equal(8, Sim.Shops.Coin.Count(sim, listener));
+        Assert.Equal((listener, 1), (session.Tips[^1].From, session.Tips[^1].Silver)); // the musician's window says who
+        Assert.All(Takings.Tossed(sim, hat), c => Assert.False(sim.IsAvailable(c)));
+        // The musician's own hat offers them nothing of the kind.
+        var mine = module.EarlyActionAt(sim, me, at, sim.World.Get<Position>(me).Cell);
+        Assert.False(mine is { } a && a.Label.Contains("Toss"));
+        // Penniless, nothing's offered.
+        var purse = Sim.Shops.Coin.Count(sim, listener);
+        Sim.Shops.Coin.PayDown(sim, listener, spot, purse);
+        Assert.Null(module.EarlyActionAt(sim, listener, at, spot));
+        return 0;
+    });
+
+    [Fact]
     public void ATuneCalledForAndPlayedIsTippedWell() => WithMusician(() =>
     {
         var defs = MusicianDefs();

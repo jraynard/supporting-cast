@@ -1142,6 +1142,10 @@ public sealed class MusicianModule : ITradeModule
     /// <summary>F where you stand: with an instrument, play it; without one, and music in earshot, dance to it (anyone, any trade).</summary>
     public AvatarAction? EarlyActionAt(Simulation sim, Entity avatar, int3 cell, int3 here)
     {
+        // A musician's hat set down in reach, and silver on you: toss a coin in (anyone but its musician).
+        if (!sim.World.Has<WorkSession>(avatar) && AvatarSystem.InReach(here, cell) && Takings.HatAt(sim, cell) is { Hat.IsNull: false } inHat
+            && inHat.Musician != avatar && Sim.Shops.Coin.Count(sim, avatar) >= Takings.Tossing)
+            return new AvatarAction(AvatarActionKind.Custom, $"Toss a coin in {sim.World.Get<Creature>(inHat.Musician).Name}'s hat", cell, inHat.Hat);
         // Only where you stand with nothing else there to use: on a bed or by a station, F is that (a playtest: lying down
         // on the shrine's pallet opened the music instead).
         if (cell != here || sim.World.Has<WorkSession>(avatar) || !sim.Map.InBounds(cell) || !sim.Map.Structure[sim.Map.Idx(cell)].IsNull)
@@ -1159,7 +1163,9 @@ public sealed class MusicianModule : ITradeModule
         var w = sim.World;
         if (!w.IsAlive(action.Target) || w.Has<WorkSession>(avatar))
             return;
-        if (w.Has<Creature>(action.Target)) // a musician: to dance to
+        if (w.Has<Thing>(action.Target) && Takings.HatAt(sim, sim.LocationOf(action.Target)).Hat == action.Target) // a hat: a coin in it
+            Takings.Toss(sim, avatar, action.Target);
+        else if (w.Has<Creature>(action.Target)) // a musician: to dance to
         {
             if (DanceSession.MusicHeard(sim, avatar) == action.Target)
                 WorkSystem.Start(sim, avatar, new DanceSession { Musician = action.Target, HeardAt = sim.Clock.Tick });

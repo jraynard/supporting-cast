@@ -162,6 +162,39 @@ public static class Takings
         return paid;
     }
 
+    /// <summary>What a passer-by tosses in the hat with F: a coin at a time, as often as they like.</summary>
+    public const int Tossing = 1;
+
+    /// <summary>A playing musician's hat lying at or beside <paramref name="cell"/>, and whose it is; nulls if none.</summary>
+    public static (Entity Hat, Entity Musician) HatAt(Simulation sim, int3 cell)
+    {
+        var w = sim.World;
+        foreach (var e in w.Query<WorkSession>())
+            if (w.Get<WorkSession>(e) is PlaySession { Hat: var hat } && w.IsAlive(hat) && w.Get<Thing>(hat).Spawned
+                && w.Get<Thing>(hat).Cell is var at && at.Z == cell.Z && Math.Abs(at.X - cell.X) <= 1 && Math.Abs(at.Y - cell.Y) <= 1)
+                return (hat, e);
+        return (Entity.Null, Entity.Null);
+    }
+
+    /// <summary>
+    /// Someone (a player, F at the hat) tosses a coin in: it lands by the hat, the musician's, and shows in their window
+    /// as who gave it. Not the musician's own coin. Returns what went in.
+    /// </summary>
+    public static int Toss(Simulation sim, Entity from, Entity hat)
+    {
+        var w = sim.World;
+        var (found, musician) = w.IsAlive(hat) && w.Get<Thing>(hat).Spawned ? HatAt(sim, w.Get<Thing>(hat).Cell) : (Entity.Null, Entity.Null);
+        if (found != hat || musician == from || Coin.Count(sim, from) < Tossing)
+            return 0;
+        var paid = Coin.PayDown(sim, from, w.Get<Thing>(hat).Cell, Tossing);
+        if (paid > 0)
+        {
+            Landed(sim, musician, from, paid);
+            Claim(sim, musician, hat);
+        }
+        return paid;
+    }
+
     /// <summary>A tip landed by the hat: kept on the musician's session, so their window can show who gave it.</summary>
     private static void Landed(Simulation sim, Entity musician, Entity from, int silver)
     {

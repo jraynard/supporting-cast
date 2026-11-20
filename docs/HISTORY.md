@@ -2787,3 +2787,5 @@ From the user's playing on a Deck:
   the player. Everyone down, nobody was left to bind anyone, and all bled out by morning.
 - **Fixed: a sweep crashed when an AI empath was downed by a wound it drew in.** The job ended inside its own step,
   and the AI then ended it again (`Job.Tick`, `AiSystem.RunJob`).
+- **Anyone can toss a coin in the musician's hat** (from the co-op list): F at or beside a playing musician's hat puts in
+  a silver, as often as you like (`Takings.Toss`); the musician's window shows who gave it. Not their own hat.
