@@ -157,6 +157,31 @@ public class BlacksmithTests
         Assert.True(WeaponWear.Mended(sim, sword));
     }
 
+    [Fact]
+    public void AMendShortOfIronIsRefusedBeforeAnyWorkSayingWhy()
+    {
+        var (sim, me, forge, sword) = AtTheBench(hp: 0.4f);
+        foreach (var bar in sim.StoredIn(sim.PackOf(me)).Where(i => sim.World.Get<Thing>(i).Def.Name == "IronBar").ToList())
+            sim.DestroyThing(bar);
+        var cost = Crafting.RepairCost(sim, sim.World.Get<Thing>(forge).Def, sword)!.Value;
+
+        // Nothing in the tongs, no forge fired: told at once what it takes and where it's made.
+        sim.ApplyNow(new RepairCommand(me, forge, sword));
+        Assert.Null(Smithing.PieceOf(sim, me));
+        Assert.False(sim.World.Has<FiredForMending>(forge));
+        var said = sim.Messages.Messages.Last();
+        Assert.Equal(MessageKind.Warning, said.Kind);
+        Assert.Contains($"takes {cost.Count} {cost.Material.ThingDef.Label}, and you have none to hand", said.Text);
+        Assert.True(said.Text.Contains("The forge makes iron bars."), said.Text);
+        Assert.Equal(0, Crafting.ToHandForRepair(sim, me, cost.Material));
+
+        // With the iron in the pack, the same key takes it up.
+        Inventory.Stow(sim, me, sim.CreateItem(cost.Material.ThingDef, cost.Count, Simulation.MaterialFor(cost.Material.ThingDef, null)));
+        Assert.Null(Crafting.ShortForRepair(sim, me, forge, sword));
+        sim.ApplyNow(new RepairCommand(me, forge, sword));
+        Assert.True(Smithing.PieceOf(sim, me) is { IsMend: true });
+    }
+
     private static int Coinless(Simulation sim, Entity me, string def) =>
         sim.StoredIn(sim.PackOf(me)).Where(i => sim.World.Get<Thing>(i).Def.Name == def).Sum(i => sim.World.Get<Stack>(i).Count);
 
