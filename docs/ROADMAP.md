@@ -2,7 +2,7 @@
 
 What's next, in order. Design intent is in [DESIGN.md](DESIGN.md); everything built so far, slice
 by slice, is in [HISTORY.md](HISTORY.md). When something's done, move it to HISTORY.md and trim it
-here.
+here. Ideas for long after this roadmap are in [VISION.md](VISION.md).
 
 ## Where we are
 

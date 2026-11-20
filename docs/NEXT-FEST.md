@@ -238,7 +238,7 @@ capsule's size.
       every size at 100%, plus the small capsule at the half size a store list shows it.
 - [ ] **Judge the three together** on the contact sheet, at small size first. Pick one, then tweak
       the framing and do part 2.
-- [ ] Add the musician video from 18 Nov (`~/2026-11-18 19-02-22.mp4`) and the weekend's recordings
+- [ ] Make a new musician video with updated UI and a non license song lol
       to the trailer's footage. Keep the stories that go with them in MARKETING.md.
 
 ## If we're late

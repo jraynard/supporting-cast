@@ -3,7 +3,7 @@
 Heroes Not Included (`HeroesNotIncluded` in code; the repo folder is still `supporting-cast`) is a multiplayer fantasy village game in C#/.NET 10: players take
 the trades a tabletop party usually walks past, with optional traitors. It was forked from
 DragonWorld at `cf61dfc` and runs on the **Narsil** engine (git submodule at `external/narsil`) on
-BRUTAL (GLFW + Vulkan + Dear ImGui). Design: docs/DESIGN.md. Next: docs/ROADMAP.md; done: docs/HISTORY.md. Brand: art/brand/brand-guide.html.
+BRUTAL (GLFW + Vulkan + Dear ImGui). Design: docs/DESIGN.md. Next: docs/ROADMAP.md; done: docs/HISTORY.md. Long term: docs/VISION.md. Brand: art/brand/brand-guide.html.
 Until 1 Mar 2027 the Now is the Steam Next Fest demo: docs/NEXT-FEST.md.
 
 ## Commands
