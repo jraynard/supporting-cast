@@ -96,3 +96,68 @@ copy without them.
   - DM spam filter on.
 - **Events:** schedule each playtest session as a Discord Event, so it shows at the top of the
   server, with a reminder.
+
+## Steam
+
+Every published build also goes to Steam once `STEAM_APP_ID` is set: the `steam` job in
+`playtest-release.yml` turns the same three packages into depots (`tools/steam_package.sh`) and
+uploads them with `steamcmd` to the **testing** branch. Going live on the default branch is always
+a click in Steamworks, by hand. The game's files are the itch build's bytes; only a `steam.json`
+beside the game (on the Mac, beside the `.app`) makes a copy Steam's
+(`src/HeroesNotIncluded/Platforms/SteamConfig.cs`), so itch and Steam players of one version can
+play together. Valve's libraries are in `external/steamworks/` (its README says how to update).
+
+### Trying it from a checkout
+
+With the Steam client running:
+
+```sh
+dotnet run --project src/HeroesNotIncluded -- --steam 480 --new-game --name Arin
+```
+
+480 is Valve's public test app (Spacewar). The log says `Steam: started for app 480 (dev), as
+<your name>`, and a few seconds later whether the overlay hooked the game.
+
+Steam only draws its overlay (Shift+Tab) over games it launches itself, which is also what the
+invite dialog and the Wishlist button open. To have it from a terminal on Linux, switch on its
+Vulkan layer and preload its renderer, as Steam would:
+
+```sh
+ENABLE_VK_LAYER_VALVE_steam_overlay_1=1 LD_PRELOAD=$HOME/.local/share/Steam/ubuntu12_64/gameoverlayrenderer.so \
+  dotnet run --project src/HeroesNotIncluded -- --steam 480 --new-game --name Arin
+```
+
+The log then says `Steam: the overlay is on (Shift+Tab)`. A Steam copy always opens its window
+through X11 (XWayland on a Wayland desktop, `GameHostOptions.PreferX11`): the overlay hooks X11
+input, and over a native Wayland window it loads but never sees Shift+Tab, which then reaches the
+game instead. Elsewhere (Windows, the Deck): Steam →
+Add a Game → Add a Non-Steam Game, pick the built `HeroesNotIncluded`, and set its launch options to
+`--steam 480`.
+
+### One-time setup
+
+1. **The apps.** In Steamworks, the game's app and its demo (a demo is an app of its own, linked to
+   the game). Give each three depots, Windows, Linux and macOS, with matching OS settings. Depot IDs
+   are usually the app ID plus 1, 2 and 3; if not, set them below.
+2. **Launch options**, for each app:
+   - Windows: `HeroesNotIncluded.exe`.
+   - Linux: `HeroesNotIncluded`, with the Steam Linux Runtime 3.0 ("sniper") chosen under
+     Installation → Linux Runtime.
+   - macOS: `HeroesNotIncluded.app`.
+3. **A testing branch** on each app (Builds → Branches), password-protected if testers share it.
+4. **Rich presence:** upload `packaging/steam/rich_presence.vdf` under Community → Rich Presence
+   Localization, for the game and the demo. Upload it again whenever a line changes.
+5. **A builder account:** a separate Steam account with only Edit App Metadata and Publish App
+   Changes To Steam permissions on these apps, Steam Guard on. On a machine of your own, run
+   `steamcmd +login <builder> +quit` once and enter the Steam Guard code. Then base64-encode its
+   `config/config.vdf` (under `~/.steam/steamcmd/` or wherever steamcmd lives), which keeps that login.
+6. **On GitHub:**
+   - Variables: `STEAM_APP_ID`, `STEAM_DEMO_APP_ID`, and only if they aren't app + 1, 2, 3:
+     `STEAM_DEPOT_WINDOWS`, `STEAM_DEPOT_LINUX` and `STEAM_DEPOT_MAC`, and the same with `STEAM_DEMO_`.
+   - Secrets: `STEAM_USERNAME` (the builder) and `STEAM_CONFIG_VDF` (the base64 above). If Steam
+     asks for a code again later, redo the login and replace the secret.
+
+### Releasing
+
+The same tag as for itch. When the run finishes, the build is live on the testing branch. To put it
+in front of everyone, in Steamworks: Builds → set it live on **default**.

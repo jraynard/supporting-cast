@@ -113,6 +113,12 @@ public sealed partial class VillageGame
             else
                 Host.SwitchTo(new TitleGame());
         }
+        if (Platforms.GamePlatform.Current.HasStore)
+        {
+            ImGui.SameLine(0, Gui.S(8));
+            if (ImGui.Button("Wishlist on Steam"u8, in _autoSize))
+                Platforms.GamePlatform.Current.OpenStore();
+        }
         DrawReplayButton();
         DrawPlaytestFolderButton();
         Panel.End();

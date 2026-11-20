@@ -168,6 +168,21 @@ if (args.Contains("--dev"))
     VillageGame.DevMode = true;
 HeroesNotIncluded.Net.CoopRelay.Override = ParseString(args, "--relay");
 CharacterRoster.PickOverride = ParseString(args, "--character");
+// Steam, when this copy is Steam's (a steam.json beside it) or --steam N asks: before the window, since its
+// overlay hooks Vulkan as it starts. A Steam copy opened directly is started again through Steam.
+if (HeroesNotIncluded.Platforms.SteamConfig.Find(args, AppContext.BaseDirectory) is { } steamConfig)
+{
+    if (HeroesNotIncluded.Platforms.SteamPlatform.RestartThroughSteam(steamConfig))
+    {
+        Log.Engine.Info("Steam: starting the game again through Steam");
+        return;
+    }
+    if (HeroesNotIncluded.Platforms.SteamPlatform.TryStart(steamConfig) is { } steam)
+    {
+        HeroesNotIncluded.Platforms.GamePlatform.Use(steam);
+        AppDomain.CurrentDomain.ProcessExit += (_, _) => HeroesNotIncluded.Platforms.GamePlatform.Shutdown();
+    }
+}
 using var host = new GameHost(new GameHostOptions
 {
     Title = TitleGame.Title,
@@ -177,6 +192,9 @@ using var host = new GameHost(new GameHostOptions
     IconPath = Path.Combine(AppContext.BaseDirectory, "data", "icon.png"),
     Display = settings.Display,
     VSync = !stress && settings.VSync,
+    // Steam's overlay (Shift+Tab, invites, the store) hooks X11 input: on a Wayland desktop it never sees its
+    // hotkey over a native Wayland window, so a Steam copy opens through XWayland. itch and dev runs stay native.
+    PreferX11 = HeroesNotIncluded.Platforms.GamePlatform.Current is HeroesNotIncluded.Platforms.SteamPlatform,
     SceneSamples = settings.Msaa, // fixed for the run: the world's pipelines are built for it
     MaxFps = stress ? 0 : settings.MaxFps,
     CapUnsyncedFps = !stress,

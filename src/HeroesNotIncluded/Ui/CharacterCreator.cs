@@ -39,6 +39,14 @@ public sealed class CharacterCreator
 
     private readonly List<OutfitDef> _presets;
 
+    /// <summary>A first name to start from (the player's Steam name, for their first character); one too long for the box is left alone.</summary>
+    public void SuggestName(string name)
+    {
+        name = name.Trim();
+        if (name.Length > 0 && System.Text.Encoding.UTF8.GetByteCount(name) < 32)
+            _name.SetValue(name.AsSpan());
+    }
+
     public CharacterCreator(GameHost host, DefDatabase defs)
     {
         this.host = host;

@@ -163,6 +163,10 @@ public sealed class TitleGame : Game
             new("Play with friends", "Open the doors, or pull up a stool.", null, MenuAction.Friends),
             // A mod's ways to play (a night of raids to see through), when there are any.
             .. (OtherModes().Count > 0 ? new[] { new MenuItem("Other ways to play", string.Join(", ", OtherModes().Select(m => m.Label)) + ".", null, Then: () => OpenSubmenu(ModeItems(), "How will you play?")) } : Array.Empty<MenuItem>()),
+            // The demo's way to the full game's page (Platforms.IGamePlatform.HasStore).
+            .. (Platforms.GamePlatform.Current.HasStore
+                ? new[] { new MenuItem("Wishlist on Steam", "The full season, and more of the town. We'll tell you when the doors open.", null, Then: Platforms.GamePlatform.Current.OpenStore) }
+                : Array.Empty<MenuItem>()),
             new("Settings", "House rules.", null, MenuAction.Settings),
             new("More", "Characters, saves, replays, bugs, credits.", null, MenuAction.More),
             new("Quit", "Close up for the night.", null, MenuAction.Exit),
@@ -421,6 +425,8 @@ public sealed class TitleGame : Game
         _picker = new CharacterPicker(Host, _roster, defs);
         if (_roster.Last is { } last)
             Prefill(last);
+        else if (Platforms.GamePlatform.Current.PersonaName is { } persona)
+            _creator.SuggestName(persona); // a first character goes by the player's Steam name until they change it
         _items = MainItems();
         // The village behind the menu, its people about their day (no round: nobody's dealt a trade).
         _sim = VillageRound.NewSimulation(defs, (ulong)Random.Shared.Next(1, 100_000));
@@ -456,6 +462,32 @@ public sealed class TitleGame : Game
     }
 
     /// <summary>
+    /// Steam's callbacks, "in the menus" for friends, and a friend's Join game (or an accepted
+    /// invite) taken up here: straight into the join as the last character played, or, with none
+    /// yet, the creator first and the code waiting in the Join panel.
+    /// </summary>
+    private void UpdatePlatform()
+    {
+        var platform = Platforms.GamePlatform.Current;
+        platform.Update();
+        platform.SetPresence(Platforms.Presence.Menu);
+        platform.SetJoinCode(null, 0);
+        if (platform.TakeJoinRequest() is not { } code)
+            return;
+        _coopMenu ??= new CoopMenu(Host, _defs);
+        if (_coopMenu.Busy)
+            return; // already joining someone
+        if ((_coopMenu.Playing ??= _roster.Last) == null)
+        {
+            _coopMenu.Prefill(code);
+            ChooseCharacter(Purpose.Join);
+            return;
+        }
+        (_picking, _creating, _joining) = (false, false, true);
+        _coopMenu.Connect(code);
+    }
+
+    /// <summary>
     /// The light the title is drawn in, whatever the hour in its village: golden, a little low,
     /// the brand's "common room at dusk" without a night falling on the menu.
     /// </summary>
@@ -476,6 +508,7 @@ public sealed class TitleGame : Game
         if (Host.Input.WasKeyPressed(GlfwKey.F7))
             _error = ShaderReload.Reload(Host, _quads) is { } shaderError ? $"Shader error: {shaderError}" : null;
         UpdatePad();
+        UpdatePlatform();
 
         if (_joining)
             _coopMenu?.Update(dt);

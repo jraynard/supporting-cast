@@ -231,6 +231,13 @@ public sealed partial class VillageGame
                 if (ImGui.SmallButton("Copy"u8))
                     ImGui.SetClipboardText(code);
                 Gui.ItemTip("Friends anywhere type this into Co-op → Join a Game.");
+                if (Platforms.GamePlatform.Current.CanInvite)
+                {
+                    ImGui.SameLine(0, 8);
+                    if (ImGui.SmallButton("Invite friends"u8))
+                        Platforms.GamePlatform.Current.InviteFriends();
+                    Gui.ItemTip("Steam's invite: friends who accept come straight in. They can also pick Join game on you in their friends list.");
+                }
             }
             else if (session.RelayStatus is { } status)
                 TextC(Theme.Warn, status);

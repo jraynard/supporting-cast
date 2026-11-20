@@ -1,0 +1,21 @@
+// What friends see you doing in their Steam friends list (src/HeroesNotIncluded/Platforms/GamePlatform.cs,
+// Presence). Upload it in Steamworks: the app's Community → Rich Presence Localization, once for the game
+// and once for the demo, and again whenever a line changes. %trade%, %town% and %day% are the keys the game
+// sets beside steam_display. The brand guide's voice: plain, warm, a little dry.
+"lang"
+{
+	"Language"	"english"
+	"Tokens"
+	{
+		"#Menu"			"In the menus"
+		"#Village"		"Looking round %town%"
+		"#Lobby"		"Waiting on the deal in %town%"
+		"#Practice"		"Learning the trade: %trade%"
+		"#Round"		"%trade% in %town%, day %day%"
+		"#RoundNoTrade"	"In %town%, day %day%"
+		"#Ghost"		"Haunting %town%, day %day%"
+		"#Festival"		"At the festival in %town%"
+		"#Reveal"		"Counting up in %town%"
+		"#Replay"		"Watching a season again"
+	}
+}

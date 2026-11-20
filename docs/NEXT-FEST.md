@@ -55,7 +55,7 @@ submitted by 1 Feb. Everything else can slip a little.
       *Clear, 19 Nov.*
 - [ ] Set up the game's app, and a **demo app** beside it (demos are an app of their own, with
       their own page and depots).
-- [ ] Steamworks steps 1 to 3 under the test app (below, "Steamworks: the plan").
+- [x] The Steam integration, tried with the test app (below, "Steamworks").
 - [ ] Capsule art, part 1 (below).
 - [ ] A `Demo` build property, and the `mods/demo` content gate (below).
 
@@ -69,7 +69,7 @@ submitted by 1 Feb. Everything else can slip a little.
 ### Week of 7 Dec: the page in for review
 - [ ] **Submit the store page for review by Fri 11 Dec.** Review takes 3 to 5 business days, and
       Valve slows over the holidays.
-- [ ] Steamworks step 4, packaging and upload, once the app IDs exist.
+- [ ] The Steam setup once the app IDs exist (below, "Steamworks"; PUBLISHING.md, "Steam").
 - [ ] **Newcomers play the tutorial,** one trade at a time (ROADMAP, Now 1).
 
 ### Week of 14 Dec: the page goes up
@@ -154,7 +154,7 @@ doors as every other mod (CLAUDE.md, Moddability):
 
 **Co-op.**
 - Steam's Join game and Invite carry the relay's join code, so friends join over our own relay
-  (`CoopRelay.Default`) with no lobby (below, "Steamworks: the plan"). Lobbies and Steam Datagram
+  (`CoopRelay.Default`) with no lobby (below, "Steamworks"). Lobbies and Steam Datagram
   Relay wait for Early Access.
 - [ ] A joiner on another network, a join mid-round, and the host's network pulled for a few
       seconds (ROADMAP, Now 3).
@@ -172,83 +172,42 @@ doors as every other mod (CLAUDE.md, Moddability):
 with their credits. The trailer wants a short theme of our own anyway (ROADMAP, Backlog "Sound"):
 it keeps Content ID claims off our videos and streamers'.
 
-## Steamworks: the plan
+## Steamworks
 
-Game side only, never in Narsil's sim or engine (ROADMAP, "Toward Steam"). Steps 1 to 3 run under
-Valve's public test app (480, "Spacewar") with the Steam client open, so they can start before our
-own app ID exists. Steps 4 and 5 wait for it.
+Built (19 Nov), game side only, never in Narsil or the sim. How it works is in CLAUDE.md's
+architecture notes; setting up and releasing are in [alpha/PUBLISHING.md](alpha/PUBLISHING.md),
+"Steam".
 
-**Joining without lobbies.** Online co-op already goes through our relay with a six-letter code:
-`CoopSession.JoinCode` while hosting, and `RelayClient.JoinAsync` behind Co-op → Join a Game
-(`Ui/CoopMenu.Begin`). Steam can carry that code with no lobby at all:
-- The host sets rich presence `connect` to `--join-code KX7QPM`. Friends then see **Join game** on
-  the host in their Steam friends list.
-- **Invite** opens Steam's own invite dialog with the same string
-  (`ActivateGameOverlayInviteDialogConnectString`).
-- A friend who isn't running the game gets it as a command-line argument when Steam launches the
-  game. A friend who is gets a callback (`GameRichPresenceJoinRequested_t`). Either way, the game
-  goes straight into the join it would make from a typed code.
+- **Valve's flat C API, bound by hand** (`Platforms/SteamNative.cs`, SDK 1.65 in
+  `external/steamworks/`), not Steamworks.NET: we need about fifteen functions, and the bindings
+  match the libraries we commit.
+- **One build for itch and Steam.** The libraries ship in every package. A copy is Steam's only
+  if a `steam.json` sits beside it (`tools/steam_package.sh` adds one), so builds stay the same
+  bytes and itch and Steam players can still play together. `--steam 480` tries it from a checkout.
+- **Joining without lobbies.** While you host online, rich presence `connect` is `--join CODE`
+  with the relay's join code. Friends see **Join game** on you, **Invite friends** sits beside the
+  code in the Players window, and an invite accepted with the game closed launches it with that
+  `--join`, which was already a way in. Accepting one mid-round asks before leaving.
+- **Rich presence** ("Innkeeper in Millbrook, day 2"): its words are
+  `packaging/steam/rich_presence.vdf`, uploaded in Steamworks.
+- **Wishlist on Steam** on the title screen and at the reveal, only in the demo.
+- **The Steam name** is the default name for a first character.
+- **Uploads:** the `steam` job in `playtest-release.yml` puts each published build on the
+  **testing** branch. It stays dormant until the `STEAM_APP_ID` variable is set.
 
-Steam lobbies wait until Early Access (for a lobby browser or matchmaking), along with Steam
-Datagram Relay. The relay stays our transport, so itch and Steam players join the same way.
-
-**1. The spike** (a day; nothing kept that doesn't work)
-- [ ] Steamworks.NET's standalone build (MIT), pinned, and the Steamworks SDK's native libraries
-      (`steam_api64.dll`, `libsteam_api.so`, `libsteam_api.dylib`) beside the executable.
-      The SDK is downloaded from the partner site, so we have to choose where the native libraries
-      live. Recommended: `.cache/`, fetched in CI from a secret URL, the way MoltenVK is. If the
-      repo stays private, `external/steamworks/` is also fine.
-- [ ] `SteamAPI.Init` with `steam_appid.txt` = 480, and `RunCallbacks` every frame.
-- [ ] **The overlay over Vulkan:** does Shift+Tab draw over BRUTAL's swapchain, on Linux and on
-      Windows? This is the riskiest unknown, so it comes first. If it fails, invites still work from
-      the Steam client, but in-game invites and the store button don't.
-
-**2. The platform door**
-- [ ] `src/HeroesNotIncluded/Platform/IPlatform.cs` and `Platform.Current`. `NoPlatform` is what
-      itch builds, checkouts, tests and headless runs get. `SteamPlatform` is used when the build has
-      an app ID and `SteamAPI.Init` succeeds. A failed init falls back to `NoPlatform` and writes a
-      line to the log, never a crash.
-- [ ] The app IDs come from MSBuild properties (`SteamAppId`, `SteamStoreAppId`) and are read as
-      `BuildInfo.SteamAppId` and `BuildInfo.SteamStoreAppId`. The demo build has the demo's ID and
-      the full game's store ID; an ordinary build has neither.
-- [ ] `RestartAppIfNecessary` only in Steam builds, so an itch or checkout run never bounces
-      through Steam.
-- [ ] Init in `Program.cs` before `host.Run`; callbacks pumped once a frame from the host loop
-      (Narsil's `GameHost`; add a per-frame hook there only if there isn't one, kept game-agnostic);
-      shutdown on exit.
-
-**3. What it does**
-- [ ] **Rich presence:** "Behind the bar in Millbrook, day 2", built from the player's trade, town
-      and day. Steam needs a localization file uploaded for `steam_display` tokens: write it in
-      `packaging/steam/rich_presence.vdf`.
-- [ ] **Join and invite:** `connect` set while hosting online (from `CoopSession.JoinCode`, and
-      cleared when it goes away); an **Invite friends** button beside the code in the Players
-      window (`VillageGame.Coop.cs`) and in the lobby; `--join-code CODE` parsed in `Program.cs`
-      to start the join; the join-requested callback handled from the title screen and from a round
-      (asking first if you're mid-round).
-- [ ] **Wishlist:** `ActivateGameOverlayToStore(SteamStoreAppId)`. Without Steam, it opens the store
-      page's URL in the browser.
-- [ ] **The player's name:** the Steam persona name as the default for a new character's name
-      only. `CoopIdentity` stays as it is.
-- [ ] Tests: `NoPlatform` everywhere tests run, and a test that the connect string round-trips through
-      the `--join-code` parsing.
-
-**4. Packaging and upload** (once our app IDs exist)
-- [ ] `tools/package.sh --steam APPID`: the same build with the native Steam libraries and the app
-      ID properties, and no `steam_appid.txt` (Steam supplies the ID when it launches the game).
-      Co-op's build tag hashes the game's assemblies, so Steam builds join Steam builds; itch
-      builds stay as they are.
-- [ ] `packaging/steam/` holds `app_build_*.vdf` and `depot_build_*.vdf` for the game and the demo,
-      one depot per platform.
-- [ ] A `steam` job in `playtest-release.yml` uploads through `steamcmd` to a private `testing`
-      branch. Going live stays a click in Steamworks, by hand. Needs a builder account with
-      upload-only rights (its Steam Guard as a CI secret).
-
-**5. On the hardware**
-- [ ] Two Steam accounts on two machines: Join game from the friends list, Invite from the overlay,
-      launch from an invite with the game closed, and the wishlist button.
-- [ ] The Deck: the overlay, invites and the on-screen keyboard (already asked for in text fields,
-      HISTORY.md "Steam Deck pass").
+Still to do:
+- [x] Init, callbacks and shutdown with the test app (480), from a checkout and from the packaged
+      Linux build.
+- [ ] **The overlay over Vulkan:** does Shift+Tab draw over the game? Add the build to Steam as a
+      non-Steam game with `--steam 480` (PUBLISHING.md). Then Windows, then the Deck. If it won't
+      draw, Join game from the friends list still works, and the Wishlist button opens the browser.
+- [ ] Once Valve makes the apps: the one-time setup in PUBLISHING.md (depots, launch options, the
+      Linux runtime, the testing branch, rich presence, the builder account, the GitHub variables and
+      secrets), then a tagged build onto the testing branch.
+- [ ] Two Steam accounts on two machines: Join game, Invite, an invite with the game closed, an
+      invite mid-round, Wishlist.
+- [ ] The Deck: the overlay, an invite, the on-screen keyboard in text fields.
+- [ ] The demo's own content (`mods/demo`, above). Until then, a demo depot is the game's.
 
 Later, for Early Access: lobbies, Steam Datagram Relay, Steam Cloud for `characters.json`,
 achievements, the Workshop.

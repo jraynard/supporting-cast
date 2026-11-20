@@ -30,6 +30,21 @@
     <None Include="..\..\data\fonts\Cinzel-OFL.txt" Link="licenses\Cinzel-OFL.txt" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
+  <!-- Valve's Steam library for the platform built for (external/steamworks/README.md), beside the game in every build
+       and package. It's only loaded when the game is Steam's (a steam.json beside it, or - -steam N: Platforms/SteamConfig),
+       and it isn't hashed into co-op's build tag, so itch and Steam builds stay the same game. -->
+  <PropertyGroup>
+    <SteamRid>$(RuntimeIdentifier)</SteamRid>
+    <SteamRid Condition="'$(SteamRid)' == '' and $([MSBuild]::IsOSPlatform('Windows'))">win-x64</SteamRid>
+    <SteamRid Condition="'$(SteamRid)' == '' and $([MSBuild]::IsOSPlatform('OSX'))">osx-arm64</SteamRid>
+    <SteamRid Condition="'$(SteamRid)' == '' and $([MSBuild]::IsOSPlatform('Linux'))">linux-x64</SteamRid>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Condition="'$(SteamRid)' == 'win-x64'" Include="..\..\external\steamworks\win64\steam_api64.dll" Link="steam_api64.dll" CopyToOutputDirectory="PreserveNewest" />
+    <None Condition="'$(SteamRid)' == 'linux-x64'" Include="..\..\external\steamworks\linux64\libsteam_api.so" Link="libsteam_api.so" CopyToOutputDirectory="PreserveNewest" />
+    <None Condition="$(SteamRid.StartsWith('osx'))" Include="..\..\external\steamworks\osx\libsteam_api.dylib" Link="libsteam_api.dylib" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
   <!-- The mods that ship with the game (mods/*/src/*): built after the game into their own folders, the game's
        assemblies not rebuilt for them, so a `dotnet run` of the game has its own trades. The game never references
        them: it loads them as mods (docs/MODDING.md). -->

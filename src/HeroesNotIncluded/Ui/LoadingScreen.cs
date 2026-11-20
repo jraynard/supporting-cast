@@ -45,6 +45,7 @@ public sealed class LoadingScreen(Func<Game> start, Func<string, Game> back) : G
     {
         Host.PadCursor.Enabled = false; // the stick's the camera's here (or there's nothing to point at)
         _time += dt;
+        Platforms.GamePlatform.Current.Update(); // a join request waits for the next screen
         if (_work is not { IsCompleted: true } work)
             return;
         if (work.IsCompletedSuccessfully)

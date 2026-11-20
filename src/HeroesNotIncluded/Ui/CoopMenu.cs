@@ -43,12 +43,18 @@ public sealed class CoopMenu(GameHost host, DefDatabase defs) : IDisposable
     /// <summary>The joined session, once <see cref="Draw"/> returns <see cref="Result.Joined"/>; the caller owns it.</summary>
     public CoopSession? Joined { get; private set; }
 
-    /// <summary>Start joining <paramref name="address"/> straight away (<c>--join</c>).</summary>
+    /// <summary>Start joining <paramref name="address"/> straight away (<c>--join</c>, or a friend's Join game on Steam).</summary>
     public void Connect(string address)
     {
-        _address.SetValue(address.AsSpan());
+        Prefill(address);
         Begin(address);
     }
+
+    /// <summary>Put <paramref name="address"/> in the box, to join once the player's chosen who they'll be.</summary>
+    public void Prefill(string address) => _address.SetValue(address.AsSpan());
+
+    /// <summary>Connecting, or receiving a village: a second join would trip over this one.</summary>
+    public bool Busy => _connecting != null || _session != null;
 
     /// <summary>Network work for the frame: discovery, the connection attempt, and the session's first turns.</summary>
     public void Update(float dt)

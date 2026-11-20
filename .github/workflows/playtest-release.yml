@@ -1,8 +1,8 @@
 # Playtest builds. Every push to main tests and packages Windows, Linux and macOS as a check
 # (packages kept as workflow artifacts, nothing published). Pushing a tag v<Version> (the
 # <Version> in Directory.Build.props, with a section for it in docs/alpha/CHANGELOG.md) publishes:
-# the packages go to the restricted itch.io page through butler, and Discord's #builds hears
-# about it. Running it by hand (workflow_dispatch) with "publish" ticked republishes the current
+# the packages go to the restricted itch.io page through butler (and, once STEAM_APP_ID is set, to
+# Steam's testing branch), and Discord's #builds hears about it. Running it by hand (workflow_dispatch) with "publish" ticked republishes the current
 # <Version> from that branch. docs/alpha/PUBLISHING.md has the one-time setup and the release steps.
 #
 # Every platform is packaged in one Linux job on purpose: co-op only connects builds with the same
@@ -210,6 +210,62 @@ jobs:
             dir="$(find "up/$channel" -mindepth 1 -maxdepth 1 -type d | head -1)"
             butler/butler push "$dir" "$ITCH_TARGET:$channel" --userversion "$VERSION"
           done
+
+  steam:
+    # The same packages to Steam, as depots with a steam.json beside the game (tools/steam_package.sh), set live
+    # on the testing branch only: the default branch goes live by hand in Steamworks. Dormant until the
+    # STEAM_APP_ID variable is set; the demo goes too once STEAM_DEMO_APP_ID is. One-time setup: docs/alpha/PUBLISHING.md, "Steam".
+    needs: [package, windows-smoke, macos-sign]
+    if: needs.package.outputs.publish == 'true' && vars.STEAM_APP_ID != ''
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.package.outputs.version }}
+      STEAM_APP_ID: ${{ vars.STEAM_APP_ID }}
+      STEAM_DEMO_APP_ID: ${{ vars.STEAM_DEMO_APP_ID }}
+      STEAM_DEPOT_WINDOWS: ${{ vars.STEAM_DEPOT_WINDOWS }}
+      STEAM_DEPOT_LINUX: ${{ vars.STEAM_DEPOT_LINUX }}
+      STEAM_DEPOT_MAC: ${{ vars.STEAM_DEPOT_MAC }}
+      STEAM_DEMO_DEPOT_WINDOWS: ${{ vars.STEAM_DEMO_DEPOT_WINDOWS }}
+      STEAM_DEMO_DEPOT_LINUX: ${{ vars.STEAM_DEMO_DEPOT_LINUX }}
+      STEAM_DEMO_DEPOT_MAC: ${{ vars.STEAM_DEMO_DEPOT_MAC }}
+      STEAM_USERNAME: ${{ secrets.STEAM_USERNAME }}
+      STEAM_CONFIG_VDF: ${{ secrets.STEAM_CONFIG_VDF }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: tools
+      - uses: actions/download-artifact@v4
+        with:
+          name: packages
+          path: dist
+      # The signed Mac package replaces the unsigned one.
+      - uses: actions/download-artifact@v4
+        with:
+          name: package-macos
+          path: dist
+      - name: Install steamcmd
+        run: |
+          set -euo pipefail
+          [[ -n "$STEAM_USERNAME" && -n "$STEAM_CONFIG_VDF" ]] \
+            || { echo "::error::set the STEAM_USERNAME and STEAM_CONFIG_VDF secrets (docs/alpha/PUBLISHING.md, Steam)"; exit 1; }
+          mkdir -p steamcmd
+          curl -fsSL https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz | tar -xz -C steamcmd
+          # The builder account's saved login, so Steam Guard doesn't ask a runner for a code.
+          mkdir -p steamcmd/config
+          echo "$STEAM_CONFIG_VDF" | base64 -d > steamcmd/config/config.vdf
+      - name: Upload the game
+        run: |
+          set -euo pipefail
+          for v in STEAM_DEPOT_WINDOWS STEAM_DEPOT_LINUX STEAM_DEPOT_MAC; do [[ -n "${!v}" ]] || unset "$v"; done
+          tools/steam_package.sh game dist steam-game
+          steamcmd/steamcmd.sh +login "$STEAM_USERNAME" +run_app_build "$PWD/steam-game/app_build.vdf" +quit
+      - name: Upload the demo
+        if: vars.STEAM_DEMO_APP_ID != ''
+        run: |
+          set -euo pipefail
+          for v in STEAM_DEMO_DEPOT_WINDOWS STEAM_DEMO_DEPOT_LINUX STEAM_DEMO_DEPOT_MAC; do [[ -n "${!v}" ]] || unset "$v"; done
+          tools/steam_package.sh demo dist steam-demo
+          steamcmd/steamcmd.sh +login "$STEAM_USERNAME" +run_app_build "$PWD/steam-demo/app_build.vdf" +quit
 
   discord:
     needs: [package, itch]

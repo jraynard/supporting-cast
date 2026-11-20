@@ -519,6 +519,7 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
         TrackReplay(); // before anything this frame touches the sim
         RecordRound();
         UpdatePlaytest();
+        UpdatePlatform(dt);
 
         var input = Host.Input;
         Controls.Map.Update();

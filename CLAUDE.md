@@ -231,6 +231,10 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. ` (R3
     serializes by constructor parameter. Commands declare `IActorCommand`, `ISubjectCommand`,
     `IPlayerCommand`, `IHostCommand` or `IDevCommand`; `CommandRules.Refusal` checks them on every peer.
     `CommandTests.HostileCommandsDoNoHarm` sends each one hostile values.
+  - Steam (`src/HeroesNotIncluded/Platforms/`): only through `GamePlatform.Current` (`NoPlatform` unless the
+    copy is Steam's: a `steam.json` beside it, or `--steam 480` from a checkout), never from the sim. Valve's flat
+    API bound by hand (`SteamNative`, SDK in `external/steamworks/`); Join game and invites carry the relay's
+    join code as `--join CODE` (`ConnectString`). Uploads: `tools/steam_package.sh`, docs/alpha/PUBLISHING.md.
   - Co-op: `PlayerCharacter` stays on a character, `Avatar` only while they're connected, so a
     player who leaves becomes an AI villager. See `external/narsil/docs/NETWORKING.md`.
   - Saving: every component needs a hand-written codec in `Saving/ComponentCodecs.cs`; state outside

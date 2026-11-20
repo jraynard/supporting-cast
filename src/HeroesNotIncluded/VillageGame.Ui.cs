@@ -101,6 +101,7 @@ public sealed partial class VillageGame
         DrawCredits();
         DrawSaveWindows();
         DrawCoop();
+        DrawJoinOffer();
         DrawReveal();
         DrawPlaytestNote();
         DrawControls();
