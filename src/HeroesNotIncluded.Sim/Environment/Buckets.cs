@@ -170,6 +170,7 @@ public static class Buckets
             if (Math.Abs(c.X - at.X) <= 2 && Math.Abs(c.Y - at.Y) <= 2 && c.Z - at.Z is >= -1 and <= 2)
                 DragonBrain.Douse(sim, e);
         }
+        Hospitality.BrawlCrisis.Doused(sim, at); // well water over a drunk sobers them (and a brawler, out of it)
         sim.RecentSplashes.RemoveAll(s => sim.Clock.Tick - s.Tick > SplashShowTicks);
         sim.RecentSplashes.Add(ev);
         return put;

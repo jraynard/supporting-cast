@@ -200,7 +200,7 @@ public static class Hauntings
         }
     }
 
-    /// <summary>Raiders and predators near a sign are shaken by it (<see cref="Unnerved"/>).</summary>
+    /// <summary>Raiders and predators near a sign are shaken by it (<see cref="Unnerved"/>), and brawlers in the inn's brawl.</summary>
     public static void Unnerve(Simulation sim, int3 at)
     {
         var w = sim.World;
@@ -208,8 +208,8 @@ public static class Hauntings
         foreach (var e in sim.Creatures())
         {
             var c = w.Get<Creature>(e);
-            if (!Factions.Attacker(c.Faction) || c.Def.Race == Race.Dragon || c.Dead)
-                continue;
+            if ((!Factions.Attacker(c.Faction) && !w.Has<Hospitality.Brawler>(e)) || c.Def.Race == Race.Dragon || c.Dead)
+                continue; // raiders, predators, and brawlers in the inn
             var cell = w.Get<Position>(e).Cell;
             if (cell.Z != at.Z || Math.Max(Math.Abs(cell.X - at.X), Math.Abs(cell.Y - at.Y)) > UnnerveReach)
                 continue;

@@ -36,6 +36,20 @@
     { "name": "quick_raiders", "lines": [
       { "text": "Raiders! To arms!" },
       { "text": "Raiders on the road!" }
+    ] },
+    // The brawl at the inn's (Hospitality/BrawlCrisis.Heard): on the wheel only while there's one.
+    { "name": "quick_outside", "lines": [
+      { "text": "Take it outside!" },
+      { "text": "Outside, the lot of you!" },
+      { "text": "Not in here! Outside!" }
+    ] },
+    { "name": "quick_watch", "lines": [
+      { "text": "The watch is coming!" },
+      { "text": "Someone's fetched the watch!" }
+    ] },
+    { "name": "quick_drinks", "lines": [
+      { "text": "Drinks on the house!" },
+      { "text": "A round on the house! Sit down!" }
     ] }
   ]
 }

@@ -11,8 +11,14 @@ namespace HeroesNotIncluded;
 /// </summary>
 public sealed partial class VillageGame
 {
-    /// <summary>A quick line: its bark (<c>barks_quick.json</c>, <c>quick_{Id}</c>), the wheel's label, and how loud.</summary>
-    private readonly record struct QuickLine(string Id, string Label, Volume Volume);
+    /// <summary>
+    /// A quick line: its bark (<c>barks_quick.json</c>, <c>quick_{Id}</c>), the wheel's label, and how loud; offered
+    /// only <paramref name="When"/> it'd mean something, if that's said (the brawl's lines, while there's a brawl).
+    /// </summary>
+    private readonly record struct QuickLine(string Id, string Label, Volume Volume, Func<VillageGame, bool>? When = null);
+
+    /// <summary>A brawl at the inn under way (<see cref="Sim.Hospitality.BrawlCrisis"/>): its quick lines are on the wheel.</summary>
+    private bool Brawling => Sim.Hospitality.BrawlCrisis.Of(_sim) is { Begun: true };
 
     /// <summary>Clockwise from the top, as the wheel shows them: help first, the alarms at the bottom.</summary>
     private static readonly QuickLine[] QuickLines =
@@ -25,6 +31,11 @@ public sealed partial class VillageGame
         new("raiders", "Raiders!", Volume.Shout),
         new("nay", "Nay", Volume.Say),
         new("coming", "Coming!", Volume.Say),
+        // A brawl at the inn: words that may settle it (BrawlCrisis.Heard).
+        new("outside", "Take it outside!", Volume.Shout, g => g.Brawling),
+        new("watch", "The watch is coming!", Volume.Shout, g => g.Brawling),
+        new("drinks", "Drinks on the house!", Volume.Shout, g => g.Brawling && g.HasAvatar
+            && g._sim.World.TryGet<Trade>(g._avatar, out var t) && t.Def.Role == Sim.Defs.TownRole.Tavern),
     ];
 
     /// <summary>The emotes as the wheel offers them, clockwise from the top.</summary>
@@ -32,7 +43,7 @@ public sealed partial class VillageGame
         [.. Enum.GetValues<Emote>().Select(k => new WheelEntry(Act.Emote, _ => k.ToString(), g => g.ShowEmote(k), WorldRenderer.EmoteIcon(k)))];
 
     private static readonly WheelEntry[] QuickEntries =
-        [.. QuickLines.Select(q => new WheelEntry(Act.Emote, _ => q.Label, g => g.SayQuick(q)))];
+        [.. QuickLines.Select(q => new WheelEntry(Act.Emote, g => q.When == null || q.When(g) ? q.Label : null, g => g.SayQuick(q)))];
 
     /// <summary>Picks among a quick line's wordings: presentation only, so its own random, never the sim's.</summary>
     private readonly SimRandom _quickRand = new(0x51C4);
@@ -77,7 +88,7 @@ public sealed partial class VillageGame
         }
         var text = Barks.Pick(_sim.Defs, "quick_" + q.Id, [], _quickRand, _lastQuick) ?? q.Label;
         _lastQuick = text;
-        Issue(new SayCommand(HasAvatar ? _avatar : _ghost, text, q.Volume));
+        Issue(new SayCommand(HasAvatar ? _avatar : _ghost, text, q.Volume, q.Id));
     }
 
     /// <summary>

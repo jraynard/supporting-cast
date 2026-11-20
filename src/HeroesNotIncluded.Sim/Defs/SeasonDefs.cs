@@ -308,6 +308,18 @@ public sealed class BrawlDef
     /// <summary>The chance a brawler's punch, past <see cref="BreakAt"/>, sends them into the table or stool behind them: it takes two blows' worth.</summary>
     public float ShoveChance { get; set; } = 0.35f;
 
+    /// <summary>How much drink a bucket of well water over a brawler takes off (<c>Tipsy</c>): under clumsy after it, they're out of it.</summary>
+    public float DouseSobers { get; set; } = 0.35f;
+
+    /// <summary>Heat a game hour a tune calms (or a sour one riles) for every <see cref="PerBrawlers"/> who hear it.</summary>
+    public float MusicPerHour { get; set; } = 0.4f;
+
+    /// <summary>The chance, each look, a brawler who hears a reel they could dance to dances instead.</summary>
+    public float DanceChance { get; set; } = 0.35f;
+
+    /// <summary>Silver "Drinks on the house!" costs the keeper for each brawler who takes them up on it.</summary>
+    public int DrinksCost { get; set; } = 2;
+
     /// <summary>The chance a brawl boiling over knocks a lamp over: the inn's alight too (a fire crisis of its own).</summary>
     public float FireOnBoil { get; set; } = 0.35f;
 

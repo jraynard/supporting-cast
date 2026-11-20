@@ -6,6 +6,7 @@ using HeroesNotIncluded.Sim.Hospitality;
 using HeroesNotIncluded.Sim.Round;
 using HeroesNotIncluded.Sim.Saving;
 using HeroesNotIncluded.Sim.Scenarios;
+using HeroesNotIncluded.Sim.Speech;
 using HeroesNotIncluded.Sim.Systems;
 using Xunit.Abstractions;
 
@@ -217,5 +218,130 @@ public class BrawlCrisisTests(ITestOutputHelper output)
         Assert.Equal(1, brawl.Smashed);
         // It broke over the first one in its way (the target, or someone between), who knows who threw it.
         Assert.Contains(sim.Creatures(), c => sim.World.TryGet<Provoked>(c, out var p) && p.By == thrower && p.Tick == sim.Clock.Tick);
+    }
+
+    // ---------------- Other ways to settle it ----------------
+
+    private static readonly Guid Ana = Guid.Parse("00000000-0000-0000-0000-0000000000a1");
+
+    /// <summary>A round with Ana as <paramref name="trade"/>, the brawl staged in the inn round her and begun.</summary>
+    private static (Simulation Sim, Entity Me, BrawlCrisis Brawl) Brawling(string trade = "Innkeeper")
+    {
+        var sim = VillageRound.NewSimulation(TestWorld.LoadDefs(), 1234);
+        sim.Presets.PresetMode = true;
+        VillageRound.Setup(sim);
+        sim.Director.Enable(sim.Defs.Difficulty("Normal"));
+        sim.Round.OpenLobby();
+        sim.ApplyNow(new JoinLobbyCommand(Ana, "Ana", default));
+        sim.ApplyNow(new SetTradePreferencesCommand(Ana, [sim.Defs.Trade(trade)], []));
+        sim.ApplyNow(new StartRoundCommand());
+        var me = Players.CharacterOf(sim, Ana);
+        Assert.Equal(trade, sim.World.Get<Trade>(me).Def.Name);
+        Scenarios.BrawlDrill.Stage(sim, me);
+        var brawl = BrawlCrisis.Of(sim)!;
+        sim.TickMany(SimClock.TicksPerHour / 6 + 1);
+        Assert.True(brawl.Begun);
+        return (sim, me, brawl);
+    }
+
+    /// <summary>Stand <paramref name="who"/> right beside <paramref name="by"/>, in the inn.</summary>
+    private static void Beside(Simulation sim, BrawlCrisis brawl, Entity who, Entity by)
+    {
+        var at = sim.World.Get<Position>(by).Cell;
+        Scenarios.FireDrill.MoveTo(sim, who, sim.SpiralFrom(at, 2).First(c => c != at && c.Z == at.Z && sim.Map.Passable(c) && Buildings.At(sim, c) == brawl.Inn));
+    }
+
+    private static void Quick(Simulation sim, Entity me, string id) =>
+        sim.ApplyNow(new SayCommand(me, sim.Defs.Bark("quick_" + id)!.Lines[0].Text, Speech.Volume.Shout, id));
+
+    [Fact]
+    public void ABucketOfWellWaterOverABrawlerSobersThemOutOfIt()
+    {
+        var (sim, _, brawl) = Brawling();
+        var wet = brawl.Brawlers.First(e => BrawlCrisis.Fighting(sim, e));
+        var before = DrinkingSystem.LevelOf(sim, wet);
+        Environment.Buckets.Splash(sim, sim.World.Get<Position>(wet).Cell);
+        Assert.True(DrinkingSystem.LevelOf(sim, wet) < before);
+        Assert.False(sim.World.Has<Brawler>(wet));
+        Assert.Contains(brawl, sim.Director.Active); // the rest are still at it
+    }
+
+    [Fact]
+    public void AGhostsSpookSendsABrawlerRunning()
+    {
+        var (sim, _, brawl) = Brawling();
+        var shaken = brawl.Brawlers.First(e => BrawlCrisis.Fighting(sim, e));
+        Afterlife.Hauntings.Leave(sim, sim.World.Get<Position>(shaken).Cell, Afterlife.HauntKind.Spook);
+        sim.TickMany(SimClock.TicksPerHour / 6 + 1);
+        Assert.False(sim.World.Has<Brawler>(shaken));
+        Assert.True(sim.World.Has<Combat.Leaving>(shaken));
+    }
+
+    [Fact]
+    public void TakeItOutsideWorksOnlyIfTheRingleaderHearsIt()
+    {
+        var (sim, me, brawl) = Brawling();
+        // Out of the ringleader's hearing: they just say no.
+        var other = brawl.Brawlers.First(e => e != brawl.Ringleader && BrawlCrisis.Fighting(sim, e));
+        Scenarios.FireDrill.MoveTo(sim, brawl.Ringleader, sim.World.Get<Position>(me).Cell + new int3(40, 0, 0) is var far && sim.Map.InBounds(far) && sim.Map.Passable(far)
+            ? far : sim.SpiralFrom(new int3(5, 5, sim.World.Get<Position>(me).Cell.Z), 10).First(c => sim.Map.Passable(c)));
+        Beside(sim, brawl, me, other);
+        Quick(sim, me, "outside");
+        Assert.True(sim.World.Has<Brawler>(other), "not the ringleader's say");
+        // Beside the ringleader: the whole crowd goes out with them.
+        Beside(sim, brawl, brawl.Ringleader, me);
+        Quick(sim, me, "outside");
+        Assert.All(brawl.Brawlers, e => Assert.False(sim.World.Has<Brawler>(e)));
+        Assert.All(brawl.Crowd.Where(e => BrawlCrisis.Of(sim) != null), e => Assert.True(sim.World.Has<Combat.Leaving>(e) || sim.World.Get<Creature>(e).Downed));
+    }
+
+    [Fact]
+    public void AQuickLinesWordsMustBeItsOwnToMeanAnything()
+    {
+        var (sim, me, brawl) = Brawling();
+        Beside(sim, brawl, brawl.Ringleader, me);
+        sim.ApplyNow(new SayCommand(me, "Everyone calm down please.", Speech.Volume.Shout, "outside"));
+        Assert.True(sim.World.Has<Brawler>(brawl.Ringleader));
+    }
+
+    [Fact]
+    public void TheWatchScaresOffTheSoberingOnceAndOnlyOnce()
+    {
+        var (sim, me, brawl) = Brawling();
+        var near = brawl.Brawlers.Where(e => BrawlCrisis.Fighting(sim, e)).Take(2).ToList();
+        Beside(sim, brawl, me, near[0]);
+        Quick(sim, me, "watch"); // loud with drink: they don't care
+        Assert.All(near, e => Assert.True(sim.World.Has<Brawler>(e)));
+        var (loaded, _) = Saving.SaveGame.Read(Saving.SaveGame.Write(sim), sim.Defs);
+        Quick(loaded, me, "watch"); // and it's been tried
+        Assert.All(near, e => Assert.True(loaded.World.Has<Brawler>(e)));
+
+        // A fresh brawl, the crowd sobered a little first: the watch sends them off.
+        (sim, me, brawl) = Brawling();
+        foreach (var e in brawl.Brawlers)
+            sim.World.Get<Tipsy>(e).Level = 0.4f;
+        Beside(sim, brawl, me, brawl.Brawlers[0]);
+        Quick(sim, me, "watch");
+        Assert.Contains(brawl.Brawlers, e => !sim.World.Has<Brawler>(e) && sim.World.Has<Combat.Leaving>(e));
+    }
+
+    [Fact]
+    public void DrinksOnTheHouseFromTheKeeperBuysThemOffAtSoMuchAHead()
+    {
+        var (sim, me, brawl) = Brawling("Innkeeper");
+        Inventory.Stow(sim, me, sim.CreateItem(sim.Defs.Thing(Shops.Coin.Silver), 40));
+        var silver = Shops.Coin.Count(sim, me);
+        Beside(sim, brawl, me, brawl.Brawlers[0]);
+        Quick(sim, me, "drinks");
+        var bought = brawl.Brawlers.Count(e => !sim.World.Has<Brawler>(e));
+        Assert.True(bought > 0);
+        Assert.Equal(silver - bought * sim.Defs.Season.Brawl.DrinksCost, Shops.Coin.Count(sim, me));
+
+        // From anyone else, it's jeered.
+        var (sim2, me2, brawl2) = Brawling("Blacksmith");
+        Inventory.Stow(sim2, me2, sim2.CreateItem(sim2.Defs.Thing(Shops.Coin.Silver), 40));
+        Beside(sim2, brawl2, me2, brawl2.Brawlers[0]);
+        Quick(sim2, me2, "drinks");
+        Assert.All(brawl2.Brawlers, e => Assert.True(sim2.World.Has<Brawler>(e)));
     }
 }

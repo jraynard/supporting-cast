@@ -5,6 +5,21 @@ using HeroesNotIncluded.Sim.Systems;
 
 namespace HeroesNotIncluded.Sim.Modding;
 
+/// <summary>What a trade's work does to a brawler in the inn's brawl (<see cref="ITradeModule.Soothe"/>), weakest first.</summary>
+public enum Soothing : byte
+{
+    None,
+
+    /// <summary>Eased: the heat comes down for them.</summary>
+    Calmed,
+
+    /// <summary>Wound up further (a sour tune): the heat goes up for them.</summary>
+    Riled,
+
+    /// <summary>Out of it altogether (dancing to a reel instead).</summary>
+    Settled,
+}
+
 /// <summary>
 /// A trade's sim half, as the core sees it: hooks it calls at fixed points of the day (docs/MODDING.md,
 /// "A new trade"). Every hook has a default that does nothing, so a module answers only what's its own,
@@ -66,6 +81,12 @@ public interface ITradeModule
 
     /// <summary>A piece of furniture lost (burned away, smashed in a brawl): its thing is already gone.</summary>
     void Lost(Simulation sim, ThingDef def, int3 cell, byte facing) { }
+
+    /// <summary>
+    /// What this trade's work is doing to a brawler in the inn's brawl right now (<c>Hospitality.BrawlCrisis</c>):
+    /// the musician's tune calming them, riling them, or turning the fight into a dance. Asked every so often.
+    /// </summary>
+    Soothing Soothe(Simulation sim, Entity brawler) => Soothing.None;
 
     /// <summary>A customer sent to the practice yard for this trade's player: make them want what the trade sells.</summary>
     void PracticeCustomer(Simulation sim, Entity player, Entity customer, int index) { }
@@ -150,5 +171,15 @@ public static class Trades
     {
         foreach (var m in All(sim))
             m.Lost(sim, def, cell, facing);
+    }
+
+    /// <summary>What every trade's work is doing to a brawler, strongest first: settled, then riled, then calmed.</summary>
+    public static Soothing Soothe(Simulation sim, Entity brawler)
+    {
+        var best = Soothing.None;
+        foreach (var m in All(sim))
+            if (m.Soothe(sim, brawler) is var s && s > best)
+                best = s;
+        return best;
     }
 }

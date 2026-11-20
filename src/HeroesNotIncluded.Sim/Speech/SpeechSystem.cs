@@ -348,7 +348,15 @@ public sealed class SpeechSystem : ISimSystem, ISaveState
 }
 
 /// <summary>A character says something aloud.</summary>
-public sealed record SayCommand(Entity Actor, string Text, Volume Volume) : ISimCommand, IActorCommand
+/// <param name="Quick">A quick line's id (<c>barks_quick.json</c>, <c>quick_{Quick}</c>) when it's one off the wheel:
+/// heard, it may mean something (<see cref="Hospitality.BrawlCrisis.Heard"/>). Only if the words are that line's.</param>
+public sealed record SayCommand(Entity Actor, string Text, Volume Volume, string? Quick = null) : ISimCommand, IActorCommand
 {
-    public void Apply(Simulation sim) => sim.Speech.Say(sim, Actor, Text, Volume);
+    public void Apply(Simulation sim)
+    {
+        var said = sim.Speech.Say(sim, Actor, Text, Volume);
+        if (said != null && Quick is { Length: > 0 and <= 32 } id && sim.Defs.Bark("quick_" + id) is { } bark
+            && bark.Lines.Any(l => string.Equals(l.Text, Text, StringComparison.Ordinal)))
+            Hospitality.BrawlCrisis.Heard(sim, Actor, id, said);
+    }
 }

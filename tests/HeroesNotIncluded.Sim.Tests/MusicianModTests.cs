@@ -1107,6 +1107,22 @@ public class MusicianModTests
     });
 
     [Fact]
+    public void InABrawlAReelMakesDancersAndSourPlayingRilesThem() => WithMusician(() =>
+    {
+        // The inn's brawl (Hospitality.BrawlCrisis) asks the trades what they're doing to a brawler (ITradeModule.Soothe).
+        var defs = MusicianDefs();
+        var (sim, me, session, listener) = Recital(defs);
+        var module = new MusicianModule();
+        Assert.Equal(Soothing.None, module.Soothe(sim, listener)); // a pipe held, nothing played
+        session.Carry(session.Book.First(t => t.Name == "MillersWheel"), 0, 0);
+        Assert.Equal(Soothing.Settled, module.Soothe(sim, listener)); // a jig they could dance to
+        session.Concentration = 0.2f;
+        Assert.True(Performance.Of(session).Sour);
+        Assert.Equal(Soothing.Riled, module.Soothe(sim, listener));
+        return 0;
+    });
+
+    [Fact]
     public void SourMusicDrawsNoOneAndDrivesTheAudienceOff() => WithMusician(() =>
     {
         var defs = MusicianDefs();

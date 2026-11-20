@@ -1113,6 +1113,34 @@ public sealed class MusicianModule : ITradeModule
 
     public string? Trade => TradeName;
 
+    /// <summary>
+    /// Music in the inn's brawl (<see cref="ITradeModule.Soothe"/>), to a brawler who hears it clearly: a tender air
+    /// played steady calms them; a reel they could dance to may turn them into a dancer; sour playing riles them.
+    /// Lively but ragged does nothing either way.
+    /// </summary>
+    public Soothing Soothe(Simulation sim, Entity brawler)
+    {
+        var w = sim.World;
+        if (!w.TryGet<Position>(brawler, out var me))
+            return Soothing.None;
+        var heard = Soothing.None;
+        foreach (var e in w.Each<WorkSession>())
+        {
+            if (e == brawler || w.Get<WorkSession>(e) is not PlaySession s || !w.TryGet<Position>(e, out var at)
+                || SpeechSystem.Hear(sim, at.Cell, me.Cell, Volume.Say) != Clarity.Clear)
+                continue;
+            var p = Performance.Of(s);
+            var does = !p.Playing ? Soothing.None
+                : p.Sour ? Soothing.Riled
+                : p.Danceable ? Soothing.Settled
+                : p.Mood == "Tender" && p.Steadiness >= 0.5f ? Soothing.Calmed
+                : Soothing.None;
+            if (does > heard)
+                heard = does;
+        }
+        return heard;
+    }
+
     /// <summary>The strings lesson begins with the lute put out of tune (<see cref="MusicianLessons.PutOut"/>).</summary>
     public void SetUpLesson(Simulation sim, Entity player, LessonDef lesson)
     {

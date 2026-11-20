@@ -269,8 +269,12 @@ do it.
     over into the street. No steel in the inn (`Combat/HouseRules`, lifted for a raid), so it's
     fists: knock them down, or settle the ringleader and the rest lose heart. Once it's hot they smash
     tables and stools (`breaksInBrawls`), the carpenter's to make again (`Refurnishing`, through
-    `ITradeModule.Lost`); boiling over may knock a lamp into a fire. Still to come: other ways to
-    settle it (a tune, a bucket, a haunting, words).
+    `ITradeModule.Lost`); boiling over may knock a lamp into a fire. Stools are thrown (brawlers', and
+    a player's, fists up: `Combat/Hurling`). Other ways to settle it: a bucket of well water sobers a
+    brawler out of it; a ghost's spook sends one running; the musician's tender air calms them, a reel
+    makes dancers of them, sour playing riles them (`ITradeModule.Soothe`); and quick lines off the wheel
+    while it's on: "Take it outside!" (only the ringleader can take them out), "The watch is coming!"
+    (once, and only on those who've sobered a little), "Drinks on the house!" (the keeper, so much a head).
   - **Rooms:** a chest per room for a guest's things while they're out.
   - **A notice board:** at the inn, for shop signs, favours and quests posted where anyone can
     read them.

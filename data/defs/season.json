@@ -51,7 +51,12 @@
         // punch that sends them into the table behind (shoveChance) hits it twice over.
         "throwChance": 0.15, "shoveChance": 0.35,
         // Boiling over, a lamp may go over (fireOnBoil): the inn's alight as well, a fire to meet of its own.
-        "fireOnBoil": 0.35 },
+        "fireOnBoil": 0.35,
+        // Other ways to settle it: a bucket of well water over a brawler takes douseSobers of drink off
+        // (under clumsy, they're out of it); a tune calms (a sour one riles) musicPerHour for every
+        // perBrawlers who hear it, and a reel they can dance to turns one into a dancer (danceChance a
+        // look); "Drinks on the house!" costs the keeper drinksCost a brawler.
+        "douseSobers": 0.35, "musicPerHour": 0.4, "danceChance": 0.35, "drinksCost": 2 },
       // Raid points (storyteller.json's formula) times this: at 0.85 a town of six meets a bandit or
       // two on the first evening and three on the second day. Left to itself the town loses that
       // one (at 1 it was wiped out): it needs its players. At 1.6 the combat sweep's sixteen

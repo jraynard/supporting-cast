@@ -138,6 +138,7 @@ public sealed class BrawlCrisis : ICrisis
         }
         Join(sim, since);
         Settle(sim);
+        Soothe(sim, hours);
         var fighting = _brawlers.Count(e => Fighting(sim, e));
         Heat = Math.Clamp(Heat + (brawl.RisePerHour * fighting / Math.Max(1f, brawl.PerBrawlers) - brawl.CoolPerHour) * hours, 0f, 1f);
         if (Heat >= 1f)
@@ -155,6 +156,152 @@ public sealed class BrawlCrisis : ICrisis
         if (now >= _deadline)
             return Over(sim, met: false);
         return null;
+    }
+
+    /// <summary>
+    /// What the town's trades are doing to the brawlers (<see cref="Modding.Trades.Soothe"/>): a tune
+    /// heard clearly calms them (or, sour, riles them), and one they can dance to turns one into a dancer.
+    /// </summary>
+    private void Soothe(Simulation sim, float hours)
+    {
+        var brawl = sim.Defs.Season.Brawl;
+        var (calmed, riled) = (0, 0);
+        foreach (var e in _brawlers.ToList())
+        {
+            if (!Fighting(sim, e))
+                continue;
+            switch (Modding.Trades.Soothe(sim, e))
+            {
+                case Modding.Soothing.Settled when sim.Rand.NextFloat() < brawl.DanceChance:
+                    Settled(sim, e);
+                    Barks.Say(sim, e, "brawl_dance", Volume.Shout, "Oh, I love this one!");
+                    break;
+                case Modding.Soothing.Settled:
+                case Modding.Soothing.Calmed:
+                    calmed++;
+                    break;
+                case Modding.Soothing.Riled:
+                    riled++;
+                    break;
+            }
+        }
+        Heat = Math.Clamp(Heat + brawl.MusicPerHour * (riled - calmed) / Math.Max(1f, brawl.PerBrawlers) * hours, 0f, 1f);
+    }
+
+    /// <summary>"The watch is coming!" has been tried: it works once.</summary>
+    private bool _watchCalled;
+
+    /// <summary>
+    /// A bucket of well water lands at <paramref name="at"/> (<see cref="Environment.Buckets.Splash"/>): anyone
+    /// in its patch is the soberer for it, and a brawler sobered past clumsy splutters and is out of it.
+    /// </summary>
+    public static void Doused(Simulation sim, int3 at)
+    {
+        var w = sim.World;
+        var brawl = Of(sim);
+        var sobers = sim.Defs.Season.Brawl.DouseSobers;
+        foreach (var e in sim.Creatures().ToList())
+        {
+            if (!w.TryGet<Position>(e, out var p) || Math.Abs(p.Cell.X - at.X) > 1 || Math.Abs(p.Cell.Y - at.Y) > 1 || p.Cell.Z != at.Z
+                || !w.Has<Tipsy>(e))
+                continue;
+            w.Get<Tipsy>(e).Level = Math.Max(0f, w.Get<Tipsy>(e).Level - sobers);
+            if (brawl != null && Fighting(sim, e) && w.Get<Tipsy>(e).Level < DrinkingSystem.ClumsyAt)
+            {
+                brawl.Settled(sim, e);
+                Barks.Say(sim, e, "brawl_doused", Volume.Shout, "Pfah! All right! All right!");
+            }
+        }
+    }
+
+    /// <summary>
+    /// A quick line said aloud (<see cref="SayCommand"/>, <c>barks_quick.json</c>) that means something to a
+    /// brawl, heard by whoever heard it clearly: "Take it outside!", heard by the ringleader, takes the whole
+    /// crowd out of the door and on their way (anyone else just says no); "The watch is coming!" scares off
+    /// those who've sobered a little, once; "Drinks on the house!", from the keeper, buys them off at so much a head.
+    /// </summary>
+    public static void Heard(Simulation sim, Entity speaker, string quick, Utterance said)
+    {
+        if (Of(sim) is not { Begun: true } brawl)
+            return;
+        var w = sim.World;
+        var listening = said.Listeners.Where(h => h.Clarity == Clarity.Clear && Fighting(sim, h.Listener) && h.Listener != speaker)
+            .Select(h => h.Listener).ToList();
+        if (listening.Count == 0)
+            return;
+        switch (quick)
+        {
+            case "outside":
+                // Only the ringleader can take them outside: heard by them, the whole crowd follows them out.
+                if (!listening.Contains(brawl.Ringleader) || DrinkingSystem.LevelOf(sim, brawl.Ringleader) >= DrinkingSystem.ClumsyAt)
+                {
+                    Barks.Say(sim, listening[0], "brawl_deaf", Volume.Shout, "Outside? I'm not going anywhere!");
+                    break;
+                }
+                Barks.Say(sim, brawl.Ringleader, "brawl_outside", Volume.Shout, "Fine! We'll take it outside!");
+                foreach (var e in brawl._brawlers.Where(e => Fighting(sim, e)).ToList())
+                {
+                    brawl.Settled(sim, e);
+                    if (!w.Has<Leaving>(e))
+                        w.Add(e, new Leaving());
+                }
+                break;
+            case "watch":
+                if (brawl._watchCalled)
+                {
+                    Barks.Say(sim, listening[0], "brawl_no_watch", Volume.Shout, "There's no watch in this town!");
+                    brawl.Heat = Math.Min(1f, brawl.Heat + 0.1f);
+                    break;
+                }
+                brawl._watchCalled = true;
+                // Only those who've sobered a little take fright; the loud ones don't care who's coming.
+                var sober = listening.Where(e => DrinkingSystem.LevelOf(sim, e) < DrinkingSystem.LoudAt).ToList();
+                if (sober.Count == 0)
+                    Barks.Say(sim, listening[0], "brawl_no_watch", Volume.Shout, "Let 'em come!");
+                foreach (var e in sober)
+                {
+                    brawl.Settled(sim, e);
+                    Barks.Say(sim, e, "brawl_scarper", Volume.Shout, "The watch! Scarper!");
+                    if (!w.Has<Leaving>(e))
+                        w.Add(e, new Leaving());
+                }
+                break;
+            case "drinks":
+                if (!w.TryGet<Components.Trade>(speaker, out var t) || t.Def.Role != TownRole.Tavern)
+                {
+                    Barks.Say(sim, listening[0], "brawl_jeer", Volume.Shout, "On whose house? Yours?");
+                    break;
+                }
+                var cost = sim.Defs.Season.Brawl.DrinksCost;
+                foreach (var e in listening)
+                {
+                    if (Coin.Count(sim, speaker) < cost)
+                    {
+                        Barks.Say(sim, e, "brawl_jeer", Volume.Shout, "Where's mine, then?");
+                        break;
+                    }
+                    Spend(sim, speaker, cost);
+                    brawl.Settled(sim, e);
+                    Drink(sim, e, DrinkingSystem.LevelOf(sim, e) + 0.15f);
+                    if (w.Has<Adventurer>(e))
+                        w.Get<Adventurer>(e).Satisfaction += 0.5f;
+                    Barks.Say(sim, e, "brawl_drinks", Volume.Shout, "Now you're talking!");
+                }
+                break;
+        }
+    }
+
+    /// <summary>Silver gone from someone's purse (the drinks they stood).</summary>
+    private static void Spend(Simulation sim, Entity who, int amount)
+    {
+        foreach (var stack in Coin.Stacks(sim, who))
+        {
+            if (amount <= 0)
+                break;
+            var take = Math.Min(amount, sim.World.Get<Stack>(stack).Count);
+            sim.DestroyThing(Inventory.TakeFromPerson(sim, who, stack, take));
+            amount -= take;
+        }
     }
 
     /// <summary>The first punch: the ringleader's if they're in, else whoever is.</summary>
@@ -210,6 +357,15 @@ public sealed class BrawlCrisis : ICrisis
             if (!w.IsAlive(e) || !w.Has<Brawler>(e))
                 continue;
             var c = w.Get<Creature>(e);
+            // Shaken by the dead (a ghost's chill, knock or spook): they want out of here.
+            if (c.Able && Afterlife.Hauntings.IsUnnerved(sim, e))
+            {
+                Settled(sim, e);
+                Barks.Say(sim, e, "brawl_spooked", Volume.Shout, "This place is cursed! I'm off!");
+                if (!w.Has<Leaving>(e))
+                    w.Add(e, new Leaving());
+                continue;
+            }
             // Knocked down by one of their own: they'll be back up and at it when they come to.
             if (c.Downed && !c.Dead && w.TryGet<Provoked>(e, out var p) && w.IsAlive(p.By) && w.Has<Brawler>(p.By))
                 continue;
@@ -224,7 +380,7 @@ public sealed class BrawlCrisis : ICrisis
         }
     }
 
-    private void Settled(Simulation sim, Entity e)
+    internal void Settled(Simulation sim, Entity e)
     {
         var w = sim.World;
         w.Remove<Brawler>(e);
@@ -307,6 +463,7 @@ public sealed class BrawlCrisis : ICrisis
         w.Bool(Begun);
         w.Float(Heat);
         w.Int(Smashed);
+        w.Bool(_watchCalled);
         w.Int(_crowd.Count);
         foreach (var e in _crowd)
             w.Entity(e);
@@ -320,7 +477,7 @@ public sealed class BrawlCrisis : ICrisis
         var crisis = new BrawlCrisis
         {
             Started = r.Long(), _deadline = r.Long(), _lastCheck = r.Long(), _deadBefore = r.Int(), _inn = r.Entity(),
-            Ringleader = r.Entity(), Begun = r.Bool(), Heat = r.Float(), Smashed = r.Int(),
+            Ringleader = r.Entity(), Begun = r.Bool(), Heat = r.Float(), Smashed = r.Int(), _watchCalled = r.Bool(),
         };
         for (var n = r.Count(100); n > 0; n--)
             crisis._crowd.Add(r.Entity());

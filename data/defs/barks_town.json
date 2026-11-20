@@ -147,6 +147,47 @@
       { "text": "I'll be back! Tomorrow! Maybe!" },
       { "text": "Don't need your inn. Got a perfectly good ditch." }
     ] },
+    { "name": "brawl_dance", "lines": [
+      { "text": "Oh, I love this one!" },
+      { "text": "Hold that thought, I've got to dance." },
+      { "text": "Is that a reel? Out of my way!" }
+    ] },
+    { "name": "brawl_doused", "lines": [
+      { "text": "Pfah! All right! All right!" },
+      { "text": "That's cold! That's... all right, I'm done." },
+      { "text": "Who threw that? Oh. Me. Fair." }
+    ] },
+    { "name": "brawl_spooked", "lines": [
+      { "text": "This place is cursed! I'm off!" },
+      { "text": "Something touched me. Something DEAD touched me." },
+      { "text": "Nope. No. Not with ghosts." }
+    ] },
+    { "name": "brawl_outside", "lines": [
+      { "text": "Fine! We'll take it outside!" },
+      { "text": "Right. Out. And keep walking, apparently." }
+    ] },
+    { "name": "brawl_deaf", "lines": [
+      { "text": "Outside? I'm not going anywhere!" },
+      { "text": "You take it outside!" }
+    ] },
+    { "name": "brawl_scarper", "lines": [
+      { "text": "The watch! Scarper!" },
+      { "text": "Not the watch again. Run!" }
+    ] },
+    { "name": "brawl_no_watch", "lines": [
+      { "text": "There's no watch in this town!" },
+      { "text": "Fool me once!" },
+      { "text": "Let 'em come!" }
+    ] },
+    { "name": "brawl_drinks", "lines": [
+      { "text": "Now you're talking!" },
+      { "text": "Well. If you're buying." },
+      { "text": "Best inn on the road. Always said so." }
+    ] },
+    { "name": "brawl_jeer", "lines": [
+      { "text": "On whose house? Yours?" },
+      { "text": "Where's mine, then?" }
+    ] },
     { "name": "brawl_spill", "lines": [
       { "text": "Outside! The lot of you!" },
       { "text": "Into the street with it!" }
