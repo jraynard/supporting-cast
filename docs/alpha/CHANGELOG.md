@@ -7,6 +7,18 @@ Write it for testers: what they'll notice, not how it's done.
 Playing together always needs everyone on the same build. Saves and characters carry over
 between builds unless a section's **Compatibility** line says otherwise.
 
+## 0.1.0-playtest.29
+
+More for the musician.
+
+- **The musician's hat** is worn now: a felt hat with a feather. It comes off and goes down upturned at
+  your feet while you play, and back on your head after.
+- **The playing panel shows the instrument in your hands:** your fingers on the pipe's holes, the lute's
+  and fiddle's strings fretted and ringing (and the fiddle's bow), the drum struck where you strike it.
+  A first pass: tell us how it looks.
+- **The musician hears things:** adventurers listening to your music sometimes talk about a quest. Your
+  playing panel lists the talk you've heard, and F at the innkeeper passes it on.
+
 ## 0.1.0-playtest.28
 
 Two changes for the co-op round.
