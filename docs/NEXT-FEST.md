@@ -78,7 +78,7 @@ submitted by 1 Feb. Everything else can slip a little.
 - [ ] **The page public as "Coming soon" by about Fri 18 Dec.**
 - [ ] "Wishlist on Steam" first in every bio, the Discord's welcome and the YouTube links
       (SOCIAL.md). The first devlog post goes to the Discord and the page's news.
-- [ ] Bots: the smith's heat stall, and answering asks (ROADMAP, Now 2).
+- [ ] Bots: ~~the smith's heat stall~~ (done 20 Nov), and answering asks (ROADMAP, Now 2).
 - [ ] Flicker at wall corners and on the inn's upper floors.
 
 ### 21 Dec to 3 Jan: the holidays
@@ -154,7 +154,8 @@ doors as every other mod (CLAUDE.md, Moddability):
   same `characters.json`.
 
 **Solo has to be good.** In a demo, bots are most of the town:
-- [ ] The bot smith's heat stall (`BotPlayer.Forge.TooHotToForge`).
+- [x] The bot smith's heat stall (`BotPlayer.Forge.TooHotToForge`). *20 Nov: with a customer waiting it judges the heat
+      by what it can stand now, and smelts for a mend short of iron (HISTORY.md).*
 - [ ] Bot keepers answering asked-for pieces (`Order.Wants`).
 - [x] `--season-sweep` on the demo's season (`--mods demo,-musician`): it plays through and lands about
       right (above). A `SeasonScenario` on it is still to add.

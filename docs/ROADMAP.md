@@ -75,9 +75,6 @@ Visual issues and requests from playtests, so they don't get lost between HISTOR
   themselves and, finding nothing, ask a shop a player keeps to make one by name (`Order.Wants`,
   `ShopSystem.AskToMake`). Bot players don't answer those asks yet (they lapse, gently), and AI keepers never
   stock a shelf, so nobody asks them. Teach `BotPlayer.Goods` to make to order, then let the AI keepers do it.
-- [ ] **(demo) The bot smith stalls on the smithy's heat** (`BotPlayer.Forge.TooHotToForge`): on a warm afternoon it
-  waits hours "letting the smithy cool" with a customer's blade in hand (and on `main` too, by luck less often).
-  `PartyLoopScenarioTests` seed 99 and the Reedmere `SeasonScenario` (Dread ends it before the dragon) tip on it.
 - [ ] **HUD layout: move, fold, choose** (Deck playtest, Nov 2026): testers want windows they can drag about and
   fold away like an OS's (the character block top left most of all), and to choose what it always shows (rest
   and food at a glance, not only when low; a setting, not more on screen). Every HUD panel is placed by Narsil's

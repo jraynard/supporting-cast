@@ -292,6 +292,39 @@ public class BlacksmithTests
     }
 
     [Fact]
+    public void ABotSmithShortOfIronSmeltsABloomForTheMend()
+    {
+        // No bars anywhere, only ore in the chest: a chipped blade handed over is smelted for, not the mend tried again and again.
+        var (sim, owner, sword) = TownWithAWornSword("Blacksmith");
+        var me = Players.CharacterOf(sim, Ana);
+        var w = sim.World;
+        foreach (var bar in w.Query<Thing>().Where(e => w.Get<Thing>(e).Def.Name == "IronBar").ToList())
+            sim.DestroyThing(bar);
+        sim.Store(Stock.ChestOf(sim, ShopSystem.BuildingFor(sim, TownRole.Forge)), sim.CreateItem(sim.Thing("IronOre"), 8)); // a bloom's worth, and some
+        for (var t = 0; t < 40 && !sim.Shops.All.Any(e => e.IsOpen && e.Poster == owner && e.Kind.Kind == ServiceKind.Repair); t++)
+            sim.TickMany(SimClock.TicksPerHour / 4);
+        var asked = sim.Shops.All.Single(e => e.IsOpen && e.Poster == owner && e.Kind.Kind == ServiceKind.Repair);
+        sim.ApplyNow(new TakeOrderCommand(me, asked.Id));
+        var at = w.Get<Position>(owner).Cell;
+        var cell = sim.SpiralFrom(at, 3).First(c => c != at && sim.Map.Passable(c) && c.Z == at.Z);
+        w.Get<Position>(me).Cell = cell;
+        w.Get<Position>(me).Pos = Position.CenterOf(cell);
+        Assert.True(sim.Shops.TryHandOver(sim, asked));
+        var bot = new Bots.BotPlayer(() => sim, Ana, c => sim.ApplyNow(c), 7) { Temper = Bots.BotTemperament.Steady };
+
+        for (var t = 0; t < SimClock.TicksPerHour * 10 && sim.Shops.All.All(e => e.Poster != owner || e.Kind.Kind != ServiceKind.Repair || e.IsOpen); t++)
+        {
+            sim.Tick();
+            bot.Tick();
+        }
+
+        var order = RepairOf(sim, owner);
+        Assert.True(order.Status == OrderStatus.Done, $"{order.Status}, bot: {bot.Doing}\n"
+            + string.Join("\n", sim.Messages.Messages.TakeLast(8).Select(m => m.Text)));
+        Assert.True(WeaponWear.Mended(sim, sword));
+    }
+
+    [Fact]
     public void APartyTakingAQuestWaitsForTheBladeAtTheSmiths()
     {
         var (sim, owner, sword) = TownWithAWornSword("Blacksmith");

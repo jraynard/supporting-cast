@@ -24,9 +24,12 @@ public class PartyLoopScenarioTests(ITestOutputHelper output)
     private static readonly ServiceKind[] Wanted = [ServiceKind.Drink, ServiceKind.Repair, ServiceKind.Quest];
 
     [Theory]
-    // A seed that sees each wanted kind served. Others (7) have the bot smith wait on a hot smithy past every mend: a
-    // bot weakness the dice expose, not the loop's. (99 did, till the kilns changed the town's dice.)
+    // Seeds that see each wanted kind served. 7 and 99 once had the bot smith wait on a hot smithy past every mend, or
+    // try a mend again and again with no iron to hand; it now smelts for a customer's mend and judges the heat by what
+    // it can stand now. (Seed 1 sends its only quest too late to come back inside the two days: the loop's dice.)
     [InlineData(1234UL)]
+    [InlineData(7UL)]
+    [InlineData(99UL)]
     public void APartyIsServedSentOutAndComesBackChanged(ulong seed)
     {
         var sim = VillageRound.NewSimulation(TestWorld.LoadDefs(), seed);

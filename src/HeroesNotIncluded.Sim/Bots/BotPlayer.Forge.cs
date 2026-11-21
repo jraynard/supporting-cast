@@ -38,10 +38,21 @@ public sealed partial class BotPlayer
         if (condition.Contains("chip") || condition.Contains("bent") || condition.Contains("breaking"))
         {
             var forge = Nearest(sim, me, "Forge");
-            if (!forge.IsNull && TooHotToForge(sim, me, forge, WarmsPerWork * MendWork))
+            // Short of the mend's iron: a bloom smelted first, as a smith would, not the mend tried again and again.
+            if (!forge.IsNull && Crafting.ShortForRepair(sim, me, forge, blade) != null)
+            {
+                if (Smelt(sim, me, view, now, waiting: true))
+                    return true;
+                Doing = "short of iron for the mend";
+                return true;
+            }
+            // Someone's waiting on it: judged by whether it can stand at the forge now, not by how warm the work will
+            // leave the smithy (a mend begun can be seen through, stepping back for a breath). Waiting on a smithy cool
+            // enough for that kept customers waiting for hours on a warm day.
+            if (!forge.IsNull && TooHotToForge(sim, me, forge, 0f))
             {
                 Doing = "letting the smithy cool before the mend";
-                return true; // they'll wait: a mend begun hot can't be seen through
+                return true;
             }
             return Stoke(sim, me, view, now) || AtStation(sim, me, forge, now, s => Send(new RepairCommand(me, s, blade)));
         }
@@ -148,10 +159,22 @@ public sealed partial class BotPlayer
             return true;
         if (ShowGoods(sim, me, view, now) || ForgeForSale(sim, me, view, now))
             return true;
-        if (now < _noOreUntil || sim.Defs.AllRecipes.FirstOrDefault(r => r.Bloom) is not { } recipe || OnMe(sim, me, "IronBar") >= SmeltBelow)
+        return OnMe(sim, me, "IronBar") < SmeltBelow && Smelt(sim, me, view, now);
+    }
+
+    /// <summary>
+    /// A bloom smelted for bars: ore from the smithy chest and charcoal from the bin into the forge.
+    /// True while at it; false if there's no ore to be had (it looks again in an hour) or the smithy's
+    /// too hot. Between customers that's too hot to stand at the forge's mouth as long as a bloom takes;
+    /// with a customer <paramref name="waiting"/> on the iron, only too hot to stand there now.
+    /// </summary>
+    private bool Smelt(Simulation sim, Entity me, PerceptionView view, long now, bool waiting = false)
+    {
+        var w = sim.World;
+        if (now < _noOreUntil || sim.Defs.AllRecipes.FirstOrDefault(r => r.Bloom) is not { } recipe)
             return false;
         var forge = Nearest(sim, me, "Forge");
-        if (forge.IsNull || TooHotToForge(sim, me, forge, recipe))
+        if (forge.IsNull || (waiting ? TooHotToForge(sim, me, forge, 0f) : TooHotToForge(sim, me, forge, recipe)))
             return false;
         var ore = recipe.Ingredients[0];
         var fuel = recipe.Ingredients.Count > 1 ? recipe.Ingredients[1] : null;

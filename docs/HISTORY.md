@@ -2958,3 +2958,18 @@ before it boils over. Plan and decisions: the brawl plan, slices 0 to 4.
   `beforeStart`). `TutorialWordsTests` registers the miner's controls, as the musician's.
 - Bench: seed 1234 state `FA5832CE2E5733BD`, full `75BF1CEA429514A4`; seed 99 state `21E34C65DB6A0705`, full
   `184C15E749A1ECD8` (the miner on by default; as with `--mods miner` before).
+
+### The bot smith no longer stalls with a customer's blade (2026-11-20)
+
+Bots are most of the town in the demo, and the bot smith could hold a customer's blade for a day and a half.
+- **Short of iron, it smelts.** A chipped blade takes an iron bar to mend, and the bot sent the mend again and again
+  with none to hand (the message log full of "you have none to hand"); smelting came only between customers. Now a
+  mend short of its iron smelts a bloom first (`BotPlayer.Smelt`, shared with the smith's idle smelting).
+- **The heat, judged by what it can stand now.** For work that can wait, `TooHotToForge` asks whether the smithy will
+  still be bearable once the piece has warmed it; for a bloom that meant a forge's mouth under 4°C, so a warm day never
+  came. With a customer waiting (the mend, and the bloom for it) it asks only whether it can stand at the forge now (the
+  line its step back from the heat uses). Shelf work and idle smelting keep the caution.
+- `BlacksmithTests.ABotSmithShortOfIronSmeltsABloomForTheMend` (no bars, ore in the chest: smelted and mended);
+  `PartyLoopScenarioTests` runs seeds 7 and 99 again, both once stalled. Of seeds 1 to 16, only 1 fails, its single
+  quest sent too late to come home inside two days. The demo's sweep (`--mods demo,-musician`, 8 seeds): won 7, mean
+  Renown 68.3 of 40 (65.2 before), lowest 33.8 (9.0 before: a season lost to Dread is now merely short). Bench unchanged.
