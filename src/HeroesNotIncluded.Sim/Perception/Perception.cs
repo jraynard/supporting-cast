@@ -652,7 +652,8 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
             {
                 var (label, icon) = WhatFor(e);
                 yield return new Shops.KnownOrder(e.Id, e.Kind.Kind, label, e.PosterName, e.Text, e.Price,
-                    e.PostedTick, e.Deadline, e.AssigneeName, e.Status, e.Poster == viewer, e.Assignee == viewer, e.Poster, icon);
+                    e.PostedTick, e.Deadline, e.AssigneeName, e.Status, e.Poster == viewer, e.Assignee == viewer, e.Poster, icon,
+                    e.Wants, e.WantsMending, e.Where);
             }
     }
 

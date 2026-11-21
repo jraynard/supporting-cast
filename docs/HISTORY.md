@@ -2973,3 +2973,22 @@ Bots are most of the town in the demo, and the bot smith could hold a customer's
   `PartyLoopScenarioTests` runs seeds 7 and 99 again, both once stalled. Of seeds 1 to 16, only 1 fails, its single
   quest sent too late to come home inside two days. The demo's sweep (`--mods demo,-musician`, 8 seeds): won 7, mean
   Renown 68.3 of 40 (65.2 before), lowest 33.8 (9.0 before: a season lost to Dread is now merely short). Bench unchanged.
+
+### Bot keepers make what's asked for by name (2026-11-20)
+
+Finding nothing on show, an adventurer asks a player's shop to make a piece by name (`Order.Wants`); bot players
+let those lapse, and in the demo bots keep most shops.
+- **Made first, handed over.** `BotPlayer.Asked` reads an open ask of its own shop as it heard it (`KnownOrder` now
+  carries the piece named, its mending and the shop: what was said aloud), and each trade's routine makes it ahead
+  of shelf stock: the smith (`ForgeAsked`: bars smelted first, the heat judged by now, as for a mend; not only when
+  the town's quiet), the tinker's bench, the empath's charm if it knows the mending, the carpenter's bench or
+  sawhorse (its mod, through `BotPlayer.AskedRecipe`). Asks wait while a customer waits on the trade's own work.
+- **By hand, not on the shelf** (`BotPlayer.Deliver`): put on show, another adventurer bought the asked piece before
+  the asker came, as often as not. A piece already made fills an ask too (a blade forged before a party came, kept
+  back while they were new in town).
+- **The order keeps the piece:** an ask filled by hand or off the shelf now records it as `Order.Subject`.
+- `GoodsTests.ABotKeeperMakesAPieceAskedForByNameAndItsBought` (smith, empath, tinker, carpenter, each from a real
+  wish it can make); `BotBenchTests`' shelf sale may now be an ask handed over. Demo sweep, 32 seeds: won 24 (27
+  before), mean Renown 65.7 (66.5), served 8.3 a season (8.8): within the noise, or the asks' time costing a little
+  service. Bench unchanged (no player shops in it).
+

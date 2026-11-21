@@ -51,7 +51,7 @@ public sealed class CarpenterBot(BotPlayer bot) : IBotTrade
     }
 
     /// <summary>
-    /// The carpenter between orders: its quivers on show; a quiver fletched while the stock's short;
+    /// The carpenter between orders: its quivers on show; a piece someone asked for by name; a quiver fletched while the stock's short;
     /// planks sawn first if there are none to split shafts from. True while at it.
     /// </summary>
     private bool Woodshop(Simulation sim, Entity me, PerceptionView view, long now)
@@ -76,6 +76,11 @@ public sealed class CarpenterBot(BotPlayer bot) : IBotTrade
             return true;
         if (Firewood(sim, me, view, now))
             return true;
+        // A piece asked for by name (a bow, a cudgel): made at whichever of its stations makes it, whatever's in stock.
+        if (BotPlayer.Asked(sim, me, view) is { } asked)
+            foreach (var station in new[] { bench, horse })
+                if (BotPlayer.AskedRecipe(sim, me, station, asked) is { } wanted)
+                    return bot.Make(sim, me, view, station, wanted, now);
         if (bot.Stock(sim, me) >= bot.StockWanted || bench.IsNull)
             return false;
         var fletch = Recipe(sim, bench, Carpenters.Fletches);

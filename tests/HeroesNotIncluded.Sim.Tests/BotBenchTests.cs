@@ -99,7 +99,9 @@ public class BotBenchTests
         Assert.True(Run(sim, bot, () => { seen.UnionWith(OnShowBy(sim, me)); return Sold() != null; }, SimClock.TicksPerHour * 16),
             Why(sim, bot) + "\n" + string.Join("\n", sim.Shops.All.Where(o => o.Kind.Kind == ServiceKind.Goods).Select(o => $"{o.Text} {o.Status} {o.AssigneeName}")));
         var sale = Sold()!;
-        Assert.Contains(sale.Subject, seen);
+        // Off the shelf; or, kept back while they were new in town and asked for by name meanwhile, taken to them by hand.
+        if (sale.Wants == null)
+            Assert.Contains(sale.Subject, seen);
         Assert.Equal(smithy, sale.Where);
         Assert.Equal(me, sim.World.Get<Crafted>(sale.Subject).Maker);
         Assert.True(Inventory.OnPerson(sim, sale.Poster, sale.Subject));

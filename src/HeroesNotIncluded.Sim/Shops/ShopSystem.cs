@@ -760,6 +760,8 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             Learn(asked, buyer);
         }
         asked.Price = price;
+        if (asked.Subject.IsNull)
+            asked.Subject = down; // a piece asked for by name: this is it
         Learn(asked, seller);
         Complete(sim, asked, seller);
         sim.Messages.Tell(seller, MessageKind.Info, $"{w.Get<Creature>(buyer).Name} bought the {label} off your shelf: {price} silver.", sim.LocationOf(buyer));
@@ -1488,6 +1490,8 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
         if (bought != null)
         {
             Goods.TakeUp(sim, to, item);
+            if (bought.Subject.IsNull)
+                bought.Subject = item; // a piece asked for by name: this is it
             Complete(sim, bought, giver);
             return;
         }

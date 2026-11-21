@@ -312,10 +312,14 @@ public sealed partial class BotPlayer
     /// <summary>
     /// A contraption for the shelf while the stock's short: one that does something none in stock
     /// does (nobody carries two the same), of those it knows and has the makings for, the least iron first.
+    /// One asked for by name comes before any of that.
     /// </summary>
     private bool Contraption(Simulation sim, Entity me, PerceptionView view, Entity bench, long now)
     {
         var w = sim.World;
+        // Asked for one by name: that one, whatever's in stock.
+        if (Asked(sim, me, view) is { } asked && AskedRecipe(sim, me, bench, asked) is { } wanted)
+            return Make(sim, me, view, bench, wanted, now);
         if (Stock(sim, me) >= StockWanted)
             return false;
         var uses = OnSale(sim, me).Concat(Loose(sim, me).Where(i => ForTheShelf(sim, me, i)))

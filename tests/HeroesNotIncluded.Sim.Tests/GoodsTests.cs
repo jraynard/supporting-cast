@@ -285,4 +285,63 @@ public class GoodsTests
         Assert.Equal(order.WantsMending, again.WantsMending);
         SaveLoadTests.AssertSameFuture(sim, loaded, 2);
     }
+
+    [Theory]
+    [InlineData("Blacksmith")]
+    [InlineData("Empath")]
+    [InlineData("Tinker")]
+    [InlineData("Carpenter")]
+    public void ABotKeeperMakesAPieceAskedForByNameAndItsBought(string trade)
+    {
+        var (sim, me, _, party) = Town(trade);
+        var bot = new Bots.BotPlayer(() => sim, Ana, c => sim.ApplyNow(c), 7) { Temper = Bots.BotTemperament.Steady };
+        var shop = Bots.BotPlayer.MyShop(sim, me)!.Value;
+        var stations = Buildings.Parts(sim, shop).Where(e => sim.World.Get<Thing>(e).Def.Building?.Workbench != null).ToList();
+        // Of what the party wish for at this shop, a piece it can make (asks it can't, a mending it doesn't know, go unanswered).
+        bool CanMake(Goods.Wish wish) => wish.Mending != null ? Healing.Weaving.Knows(sim, me, wish.Mending)
+            : stations.Any(st => Bots.BotPlayer.AskedRecipe(sim, me, st, new KnownOrder { Wants = wish.Def }) != null);
+        bool OnShow(Goods.Wish wish) => Goods.OnShow(sim).Any(g => sim.World.Get<Thing>(g.Item).Def == wish.Def
+            && (wish.Mending == null || sim.World.TryGet<Charm>(g.Item, out var c) && c.Mending == wish.Mending));
+        (Entity, Goods.Wish)? Wanted(IEnumerable<Entity> who) =>
+            who.SelectMany(a => Goods.Wishes(sim, a).Where(x => x.Shop == shop && CanMake(x) && !OnShow(x)).Select(x => ((Entity, Goods.Wish)?)(a, x))).FirstOrDefault();
+        // If they want nothing it makes, one of them has lost their weapon on the road: anything it makes would do.
+        var wanted = Wanted(party);
+        if (wanted == null && party.FirstOrDefault(a => sim.World.TryGet<Equipment>(a, out var eq) && sim.World.IsAlive(eq.Weapon)) is { IsNull: false } bare)
+        {
+            sim.DestroyThing(sim.World.Get<Equipment>(bare).Weapon);
+            wanted = Wanted([bare]);
+        }
+        Assert.NotNull(wanted);
+        var (asker, ask) = wanted!.Value;
+        var offer = Math.Min(4, Coin.Count(sim, asker) / 4); // what they could spare, kept modest
+        Assert.True(offer > 0);
+        var order = sim.Shops.Post(sim, asker, sim.Defs.Service(ServiceKind.Goods), $"Could you make me {Goods.WithArticle(Goods.WishLabel(ask.Def, ask.Mending))}? {offer} silver.",
+            offer, sim.Clock.Tick + SimClock.HoursToTicks(ShopSystem.AskToMakeHours), where: shop, worth: offer, wants: ask.Def, wantsMending: ask.Mending);
+
+        var doing = new List<string>();
+        for (var t = 0; t < SimClock.TicksPerDay && order.IsOpen; t++) // its patience, and the small hours that don't count against it
+        {
+            if (t % SimClock.TicksPerHour == 0)
+                foreach (var q in sim.Expeditions.Quests)
+                    q.Status = Expeditions.QuestStatus.Cleared; // the party stays in town: the making is what's tried
+            sim.Tick();
+            bot.Tick();
+            if (t % (SimClock.TicksPerHour / 12) == 0 && (doing.Count == 0 || !doing[^1].EndsWith(bot.Doing)))
+                doing.Add($"{sim.Clock.HourOfDay:F2}h {bot.Doing}");
+        }
+        string L(Entity e) => sim.World.IsAlive(e) ? $"{sim.LabelOf(e)}#{e.Index}{(sim.World.TryGet<ForSale>(e, out var fs) ? $"(sale {fs.Price})" : "")}" : "-";
+        var state = $"hand {L(sim.World.Get<Carrying>(me).Item)}; pack [{string.Join(", ", sim.PackOf(me).IsNull ? [] : sim.StoredIn(sim.PackOf(me)).Select(L))}]; "
+            + $"worn [{string.Join(", ", sim.Worn(me).Select(L))}]; weapon {L(sim.World.TryGet<Equipment>(me, out var meq) ? meq.Weapon : Entity.Null)}; "
+            + $"shelf [{string.Join(", ", Buildings.Parts(sim, shop).Where(e => Goods.IsDisplay(sim, e)).SelectMany(sim.StoredIn).Select(L))}]; "
+            + $"made [{string.Join(", ", sim.World.Query<Crafted>().Where(e => sim.World.Get<Crafted>(e).Maker == me && sim.World.Get<Thing>(e).Def == order.Wants)
+                .Select(e => $"{L(e)} spawned={sim.World.Get<Thing>(e).Spawned}@{sim.World.Get<Thing>(e).Cell} in={(sim.World.TryGet<Stored>(e, out var st) ? L(st.In) : "-")} onAsker={Inventory.OnPerson(sim, asker, e) || sim.Worn(asker).Contains(e)} carriedBy={string.Join("/", sim.World.Query<Carrying>().Where(c => sim.World.Get<Carrying>(c).Item == e).Select(c => sim.World.Get<Creature>(c).Name))} wornBy={string.Join("/", sim.Creatures().Where(c => sim.Worn(c).Contains(e)).Select(c => sim.World.Get<Creature>(c).Name + (sim.World.Has<Adventurer>(c) ? "(adv)" : "")))}"))}]; "
+            + $"open orders [{string.Join("; ", sim.Shops.All.Where(o => o.IsOpen && o.KnownBy.Contains(me)).Select(o => $"{o.Kind.Kind} {o.Text} by {o.PosterName} to {o.AssigneeName}"))}]";
+        state += "\nHELM: " + string.Join(" | ", sim.Messages.Messages.Where(m => m.Text.Contains("helm")).Select(m => $"{SimClock.TicksToDays(m.Tick) * 24:F2}h {m.Text}"))
+            + " || SAID: " + string.Join(" | ", sim.Speech.Kept.Where(u => u.Text.Contains("helm")).Select(u => $"{u.SpeakerName}: {u.Text}"));
+        Assert.True(order.Status == OrderStatus.Done, $"{order.Status}: {order.Text}\n{state}\n"
+            + string.Join("\n", sim.Messages.Messages.TakeLast(8).Select(m => m.Text)) + "\n" + string.Join("\n", doing));
+        Assert.True(sim.World.Query<Crafted>().Concat(sim.World.Query<Charm>()).Any(e => Goods.Fills(sim, order, e) && Inventory.OnPerson(sim, asker, e)
+            || sim.World.TryGet<Equipment>(asker, out var eq) && eq.Weapon == e && Goods.Fills(sim, order, e) || sim.Worn(asker).Contains(e) && Goods.Fills(sim, order, e)),
+            "they have the piece they asked for");
+    }
 }

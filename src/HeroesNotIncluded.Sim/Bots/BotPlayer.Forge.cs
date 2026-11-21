@@ -326,7 +326,16 @@ public sealed partial class BotPlayer
     {
         var w = sim.World;
         var forge = Nearest(sim, me, "Forge");
-        if (!Quiet(sim, me, view, now) || forge.IsNull || Stock(sim, me) >= StockWanted || !w.TryGet<Workbench>(forge, out var bench))
+        if (forge.IsNull || !w.TryGet<Workbench>(forge, out var bench))
+            return false;
+        // Asked to make a piece by name: that first, whoever's about and whatever's in stock; they're waiting on it.
+        if (Asked(sim, me, view) is { } asked && AskedRecipe(sim, me, forge, asked, needMakings: false) is { } wanted)
+        {
+            var begunOther = bench.Active is { } other && other != wanted && bench.By == me && !bench.Untouched;
+            if (!begunOther)
+                return ForgeAsked(sim, me, view, forge, wanted, asked, now);
+        }
+        if (!Quiet(sim, me, view, now) || Stock(sim, me) >= StockWanted)
             return false;
         var stocked = OnSale(sim, me).Concat(Loose(sim, me).Where(i => ForTheShelf(sim, me, i))).Select(i => w.Get<Thing>(i).Def).ToHashSet();
         RecipeDef? pick = null;
@@ -361,6 +370,40 @@ public sealed partial class BotPlayer
             return true;
         Doing = $"forging a {pick.Label} for the shelf";
         return AtStation(sim, me, forge, now, f => Send(new CraftCommand(me, f, pick)));
+    }
+
+    /// <summary>
+    /// A piece someone asked for by name, forged: the bars smelted first if it's short, judged by the heat it can
+    /// stand now (someone's waiting, as for a mend). False if it can't be had (no ore, too hot to stand there).
+    /// </summary>
+    private bool ForgeAsked(Simulation sim, Entity me, PerceptionView view, Entity forge, RecipeDef recipe, KnownOrder asked, long now)
+    {
+        var w = sim.World;
+        foreach (var x in recipe.Ingredients)
+            if (!Obtainable(sim, me, x))
+            {
+                // Iron short: a bloom. Anything else it can't make, it can't forge it.
+                if (sim.Defs.AllRecipes.FirstOrDefault(r => r.Bloom) is { } bloom && bloom.Products.Exists(p => p.ThingDef == x.ThingDef))
+                    return Smelt(sim, me, view, now, waiting: true);
+                return false;
+            }
+        if (TooHotToForge(sim, me, forge, 0f))
+        {
+            Doing = $"letting the smithy cool before {asked.PosterName}'s {recipe.Label}";
+            return false;
+        }
+        if (!w.Get<Carrying>(me).Item.IsNull && !recipe.Ingredients.Exists(x => x.ThingDef == w.Get<Thing>(w.Get<Carrying>(me).Item).Def))
+        {
+            Send(new StowCommand(me));
+            return true;
+        }
+        foreach (var x in recipe.Ingredients)
+            if (OnMe(sim, me, x.Def) < x.Count)
+                return Fetch(sim, me, view, now, x, x.ThingDef.Label);
+        if (Stoke(sim, me, view, now))
+            return true;
+        Doing = $"forging a {recipe.Label} for {asked.PosterName}";
+        return AtStation(sim, me, forge, now, f => Send(new CraftCommand(me, f, recipe)));
     }
 
     /// <summary>Game hours since it last saw an adventurer before it reckons the town quiet enough to forge for the shelf.</summary>

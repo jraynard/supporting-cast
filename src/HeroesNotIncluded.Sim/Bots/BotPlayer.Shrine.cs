@@ -126,7 +126,8 @@ public sealed partial class BotPlayer
     /// The healer between patients: charms for the road. A charm it wove loose is torn (its mending
     /// lands on it, as anyone's would); good ones go on show in the shrine; and with mana to spare
     /// and linen to hand, a new one is woven at the shrine's altar, a different healing mending from
-    /// what's in stock, while the stock's short. Never in the small hours. True while at it.
+    /// what's in stock, while the stock's short (or the one someone asked for by name, whatever's in stock).
+    /// Never in the small hours. True while at it.
     /// </summary>
     private bool Shrine(Simulation sim, Entity me, PerceptionView view, long now)
     {
@@ -143,7 +144,9 @@ public sealed partial class BotPlayer
             }
         if (ShowGoods(sim, me, view, now))
             return true;
-        if (!sim.Round.Live || ShopSystem.SmallHours(sim) || Stock(sim, me) >= StockWanted || mana.Current < mana.Max * CharmsFrom)
+        // A charm asked for by name: woven whatever's in stock, if it knows the mending and has the mana for it.
+        var asked = Asked(sim, me, view) is { WantsMending: { } m } a && Weaving.Knows(sim, me, m) ? a : (KnownOrder?)null;
+        if (!sim.Round.Live || ShopSystem.SmallHours(sim) || (asked == null && Stock(sim, me) >= StockWanted) || mana.Current < mana.Max * CharmsFrom)
             return false;
         // Linen on it, not just in the chest beside it: it walks off to the altar.
         if (OnMe(sim, me, Bandaging.BandageDef) <= KeepBandages)
@@ -153,8 +156,9 @@ public sealed partial class BotPlayer
         // leaving a Calling's worth: whoever dies next mustn't wait on a charm for sale.
         var stocked = OnSale(sim, me).Concat(Loose(sim, me)).Select(view.Charm).OfType<KnownCharm>().Select(c => c.Mending).ToHashSet();
         var reserve = Math.Max(mana.Max * (CharmsFrom - 0.3f), Afterlife.Revival.CallCost(sim));
-        var pick = sim.Defs.AllMendings.FirstOrDefault(m => !m.CallsBack && m.Heals.Count > 0 && m.Sears <= 0 && Weaving.Knows(sim, me, m)
-            && !stocked.Contains(m) && m.CostAt(0) <= mana.Current - reserve);
+        var pick = asked is { WantsMending: { } wanted } && wanted.CostAt(0) <= mana.Current - reserve ? wanted
+            : sim.Defs.AllMendings.FirstOrDefault(m => !m.CallsBack && m.Heals.Count > 0 && m.Sears <= 0 && Weaving.Knows(sim, me, m)
+                && !stocked.Contains(m) && m.CostAt(0) <= mana.Current - reserve);
         if (pick == null)
             return false;
         _weave = Weaving.Recipe(pick).Select(r => r.Index).ToList();

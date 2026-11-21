@@ -87,6 +87,82 @@ public sealed partial class BotPlayer
         return Entity.Null;
     }
 
+    /// <summary>
+    /// A piece someone asked this shop to make, by name (<see cref="Order.Wants"/>), as it heard it said: open,
+    /// asked of its own shop, and not yet made (nothing of its own on show or on it fills it). The oldest first.
+    /// Not while a customer waits on the trade's own work (a mend, a lock): they come first, as at the shelf.
+    /// </summary>
+    public static KnownOrder? Asked(Simulation sim, Entity me, PerceptionView view)
+    {
+        if (MyShop(sim, me) is not { IsNull: false } shop || !sim.World.TryGet<Trade>(me, out var trade))
+            return null;
+        var serves = KindsFor(sim, trade.Def);
+        if (view.Orders().Any(o => o.Status == OrderStatus.Open && !o.Mine && o.Kind is not (ServiceKind.Goods or ServiceKind.Quest) && serves.Contains(o.Kind)))
+            return null;
+        foreach (var o in view.Orders())
+            if (o is { Kind: ServiceKind.Goods, Status: OrderStatus.Open, Wants: not null } && o.Where == shop
+                && !OnSale(sim, me).Concat(Loose(sim, me)).Any(i => FillsAsk(sim, view, o, i) && (MadeBy(sim, i, me) || sim.World.Has<ForSale>(i))))
+                return o;
+        return null;
+    }
+
+    /// <summary>Is this piece the one asked for: the thing named, and for a charm the mending it was asked of (as it knows its own charm).</summary>
+    public static bool FillsAsk(Simulation sim, PerceptionView view, KnownOrder asked, Entity item) =>
+        sim.World.IsAlive(item) && sim.World.TryGet<Thing>(item, out var t) && t.Def == asked.Wants
+        && (asked.WantsMending == null || view.Charm(item)?.Mending == asked.WantsMending);
+
+    /// <summary>The recipe at this station that makes what was asked for, if it can make it now (it knows it, has the tools and, unless not <paramref name="needMakings"/>, the makings to hand).</summary>
+    public static RecipeDef? AskedRecipe(Simulation sim, Entity me, Entity station, KnownOrder asked, bool needMakings = true)
+    {
+        var w = sim.World;
+        if (station.IsNull || asked.Wants is not { } want)
+            return null;
+        foreach (var r in w.Get<Thing>(station).Def.Recipes)
+            if (r.Products.Count == 1 && r.Products[0].ThingDef == want && RecipeBooks.Knows(sim, me, r) && Crafting.CanMake(sim, me, r)
+                && Crafting.MissingTool(sim, me, station, r) == null
+                && (!needMakings || r.Ingredients.TrueForAll(x => Obtainable(sim, me, x))))
+                return r;
+        return null;
+    }
+
+    /// <summary>A piece that fills an open ask it knows of (asked of its shop): it goes to the asker, not on the shelf.</summary>
+    private static bool ForAnAsk(Simulation sim, Entity me, PerceptionView view, Entity item) =>
+        MyShop(sim, me) is { IsNull: false } shop
+        && view.Orders().Any(o => o is { Kind: ServiceKind.Goods, Status: OrderStatus.Open, Wants: not null } && o.Where == shop && FillsAsk(sim, view, o, item));
+
+    /// <summary>
+    /// A piece of its own making on it that fills someone's ask, taken to them and handed over (paid on the spot,
+    /// as a player's would be): the oldest ask first. True while at it.
+    /// </summary>
+    private bool Deliver(Simulation sim, Entity me, PerceptionView view, long now)
+    {
+        var w = sim.World;
+        if (MyShop(sim, me) is not { IsNull: false } shop)
+            return false;
+        foreach (var o in view.Orders())
+        {
+            if (o is not { Kind: ServiceKind.Goods, Status: OrderStatus.Open, Wants: not null } || o.Where != shop || !w.IsAlive(o.Poster))
+                continue;
+            var piece = Loose(sim, me).FirstOrDefault(i => ForTheShelf(sim, me, i) && !w.Has<ForSale>(i) && Showable(sim, me, view, i) && FillsAsk(sim, view, o, i), Entity.Null);
+            if (piece.IsNull && w.TryGet<Equipment>(me, out var eq) && ForTheShelf(sim, me, eq.Weapon) && FillsAsk(sim, view, o, eq.Weapon))
+            {
+                Send(new UnequipCommand(me, GearSlot.Weapon)); // picked up into an empty hand, a weapon goes straight on: off again
+                return true;
+            }
+            if (piece.IsNull)
+                continue;
+            Doing = $"taking the {w.Get<Thing>(piece).Label} to {o.PosterName}";
+            if (Reach(sim, me, o.Poster, now, returning: true))
+            {
+                if (Inventory.InOwnPack(sim, me, piece) && w.Get<Carrying>(me).Item != piece)
+                    Send(new HoldCommand(me, piece));
+                Send(new GiveCommand(me, o.Poster, piece, 1));
+            }
+            return true;
+        }
+        return false;
+    }
+
     /// <summary>Everything it has up for sale: on show in its shop, or on it (taken down to hand over), in a fixed order.</summary>
     private static List<Entity> OnSale(Simulation sim, Entity me)
     {
@@ -149,6 +225,9 @@ public sealed partial class BotPlayer
         if (MyShop(sim, me) is not { IsNull: false } shop)
             return false;
         Haggled(sim, me, view);
+        // A piece made to someone's ask goes to them by hand, first: on the shelf, anyone might buy it before they came.
+        if (Deliver(sim, me, view, now))
+            return true;
         if (FreshInTown(sim, view, now))
             return Shutters(sim, me, shop);
         if (_placing is { IsNull: false } put)
@@ -203,10 +282,15 @@ public sealed partial class BotPlayer
         if (Goods.OnShow(sim).Count(g => w.Get<ForSale>(g.Item).Seller == me) >= StockWanted)
             return false;
         var shelf = Goods.DisplayOf(sim, shop, me);
-        var piece = Loose(sim, me).FirstOrDefault(i => ForTheShelf(sim, me, i) && Showable(sim, me, view, i)
+        var piece = Loose(sim, me).FirstOrDefault(i => ForTheShelf(sim, me, i) && Showable(sim, me, view, i) && !ForAnAsk(sim, me, view, i)
             && !shelf.IsNull && sim.ContainerRoom(shelf, w.Get<Thing>(i).Def, w.Get<Thing>(i).Material) > 0, Entity.Null);
-        if (piece.IsNull)
-            return false;
+        return !piece.IsNull && PutOnShow(sim, me, piece, shelf, now);
+    }
+
+    /// <summary>A piece of its own carried to its wares shelf and set there, to be priced once it's down (<see cref="_placing"/>).</summary>
+    private bool PutOnShow(Simulation sim, Entity me, Entity piece, Entity shelf, long now)
+    {
+        var w = sim.World;
         Doing = $"putting the {w.Get<Thing>(piece).Label} on the {w.Get<Thing>(shelf).Label}";
         if (!Inventory.CanReachContainer(sim, me, shelf))
         {

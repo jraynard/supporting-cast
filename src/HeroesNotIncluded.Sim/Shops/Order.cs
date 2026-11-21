@@ -37,8 +37,8 @@ public sealed class Order
     /// <summary>The building it's to be done at; Entity.Null for anywhere.</summary>
     public Entity Where { get; init; } = Entity.Null;
 
-    /// <summary>The thing in question (the blade to mend); Entity.Null if none.</summary>
-    public Entity Subject { get; init; } = Entity.Null;
+    /// <summary>The thing in question (the blade to mend); Entity.Null if none. A piece asked for by name gets one once it's handed over.</summary>
+    public Entity Subject { get; set; } = Entity.Null;
 
     /// <summary>
     /// Silver promised on completion: the shop's price when they ordered, whatever the sign says
@@ -110,8 +110,11 @@ public readonly record struct KnownErrand(int Order, ServiceKind Kind, Entity Wh
 /// An order as someone who knows of it sees it (<c>PerceptionView.Shops</c>). <see cref="Poster"/>
 /// is who asked: they heard the voice, so they know whom to go to. <see cref="KindLabel"/> is what
 /// it's for, the piece named where there is one ("their spiked club mended", "a charm of burns");
-/// <see cref="Icon"/> that piece's sprite, or "" for the service's own icon.
+/// <see cref="Icon"/> that piece's sprite, or "" for the service's own icon. A piece asked for by name
+/// (<see cref="Order.Wants"/>) is what was said aloud: <see cref="Wants"/>, its mending if a charm, and
+/// <see cref="Where"/>, the shop it was asked of.
 /// </summary>
 public readonly record struct KnownOrder(
     int Id, ServiceKind Kind, string KindLabel, string PosterName, string Text, int Price,
-    long PostedTick, long Deadline, string AssigneeName, OrderStatus Status, bool Mine, bool MineToDo, Entity Poster, string Icon = "");
+    long PostedTick, long Deadline, string AssigneeName, OrderStatus Status, bool Mine, bool MineToDo, Entity Poster, string Icon = "",
+    Defs.ThingDef? Wants = null, Defs.MendingDef? WantsMending = null, Entity Where = default);

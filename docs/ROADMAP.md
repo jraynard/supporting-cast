@@ -71,10 +71,11 @@ so far. Nobody new has tried them yet.
 ### 2. From testers
 Visual issues and requests from playtests, so they don't get lost between HISTORY.md and the Backlog.
 - [x] **(demo) Flicker** at wall corners and on furniture, and the upper floors when walking past the inn.
-- [x] **(demo) Asked-for pieces, by bots and the AI** (Deck playtest, Nov 2026): adventurers now buy off the shelf
-  themselves and, finding nothing, ask a shop a player keeps to make one by name (`Order.Wants`,
-  `ShopSystem.AskToMake`). Bot players don't answer those asks yet (they lapse, gently), and AI keepers never
-  stock a shelf, so nobody asks them. Teach `BotPlayer.Goods` to make to order, then let the AI keepers do it.
+- [x] **(demo) Asked-for pieces, by bots** (Deck playtest, Nov 2026): bot players now make a piece asked for by name
+  and hand it over (HISTORY.md, 20 Nov). Still to do: AI keepers never stock a shelf, so nobody asks them.
+- [ ] **For you to decide: asks a shop can't answer.** Adventurers ask for any piece a shop's stations make
+  (`Goods.Wishes`), so the smith is asked for a longsword with no steel in town, and the empath for a mending it
+  doesn't know. Fine as flavour, or noise? Wishes could be limited to what the town can make.
 - [ ] **HUD layout: move, fold, choose** (Deck playtest, Nov 2026): testers want windows they can drag about and
   fold away like an OS's (the character block top left most of all), and to choose what it always shows (rest
   and food at a glance, not only when low; a setting, not more on screen). Every HUD panel is placed by Narsil's
