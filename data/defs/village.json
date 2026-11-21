@@ -11,9 +11,8 @@
   ],
 
   "things": [
-    { "name": "Cabbage", "label": "cabbage", "category": "Item", "mass": 0.4, "sprite": "items/cabbage", "stackLimit": 20, "wellFed": 0.1, "nutrition": 0.12, "rotDays": 10, "flavour": { "fresh": 0.7, "sweet": 0.3 }, "chopsInto": "ChoppedCabbage",
-      "flammability": 0.2, "maxHp": 20, "description": "A tight green head from the village gardens. Better in a stew, but it'll do raw.",
-      "model": [ { "min": [0.22, 0.22, 0], "max": [0.78, 0.78, 0.4], "top": "props/cabbage_top", "side": "props/cabbage_top" } ] },
+    { "name": "Cabbage", "label": "cabbage", "category": "Item", "mass": 0.4, "sprite": "items/cabbage", "renderSize": 0.6, "stackLimit": 20, "wellFed": 0.1, "nutrition": 0.12, "rotDays": 10, "flavour": { "fresh": 0.7, "sweet": 0.3 }, "chopsInto": "ChoppedCabbage",
+      "flammability": 0.2, "maxHp": 20, "description": "A tight green head from the village gardens. Better in a stew, but it'll do raw." },
     {
       "name": "CabbagePlant", "label": "cabbages", "category": "Plant", "sprite": "things/cabbage", "renderSize": 0.6, "maxHp": 25, "flammability": 0.2, "pathCost": 1,
       "description": "A row of cabbages in a garden plot. Cut, the stalk sprouts again.",

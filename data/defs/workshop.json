@@ -51,46 +51,41 @@
     },
     {
       // Poured at the tavern's cask (Work.PourSession); the pour's quality is the drink's.
-      "name": "Ale", "label": "tankard of ale", "category": "Item", "mass": 0.8, "sprite": "items/ale", "stackLimit": 1,
+      "name": "Ale", "label": "tankard of ale", "category": "Item", "mass": 0.8, "sprite": "items/ale", "renderSize": 0.55, "stackLimit": 1,
       "drink": true, "leaves": "DirtyTankard", "flammability": 0.1, "maxHp": 10,
       "drinkEffect": { "strength": 0.12, "loosening": 0.15 },
-      "description": "Brown ale with a head on it. Adventurers drink it like water and complain about it like wine.",
-      "model": [ { "min": [0.35, 0.35, 0], "max": [0.65, 0.65, 0.35], "top": "props/linen", "side": "props/planks" } ]
+      "description": "Brown ale with a head on it. Adventurers drink it like water and complain about it like wine."
     },
     {
       // Mixed at the bar (Work/MixSession): a serving from the cask, one of each add, mixed to the
       // cues. What it does is the sum of what's in it ("drinkEffect"), so a house mix (any other
       // combination) does whatever its ingredients do.
-      "name": "Hearthwarmer", "label": "hearthwarmer", "category": "Item", "mass": 0.8, "sprite": "items/ale", "stackLimit": 1,
+      "name": "Hearthwarmer", "label": "hearthwarmer", "category": "Item", "mass": 0.8, "sprite": "items/mixed_drink", "renderSize": 0.55, "stackLimit": 1,
       "drink": true, "leaves": "DirtyTankard", "flammability": 0.2, "maxHp": 10,
       "mix": { "base": "Ale", "adds": [ "Spirits", "Honey" ], "cues": "FADF" },
-      "description": "Ale with a slug of spirits and a spoon of honey, stirred hot. For coming in out of the cold.",
-      "model": [ { "min": [0.35, 0.35, 0], "max": [0.65, 0.65, 0.35], "top": "props/meal_top", "side": "props/planks" } ]
+      "description": "Ale with a slug of spirits and a spoon of honey, stirred hot. For coming in out of the cold."
     },
     {
-      "name": "Bramblecup", "label": "bramblecup", "category": "Item", "mass": 0.8, "sprite": "items/ale", "stackLimit": 1,
+      "name": "Bramblecup", "label": "bramblecup", "category": "Item", "mass": 0.8, "sprite": "items/mixed_drink", "renderSize": 0.55, "stackLimit": 1,
       "drink": true, "leaves": "DirtyTankard", "flammability": 0.1, "maxHp": 10,
       "mix": { "base": "Ale", "adds": [ "Berries", "Herbs" ], "cues": "DAFD" },
-      "description": "Ale crushed with berries and a sprig of herbs. Sharp, cold, and it wakes you up.",
-      "model": [ { "min": [0.35, 0.35, 0], "max": [0.65, 0.65, 0.35], "top": "props/meal_top", "side": "props/planks" } ]
+      "description": "Ale crushed with berries and a sprig of herbs. Sharp, cold, and it wakes you up."
     },
     {
-      "name": "Stillwater", "label": "stillwater", "category": "Item", "mass": 0.8, "sprite": "items/ale", "stackLimit": 1,
+      "name": "Stillwater", "label": "stillwater", "category": "Item", "mass": 0.8, "sprite": "items/mixed_drink", "renderSize": 0.55, "stackLimit": 1,
       "drink": true, "leaves": "DirtyTankard", "flammability": 0.3, "maxHp": 10,
       "mix": { "base": "Ale", "adds": [ "Spirits", "Herbs" ], "cues": "AFAD" },
-      "description": "Spirits and bitter herbs in ale. Takes the edge off a wound, and off most other things.",
-      "model": [ { "min": [0.35, 0.35, 0], "max": [0.65, 0.65, 0.35], "top": "props/meal_top", "side": "props/planks" } ]
+      "description": "Spirits and bitter herbs in ale. Takes the edge off a wound, and off most other things."
     },
     {
-      "name": "HouseMix", "label": "house mix", "category": "Item", "mass": 0.8, "sprite": "items/ale", "stackLimit": 1,
+      "name": "HouseMix", "label": "house mix", "category": "Item", "mass": 0.8, "sprite": "items/mixed_drink", "renderSize": 0.55, "stackLimit": 1,
       "drink": true, "leaves": "DirtyTankard", "flammability": 0.2, "maxHp": 10,
       "mix": { "base": "Ale", "house": true },
-      "description": "Whatever the keeper had to hand, in ale. Nobody's quite sure what it does until they've drunk it.",
-      "model": [ { "min": [0.35, 0.35, 0], "max": [0.65, 0.65, 0.35], "top": "props/meal_top", "side": "props/planks" } ]
+      "description": "Whatever the keeper had to hand, in ale. Nobody's quite sure what it does until they've drunk it."
     },
     {
       // What goes into a mix, kept on the shelf behind the bar: each one's cue and what it does.
-      "name": "Spirits", "label": "spirits", "category": "Item", "mass": 0.3, "sprite": "items/ale", "stackLimit": 20,
+      "name": "Spirits", "label": "spirits", "category": "Item", "mass": 0.3, "sprite": "items/spirits", "renderSize": 0.55, "stackLimit": 20,
       "mixCue": "F", "drinkEffect": { "strength": 0.3, "warming": 0.3, "loosening": 0.2 }, "flammability": 0.9, "maxHp": 10,
       "description": "A measure of clear spirits. Burns going down."
     },
@@ -107,135 +102,110 @@
     {
       // The inn's crockery (Work/Vessels): a drink is poured into a clean tankard, a bowl of stew
       // ladled into a clean bowl, and the customer leaves it dirty where they finished.
-      "name": "Tankard", "label": "tankard", "category": "Item", "mass": 0.4, "sprite": "items/ale", "stackLimit": 12,
+      "name": "Tankard", "label": "tankard", "category": "Item", "mass": 0.4, "sprite": "items/tankard", "renderSize": 0.55, "stackLimit": 12,
       "vessel": true, "flammability": 0.3, "maxHp": 30,
-      "description": "A clean wooden tankard, banded in iron. Pour into it at the cask.",
-      "model": [ { "min": [0.36, 0.36, 0], "max": [0.64, 0.64, 0.3], "top": "props/planks", "side": "props/planks" } ]
+      "description": "A clean wooden tankard, banded in iron. Pour into it at the cask."
     },
     {
-      "name": "DirtyTankard", "label": "dirty tankard", "category": "Item", "mass": 0.4, "sprite": "items/ale", "stackLimit": 12,
+      "name": "DirtyTankard", "label": "dirty tankard", "category": "Item", "mass": 0.4, "sprite": "items/dirty_tankard", "renderSize": 0.55, "stackLimit": 12,
       "washesInto": "Tankard", "flammability": 0.3, "maxHp": 30,
-      "description": "Sticky with dregs. Wash it in the tub before it's poured into again.",
-      "model": [ { "min": [0.36, 0.36, 0], "max": [0.64, 0.64, 0.3], "top": "props/log_end", "side": "props/planks" } ]
+      "description": "Sticky with dregs. Wash it in the tub before it's poured into again."
     },
     {
-      "name": "Bowl", "label": "bowl", "category": "Item", "mass": 0.3, "sprite": "items/meal", "stackLimit": 12,
+      "name": "Bowl", "label": "bowl", "category": "Item", "mass": 0.3, "sprite": "items/bowl", "renderSize": 0.6, "stackLimit": 12,
       "vessel": true, "flammability": 0.3, "maxHp": 30,
-      "description": "A clean turned-wood bowl. Ladle stew into it at the pot.",
-      "model": [ { "min": [0.3, 0.3, 0], "max": [0.7, 0.7, 0.14], "top": "props/planks", "side": "props/planks" } ]
+      "description": "A clean turned-wood bowl. Ladle stew into it at the pot."
     },
     {
-      "name": "DirtyBowl", "label": "dirty bowl", "category": "Item", "mass": 0.3, "sprite": "items/meal", "stackLimit": 12,
+      "name": "DirtyBowl", "label": "dirty bowl", "category": "Item", "mass": 0.3, "sprite": "items/dirty_bowl", "renderSize": 0.6, "stackLimit": 12,
       "washesInto": "Bowl", "flammability": 0.3, "maxHp": 30,
-      "description": "Scraped, mostly. Wash it in the tub before it's ladled into again.",
-      "model": [ { "min": [0.3, 0.3, 0], "max": [0.7, 0.7, 0.14], "top": "props/meal_top", "side": "props/planks" } ]
+      "description": "Scraped, mostly. Wash it in the tub before it's ladled into again."
     },
     {
-      "name": "Stew", "label": "stew", "category": "Item", "mass": 0.5, "sprite": "items/meal", "stackLimit": 20,
+      "name": "Stew", "label": "stew", "category": "Item", "mass": 0.5, "sprite": "items/stew", "renderSize": 0.6, "stackLimit": 20,
       "wellFed": 0.5, "nutrition": 0.35, "cooked": true, "rotDays": 2, "leaves": "DirtyBowl", "flammability": 0.2, "maxHp": 20,
-      "description": "Meat and berries simmered over the hearth in its pot. Filling, and warming going down.",
-      "model": [ { "min": [0.25, 0.25, 0], "max": [0.75, 0.75, 0.2], "top": "props/meal_top", "side": "props/stone_block" } ]
+      "description": "Meat and berries simmered over the hearth in its pot. Filling, and warming going down."
     },
     // Porridge (Work.Cooking): oats in the stew pot of a morning. A pot that's mostly grain serves it
     // instead of stew; on the menu as the breakfast dish, asked for before noon (Shops.Menu).
     {
-      "name": "Porridge", "label": "porridge", "category": "Item", "mass": 0.5, "sprite": "items/meal", "stackLimit": 20,
+      "name": "Porridge", "label": "porridge", "category": "Item", "mass": 0.5, "sprite": "items/porridge", "renderSize": 0.6, "stackLimit": 20,
       "wellFed": 0.5, "nutrition": 0.35, "cooked": true, "rotDays": 1, "leaves": "DirtyBowl", "flammability": 0.2, "maxHp": 20,
       "menu": { "price": 2, "worth": 0.8, "madeAt": "StewPot", "morning": true, "asks": "A bowl of porridge to start the day. {0} silver, is it?" },
-      "description": "Oats simmered soft in the pot. What the road wants of a morning.",
-      "model": [ { "min": [0.25, 0.25, 0], "max": [0.75, 0.75, 0.2], "top": "props/linen", "side": "props/stone_block" } ]
+      "description": "Oats simmered soft in the pot. What the road wants of a morning."
     },
     // Bread (Work.Baking): flour kneaded into dough at the prep table, proved, baked in the oven by
     // smell. Bread is on the menu, and keeps: rations with bread in them turn half as fast.
-    { "name": "Flour", "label": "flour", "category": "Item", "mass": 0.5, "sprite": "items/fiber", "stackLimit": 20, "flammability": 0.5, "maxHp": 15,
-      "description": "Milled flour in a sack. Two scoops knead into a ball of dough at the prep table.",
-      "model": [ { "min": [0.25, 0.25, 0], "max": [0.75, 0.75, 0.3], "top": "props/linen", "side": "props/linen" } ] },
-    { "name": "Oats", "label": "oats", "category": "Item", "mass": 0.4, "sprite": "items/fiber", "stackLimit": 30,
+    { "name": "Flour", "label": "flour", "category": "Item", "mass": 0.5, "sprite": "items/flour", "renderSize": 0.75, "stackLimit": 20, "flammability": 0.5, "maxHp": 15,
+      "description": "Milled flour in a sack. Two scoops knead into a ball of dough at the prep table." },
+    { "name": "Oats", "label": "oats", "category": "Item", "mass": 0.4, "sprite": "items/oats", "renderSize": 0.75, "stackLimit": 30,
       "wellFed": 0.1, "nutrition": 0.12, "grain": true, "rotDays": 60, "flavour": { "savoury": 0.4, "sweet": 0.6 }, "flammability": 0.5, "maxHp": 15,
-      "description": "Rolled oats in a sack. Mostly oats in the pot, and it's porridge.",
-      "model": [ { "min": [0.25, 0.25, 0], "max": [0.75, 0.75, 0.3], "top": "props/straw", "side": "props/linen" } ] },
-    { "name": "Dough", "label": "dough", "category": "Item", "mass": 0.6, "sprite": "items/clay", "stackLimit": 1, "rotDays": 1, "flammability": 0.3, "maxHp": 10,
-      "description": "A ball of kneaded dough, proving. An hour or two, then into the oven before it sinks.",
-      "model": [ { "min": [0.3, 0.3, 0], "max": [0.7, 0.7, 0.2], "top": "props/linen", "side": "props/linen" } ] },
-    { "name": "Bread", "label": "bread", "category": "Item", "mass": 0.3, "sprite": "items/meal", "stackLimit": 10,
+      "description": "Rolled oats in a sack. Mostly oats in the pot, and it's porridge." },
+    { "name": "Dough", "label": "dough", "category": "Item", "mass": 0.6, "sprite": "items/dough", "renderSize": 0.65, "stackLimit": 1, "rotDays": 1, "flammability": 0.3, "maxHp": 10,
+      "description": "A ball of kneaded dough, proving. An hour or two, then into the oven before it sinks." },
+    { "name": "Bread", "label": "bread", "category": "Item", "mass": 0.3, "sprite": "items/loaf", "renderSize": 0.6, "stackLimit": 10,
       "wellFed": 0.3, "nutrition": 0.2, "cooked": true, "rotDays": 6, "flavour": { "savoury": 0.5, "sweet": 0.5 }, "flammability": 0.5, "maxHp": 15,
       "menu": { "price": 2, "worth": 0.7, "madeAt": "Oven", "asks": "A loaf of your bread, if it's fresh. {0} silver." },
-      "description": "A round loaf from the inn's oven. Keeps for days, and packs well for the road.",
-      "model": [ { "min": [0.26, 0.26, 0], "max": [0.74, 0.74, 0.22], "top": "props/planks", "side": "props/basket" } ] },
+      "description": "A round loaf from the inn's oven. Keeps for days, and packs well for the road." },
     // A roast off the spit (Work.Roasting), by the slice: a dish of its own on the menu (Shops.Menu),
     // asked for by name at its own price once the cook offers it. No bowl: a slice on a trencher.
-    { "name": "Roast", "label": "roast", "category": "Item", "mass": 0.4, "sprite": "items/meat", "stackLimit": 10,
+    { "name": "Roast", "label": "roast", "category": "Item", "mass": 0.4, "sprite": "items/roast", "renderSize": 0.7, "stackLimit": 10,
       "wellFed": 0.6, "nutrition": 0.3, "cooked": true, "rotDays": 2, "flammability": 0.4, "maxHp": 20,
       "menu": { "price": 5, "worth": 1.6, "madeAt": "Spit", "asks": "A slice off the roast, if there's one turning. {0} silver." },
-      "description": "A thick slice off the spit, crackling and all.",
-      "model": [ { "min": [0.22, 0.22, 0], "max": [0.78, 0.78, 0.18], "top": "props/meat_top", "side": "props/planks" } ] },
+      "description": "A thick slice off the spit, crackling and all." },
     // Pies (Work.Pies): a ball of dough filled with two portions of raw food and crimped round at the
     // prep table, then baked in the oven by smell into slices tasting of the filling.
-    { "name": "RawPie", "label": "unbaked pie", "category": "Item", "mass": 0.9, "sprite": "items/clay", "stackLimit": 1, "rotDays": 1.5, "flammability": 0.3, "maxHp": 10,
-      "description": "A pie, filled and crimped, waiting for the oven.",
-      "model": [ { "min": [0.22, 0.22, 0], "max": [0.78, 0.78, 0.16], "top": "props/linen", "side": "props/linen" } ] },
-    { "name": "Pie", "label": "pie", "category": "Item", "mass": 0.35, "sprite": "items/meal", "stackLimit": 10,
+    { "name": "RawPie", "label": "unbaked pie", "category": "Item", "mass": 0.9, "sprite": "items/raw_pie", "renderSize": 0.65, "stackLimit": 1, "rotDays": 1.5, "flammability": 0.3, "maxHp": 10,
+      "description": "A pie, filled and crimped, waiting for the oven." },
+    { "name": "Pie", "label": "pie", "category": "Item", "mass": 0.35, "sprite": "items/pie", "renderSize": 0.65, "stackLimit": 10,
       "wellFed": 0.6, "nutrition": 0.3, "cooked": true, "rotDays": 3, "flammability": 0.4, "maxHp": 15,
       "menu": { "price": 4, "worth": 1.3, "madeAt": "Oven", "asks": "A slice of pie, whatever's in it. {0} silver." },
-      "description": "A slice of pie from the inn's oven, the filling still warm.",
-      "model": [ { "min": [0.24, 0.24, 0], "max": [0.76, 0.76, 0.18], "top": "props/planks", "side": "props/basket" } ] },
+      "description": "A slice of pie from the inn's oven, the filling still warm." },
     // Brought whole by the carter and dressed at the kitchen's butcher block (Work.Butchery): no use
     // to anyone till then. A side is jointed into meat; a bird plucked into dressed fowl.
-    { "name": "PorkSide", "label": "side of pork", "category": "Item", "mass": 12, "sprite": "items/meat", "stackLimit": 1, "rotDays": 4, "flammability": 0.4, "maxHp": 60,
+    { "name": "PorkSide", "label": "side of pork", "category": "Item", "mass": 12, "sprite": "items/pork_side", "renderSize": 0.9, "stackLimit": 1, "rotDays": 4, "flammability": 0.4, "maxHp": 60,
       "joints": { "into": "Meat", "yield": 7 },
-      "description": "Half a pig, from the farm up the valley. Jointed at the butcher block, it's meat for a week.",
-      "model": [ { "min": [0.1, 0.25, 0], "max": [0.9, 0.75, 0.3], "top": "props/meat_top", "side": "props/meat_top" } ] },
-    { "name": "Fowl", "label": "fowl", "category": "Item", "mass": 1.6, "sprite": "items/hide", "stackLimit": 4, "rotDays": 3, "flammability": 0.6, "maxHp": 15,
+      "description": "Half a pig, from the farm up the valley. Jointed at the butcher block, it's meat for a week." },
+    { "name": "Fowl", "label": "fowl", "category": "Item", "mass": 1.6, "sprite": "items/fowl", "renderSize": 0.75, "stackLimit": 4, "rotDays": 3, "flammability": 0.6, "maxHp": 15,
       "plucks": { "into": "DressedFowl", "yield": 2 },
-      "description": "A bird with all its feathers on. Plucked at the butcher block, it roasts or goes in the pot.",
-      "model": [ { "min": [0.25, 0.25, 0], "max": [0.75, 0.75, 0.3], "top": "props/straw", "side": "props/hide" } ] },
-    { "name": "DressedFowl", "label": "dressed fowl", "category": "Item", "mass": 0.6, "sprite": "items/meat", "stackLimit": 20,
+      "description": "A bird with all its feathers on. Plucked at the butcher block, it roasts or goes in the pot." },
+    { "name": "DressedFowl", "label": "dressed fowl", "category": "Item", "mass": 0.6, "sprite": "items/dressed_fowl", "renderSize": 0.7, "stackLimit": 20,
       "wellFed": 0, "nutrition": 0.18, "isMeat": true, "roasts": true, "rotDays": 3, "flavour": { "savoury": 0.7, "sweet": 0.3 }, "flammability": 0.4, "maxHp": 15,
-      "description": "A plucked bird, ready for the spit or the pot.",
-      "model": [ { "min": [0.25, 0.25, 0], "max": [0.75, 0.75, 0.26], "top": "props/meat_top", "side": "props/linen" } ] },
+      "description": "A plucked bird, ready for the spit or the pot." },
     // Chopped at the prep table (Work.ChopSession): a little further for the cutting, quicker in the
     // pot, and quicker to turn. Same flavour as whole.
-    { "name": "ChoppedMeat", "label": "chopped meat", "category": "Item", "mass": 0.4, "sprite": "items/meat", "stackLimit": 30,
+    { "name": "ChoppedMeat", "label": "chopped meat", "category": "Item", "mass": 0.4, "sprite": "items/chopped_meat", "renderSize": 0.65, "stackLimit": 30,
       "wellFed": 0.15, "nutrition": 0.17, "isMeat": true, "chopped": true, "rotDays": 3, "flavour": { "savoury": 1 }, "flammability": 0.4, "maxHp": 15,
-      "description": "Meat cut small for the pot. Cooks quicker, and goes a little further.",
-      "model": [ { "min": [0.2, 0.2, 0], "max": [0.8, 0.8, 0.2], "top": "props/meat_top", "side": "props/basket" } ] },
-    { "name": "ChoppedFish", "label": "chopped fish", "category": "Item", "mass": 0.3, "sprite": "items/fish", "stackLimit": 30,
+      "description": "Meat cut small for the pot. Cooks quicker, and goes a little further." },
+    { "name": "ChoppedFish", "label": "chopped fish", "category": "Item", "mass": 0.3, "sprite": "items/chopped_fish", "renderSize": 0.65, "stackLimit": 30,
       "wellFed": 0.15, "nutrition": 0.17, "isMeat": true, "chopped": true, "rotDays": 2, "flavour": { "savoury": 0.7, "fresh": 0.3 }, "flammability": 0.3, "maxHp": 12,
-      "description": "Fish cut into chunks for the pot.",
-      "model": [ { "min": [0.2, 0.2, 0], "max": [0.8, 0.8, 0.2], "top": "props/fish_top", "side": "props/basket" } ] },
-    { "name": "ChoppedCabbage", "label": "chopped cabbage", "category": "Item", "mass": 0.4, "sprite": "items/cabbage", "stackLimit": 20,
+      "description": "Fish cut into chunks for the pot." },
+    { "name": "ChoppedCabbage", "label": "chopped cabbage", "category": "Item", "mass": 0.4, "sprite": "items/chopped_cabbage", "renderSize": 0.65, "stackLimit": 20,
       "wellFed": 0.15, "nutrition": 0.14, "chopped": true, "rotDays": 7, "flavour": { "fresh": 0.7, "sweet": 0.3 }, "flammability": 0.2, "maxHp": 15,
-      "description": "Shredded cabbage, ready for the pot.",
-      "model": [ { "min": [0.22, 0.22, 0], "max": [0.78, 0.78, 0.25], "top": "props/cabbage_top", "side": "props/basket" } ] },
+      "description": "Shredded cabbage, ready for the pot." },
     // Keeping the larder (Work.Larder): salt at the prep table, a scoop to four portions, or the smoking
     // rack near a fire. Both keep for weeks; salt meat seasons a pot by itself.
-    { "name": "CoarseSalt", "label": "salt", "category": "Item", "mass": 0.3, "sprite": "items/lime", "stackLimit": 30, "flammability": 0, "maxHp": 20,
-      "description": "Coarse grey salt in a crock. Rubbed into raw meat or fish at the prep table, it keeps them for weeks.",
-      "model": [ { "min": [0.3, 0.3, 0], "max": [0.7, 0.7, 0.3], "top": "props/linen", "side": "props/stone_block" } ] },
-    { "name": "SaltMeat", "label": "salt meat", "category": "Item", "mass": 0.4, "sprite": "items/meat", "stackLimit": 30,
+    { "name": "CoarseSalt", "label": "salt", "category": "Item", "mass": 0.3, "sprite": "items/coarse_salt", "renderSize": 0.55, "stackLimit": 30, "flammability": 0, "maxHp": 20,
+      "description": "Coarse grey salt in a crock. Rubbed into raw meat or fish at the prep table, it keeps them for weeks." },
+    { "name": "SaltMeat", "label": "salt meat", "category": "Item", "mass": 0.4, "sprite": "items/salt_meat", "renderSize": 0.7, "stackLimit": 30,
       "wellFed": 0.2, "nutrition": 0.15, "isMeat": true, "rotDays": 40, "salty": 0.35, "flavour": { "savoury": 1 }, "flammability": 0.3, "maxHp": 20,
-      "description": "Meat rubbed with salt and packed down. Keeps for weeks, and seasons a stew by itself.",
-      "model": [ { "min": [0.2, 0.2, 0], "max": [0.8, 0.8, 0.26], "top": "props/meat_top", "side": "props/linen" } ] },
-    { "name": "SaltFish", "label": "salt fish", "category": "Item", "mass": 0.3, "sprite": "items/fish", "stackLimit": 30,
+      "description": "Meat rubbed with salt and packed down. Keeps for weeks, and seasons a stew by itself." },
+    { "name": "SaltFish", "label": "salt fish", "category": "Item", "mass": 0.3, "sprite": "items/salt_fish", "renderSize": 0.65, "stackLimit": 30,
       "wellFed": 0.2, "nutrition": 0.15, "isMeat": true, "rotDays": 40, "salty": 0.35, "flavour": { "savoury": 0.8, "fresh": 0.2 }, "flammability": 0.3, "maxHp": 12,
-      "description": "Fish split and salted stiff. Keeps for weeks; soak it, or the stew's all salt.",
-      "model": [ { "min": [0.2, 0.2, 0], "max": [0.8, 0.8, 0.2], "top": "props/fish_top", "side": "props/linen" } ] },
-    { "name": "SmokedMeat", "label": "smoked meat", "category": "Item", "mass": 0.35, "sprite": "items/meat", "stackLimit": 30,
+      "description": "Fish split and salted stiff. Keeps for weeks; soak it, or the stew's all salt." },
+    { "name": "SmokedMeat", "label": "smoked meat", "category": "Item", "mass": 0.35, "sprite": "items/smoked_meat", "renderSize": 0.7, "stackLimit": 30,
       "wellFed": 0.2, "nutrition": 0.15, "isMeat": true, "rotDays": 30, "flavour": { "savoury": 0.85, "hot": 0.15 }, "flammability": 0.4, "maxHp": 20,
-      "description": "Meat cured in the smoke over a kitchen fire. Keeps for weeks, and tastes of the fire.",
-      "model": [ { "min": [0.2, 0.2, 0], "max": [0.8, 0.8, 0.24], "top": "props/meat_top", "side": "props/timber_dark" } ] },
-    { "name": "SmokedFish", "label": "smoked fish", "category": "Item", "mass": 0.25, "sprite": "items/fish", "stackLimit": 30,
+      "description": "Meat cured in the smoke over a kitchen fire. Keeps for weeks, and tastes of the fire." },
+    { "name": "SmokedFish", "label": "smoked fish", "category": "Item", "mass": 0.25, "sprite": "items/smoked_fish", "renderSize": 0.65, "stackLimit": 30,
       "wellFed": 0.2, "nutrition": 0.15, "isMeat": true, "rotDays": 30, "flavour": { "savoury": 0.7, "hot": 0.1, "fresh": 0.2 }, "flammability": 0.4, "maxHp": 12,
-      "description": "Fish cured golden in the smoke. Keeps for weeks.",
-      "model": [ { "min": [0.2, 0.2, 0], "max": [0.8, 0.8, 0.18], "top": "props/fish_top", "side": "props/timber_dark" } ] },
+      "description": "Fish cured golden in the smoke. Keeps for weeks." },
     {
       // Rations for the road (Work.Rations): three portions of food wrapped in a cloth and tied at
       // the kitchen's prep table. Sold like gear; carried on a quest and eaten on the way. Not eaten
       // in town (no nutrition of its own): it's for the road. How well it was tied doesn't show.
-      "name": "Rations", "label": "rations", "category": "Item", "mass": 0.8, "sprite": "items/cloth_undyed", "stackLimit": 1,
+      "name": "Rations", "label": "rations", "category": "Item", "mass": 0.8, "sprite": "items/rations", "renderSize": 0.6, "stackLimit": 1,
       "rations": true, "rotDays": 5, "flammability": 0.6, "maxHp": 20,
-      "description": "Food for the road, wrapped in a cloth and tied off. What's inside, and how it keeps, you'll find out on the way.",
-      "model": [ { "min": [0.25, 0.25, 0], "max": [0.75, 0.75, 0.22], "top": "props/linen", "side": "props/linen" } ]
+      "description": "Food for the road, wrapped in a cloth and tied off. What's inside, and how it keeps, you'll find out on the way."
     },
     // The carpenter's work for the road (Carpentry/Fletching): a quiver of arrows fletched at the
     // carpenter's bench, sold like gear to the parties' archers and shot away on a quest. How true the
@@ -268,10 +238,9 @@
       "model": [ { "min": [0.2, 0.25, 0], "max": [0.8, 0.75, 0.36], "top": "props/linen", "side": "props/basket" } ]
     },
     {
-      "name": "SimpleMeal", "label": "simple meal", "category": "Item", "mass": 0.4, "sprite": "items/meal", "stackLimit": 20,
+      "name": "SimpleMeal", "label": "simple meal", "category": "Item", "mass": 0.4, "sprite": "items/trencher", "renderSize": 0.65, "stackLimit": 20,
       "wellFed": 0.4, "nutrition": 0.3, "cooked": true, "rotDays": 3, "flammability": 0.4, "maxHp": 20,
-      "description": "Something hot from the fire. Goes further than raw food, and people enjoy it.",
-      "model": [ { "min": [0.25, 0.25, 0], "max": [0.75, 0.75, 0.16], "top": "props/meal_top", "side": "props/basket" } ]
+      "description": "Something hot from the fire. Goes further than raw food, and people enjoy it."
     },
     {
       "name": "Charcoal", "label": "charcoal", "category": "Item", "mass": 0.3, "sprite": "items/charcoal", "stackLimit": 60, "flammability": 1.0, "maxHp": 20,

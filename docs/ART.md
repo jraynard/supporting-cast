@@ -565,6 +565,12 @@ and the sprite's aspect, and `WorldRenderer.DrawVariedBillboard` draws them with
 runs last in `gen_placeholder_art.py`, replacing the older `norse_nature`/`norse_plants`/`norse_stone`/
 `norse_glow` drawings of the same sprites.
 
+**The inn's crockery and the kitchen's food** come from `tools/food_art.py` (`--preview` for a contact
+sheet): tankards and bowls clean and dirty, the dishes, the meats, fish, greens, staples and drinks. They
+have no box model: an item without one is drawn as its sprite standing on its bottom edge, `0.75 ×
+renderSize` cells tall, so the icon is the look in the world too. `--item-demo` lays them all out in
+the open valley to judge side by side (`Scenarios/ItemShowcase`).
+
 **Stations and props of their own** come from `tools/station_art.py`: the inn's cask, keg, shelf,
 larder, stew pot, wash tub, counter, serving hatch, fireplace and lantern, the village's barrel,
 crate and barn, the whetstone, the meditation stone and herbs, and the pyre (toolbar and inventory

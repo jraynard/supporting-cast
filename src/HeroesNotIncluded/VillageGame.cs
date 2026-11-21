@@ -297,6 +297,9 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
     /// <summary>Debug/screenshots (<c>--building-demo</c>): every preset building, and one at each phase (<see cref="BuildingShowcase"/>).</summary>
     public bool BuildingDemo { get; init; }
 
+    /// <summary>The inn's crockery and the kitchen's food laid out in the open valley (<see cref="ItemShowcase"/>).</summary>
+    public bool ItemDemo { get; init; }
+
     /// <summary>
     /// Debug (<c>--arena [FOE]</c>): the practice ring instead of a village, this raider kind in each
     /// bout (<see cref="Arena"/>). Null for a village.
@@ -415,10 +418,10 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
         if (ArenaFoe != null)
             return StartArena(defs);
         // The building showcase needs open ground, which Millbrook doesn't leave: it gets the old valley.
-        _sim = BuildingDemo ? BuildingShowcase.NewValley(defs, seed) : VillageRound.NewSimulation(defs, seed, MapName);
+        _sim = BuildingDemo || ItemDemo ? BuildingShowcase.NewValley(defs, seed) : VillageRound.NewSimulation(defs, seed, MapName);
         _sim.StrictJobs = false; // a buggy job fails itself, not the game
         _sim.Presets.PresetMode = !Freeform; // preset buildings replace freeform walls (the trial; --freeform for the old way)
-        var center = BuildingDemo ? Sim.Maps.MapGenerator.Generate(_sim) : VillageRound.Setup(_sim, MapName).Center;
+        var center = BuildingDemo || ItemDemo ? Sim.Maps.MapGenerator.Generate(_sim) : VillageRound.Setup(_sim, MapName).Center;
 
         if (Difficulty is { } difficulty && !difficulty.Equals("Off", StringComparison.OrdinalIgnoreCase))
             _sim.Storyteller.SetDifficulty(_sim, defs.Difficulty(difficulty));
@@ -468,6 +471,8 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
             focus = FurnitureShowcase.Setup(_sim, center);
         if (BuildingDemo)
             focus = BuildingShowcase.Setup(_sim, center);
+        if (ItemDemo)
+            focus = ItemShowcase.Setup(_sim, center);
         if (skipHours > 0)
         {
             for (var h = 0; h < skipHours; h++)

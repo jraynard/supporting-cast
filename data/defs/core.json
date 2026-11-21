@@ -87,12 +87,10 @@
     // Plant fiber: stripped from wild flax (below). Twisted and woven by hand into bandages (workshop.json).
     { "name": "Fiber", "label": "plant fiber", "category": "Item", "mass": 0.05, "sprite": "items/fiber", "stackLimit": 50, "flammability": 0.9, "maxHp": 10,
       "description": "Pale, tough strands stripped from wild flax. Twisted and woven, it makes bandages." },
-    { "name": "Meat", "label": "raw meat", "category": "Item", "mass": 0.4, "sprite": "items/meat", "stackLimit": 30, "wellFed": 0, "nutrition": 0.15, "isMeat": true, "rotDays": 4, "flammability": 0.4, "maxHp": 20,
-      "flavour": { "savoury": 1 }, "chopsInto": "ChoppedMeat", "roasts": true, "saltsInto": "SaltMeat", "smokesInto": "SmokedMeat",
-      "model": [ { "min": [0.2, 0.2, 0], "max": [0.8, 0.8, 0.28], "top": "props/meat_top", "side": "props/basket" } ] },
-    { "name": "RawFish", "label": "raw fish", "category": "Item", "mass": 0.3, "sprite": "items/fish", "stackLimit": 30, "wellFed": 0.1, "nutrition": 0.15, "isMeat": true, "rotDays": 2.5, "flammability": 0.3, "maxHp": 15,
-      "flavour": { "savoury": 0.7, "fresh": 0.3 }, "chopsInto": "ChoppedFish", "saltsInto": "SaltFish", "smokesInto": "SmokedFish",
-      "model": [ { "min": [0.2, 0.2, 0], "max": [0.8, 0.8, 0.28], "top": "props/fish_top", "side": "props/basket" } ] },
+    { "name": "Meat", "label": "raw meat", "category": "Item", "mass": 0.4, "sprite": "items/meat", "renderSize": 0.7, "stackLimit": 30, "wellFed": 0, "nutrition": 0.15, "isMeat": true, "rotDays": 4, "flammability": 0.4, "maxHp": 20,
+      "flavour": { "savoury": 1 }, "chopsInto": "ChoppedMeat", "roasts": true, "saltsInto": "SaltMeat", "smokesInto": "SmokedMeat" },
+    { "name": "RawFish", "label": "raw fish", "category": "Item", "mass": 0.3, "sprite": "items/fish", "renderSize": 0.65, "stackLimit": 30, "wellFed": 0.1, "nutrition": 0.15, "isMeat": true, "rotDays": 2.5, "flammability": 0.3, "maxHp": 15,
+      "flavour": { "savoury": 0.7, "fresh": 0.3 }, "chopsInto": "ChoppedFish", "saltsInto": "SaltFish", "smokesInto": "SmokedFish" },
 
     // ---- Buildings ----
     {

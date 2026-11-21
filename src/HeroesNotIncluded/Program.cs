@@ -323,6 +323,7 @@ else
         FurnitureDemo = args.Contains("--furniture-demo"),
         WorkScenesDemo = args.Contains("--work-scenes"),
         BuildingDemo = args.Contains("--building-demo"),
+        ItemDemo = args.Contains("--item-demo"),
         MapName = ParseString(args, "--map") ?? HeroesNotIncluded.Sim.Scenarios.VillageRound.DefaultMap,
         Freeform = args.Contains("--freeform"),
         HideAllRoofs = args.Contains("--hide-roofs"), // roofs are on by default; --show-roofs is still accepted
@@ -413,7 +414,7 @@ SavedCharacter? PickedCharacter()
 }
 
 static bool LaunchesDirectly(string[] args) =>
-    args.Any(a => a is "--new-game" or "--seed" or "--skip-hours" or "--furniture-demo" or "--building-demo" or "--freeform" or "--show-roofs" or "--hide-roofs"
+    args.Any(a => a is "--new-game" or "--seed" or "--skip-hours" or "--furniture-demo" or "--building-demo" or "--item-demo" or "--freeform" or "--show-roofs" or "--hide-roofs"
         or "--ignite-forest" or "--raid-test" or "--fire-test" or "--fire-spread" or "--dragon-test" or "--bridge-test" or "--fell-test" or "--brawl-test" or "--pairs-test" or "--help-as" or "--arena" or "--practice" or "--yaw" or "--pitch" or "--camera-mode" or "--keep-replay-at" or "--cutaway" or "--difficulty" or "--map" or "--work-scenes");
 
 // --load and --check-save take a path, or the name of a slot in the saves directory ("quicksave").

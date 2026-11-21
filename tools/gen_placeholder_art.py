@@ -36,6 +36,7 @@ import shrine_art
 import tinker_art
 import carpenter_art
 import norse_gear
+import food_art
 import chibi_people
 import chibi_builds
 import chibi_animals
@@ -520,6 +521,7 @@ if __name__ == "__main__":
     carpenter_art.generate()     # the carpenter's quiver and feathers
     placeholder_roofs.generate()     # roof thatch and shingles
     norse_gear.generate()        # tools and weapons per metal, stock, ores, fuel, food, hides: replaces the recoloured gear
+    food_art.generate()          # the inn's crockery and the kitchen's food: an icon each, also how each stands in the world
     chibi_animals.generate()     # deer, boar, pig, hare, wolf, bear: chibi, 4x detail
     norse_plants.generate()      # berry bushes, wild flax, emberroot
     norse_ui.generate()          # toolbar icons, fire and ember fx
