@@ -7,6 +7,59 @@ Write it for testers: what they'll notice, not how it's done.
 Playing together always needs everyone on the same build. Saves and characters carry over
 between builds unless a section's **Compatibility** line says otherwise.
 
+## 0.1.0-playtest.31
+
+A new trade, shops that order their own supplies, fires you light yourself, and a lot more to look at.
+
+**The miner** (a new trade, for beginners)
+- Hew the rock in the hill's mine with your pick. With the sounding hammer, tap along a face to hear where
+  the ore is: a dead note means ore behind it. Chalk marks show what you've found, for everyone.
+- Wheel the ore to the smithy in a barrow. Keep it balanced as you push (Q/E): lean it too far and it
+  spills. Tip it into the smithy's chest, and whoever works the forge pays you for it.
+- Three lessons in the practice yard teach all of it.
+
+**Running your shop**
+- **Supplies to order:** nothing turns up by itself any more. Send for what you need from the carter
+  at your shop window ("From the carter"), pay when you order, and it's in your store at six the next
+  morning. If the road's cut it waits; in a shortage some things don't come at all.
+- **Fires are lit by hand:** the forge, the kiln, the kitchen's fire and oven, the inn's hearth and the
+  shrine's start the round cold. Light them with flint and steel, feed them, and bank them at closing,
+  or they go out overnight (and the lodgers have a cold night). Each workplace burns its own store of
+  firewood, so running out is real.
+- **Firewood from the carpenter:** order bundles of split firewood from the carpenter at your shop window.
+  The carpenter splits it and carries it to you.
+- **Commissions** replace the notice board's favours: so many of a thing, for a price, pinned to the board.
+  The shop that makes it can take it on, bring the lot (in parts if need be) and get paid.
+- **No more labourer.** A player dealt no other trade is the musician. Villagers no longer take things
+  out of your chests or off the floor, and nobody fires up your forge or works at your anvil.
+
+**The inn**
+- Push a guest too far with your fists and they hit back. That's a brawl, and you started it.
+- A bucket of well water stops a fight, sobers a drunk and cools a grudge.
+
+**Fights look better**
+- Swings, spear thrusts and punches each have their own animation, timed to the blow.
+- A hit lands harder: whoever's struck flashes white, blocks and parries throw sparks, and the screen
+  is knocked the way the blow went. A dodge kicks up dust.
+
+**And to look at**
+- **Fire:** burning buildings lick flame, throw embers and pour smoke off the roof, and their windows
+  glow orange, so you can see a fire from the street. Chimneys smoke while the hearth's lit, and the
+  festival bonfire crackles and smokes.
+- **Water:** a bucket thrown at someone soaks them. They drip for a while, and villagers laugh it off
+  (or don't). A soaked dragon goes up in steam.
+- **Festival:** dancers fling their arms and kick on the beat, and a toast gets a proper cheer.
+- **Food and drink:** every dish, meat, loaf and pie has its own look, and so do the inn's tankards and
+  bowls, clean or dirty. No more mystery boxes on the tables.
+- The cook holds a spoon at the pot, the innkeeper a quill at the book, the butcher a cleaver. Rats look
+  like rats, and the trip-bell like a trip-bell.
+
+**Fixes**
+- The join screen no longer freezes while it searches the local network.
+- You can pick up a thing a villager was on their way to fetch.
+- The bot smith no longer stalls with a customer's blade, and an AI smith's kit goes in its chest, not
+  the fuel bin.
+
 ## 0.1.0-playtest.30
 
 A brawl at the inn, a chapter on fighting, and the rare companies dressed as themselves.
