@@ -96,6 +96,14 @@ city that's mostly AI, with players dropping in, is the architecture we already 
 
 Together with player adventurers, that's most of the dream.
 
+**Shared with M7.** A persistent town's dedicated server and M7's authoritative server for playing
+with strangers (ROADMAP.md) are the same foundation, so build them once: the server runs the only
+sim, `Perception` becomes the replication filter, and the client renders from what it's sent
+instead of reading `World`. Friends keep lockstep. Until then, keep the move small: new client code
+(UI, rendering, sound) reads through `Perception` even where nothing is secret, and mini-games keep
+hidden state out of what `WorkPredictor` runs on the client (the sounding hammer's ore, a fletch's
+warp).
+
 ## Order
 
 A suggestion, not a commitment:

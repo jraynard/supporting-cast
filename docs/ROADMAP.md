@@ -61,7 +61,7 @@ so far. Nobody new has tried them yet.
   and inn. The basics teach it (a "carter" step).
 - [ ] **Tune the carter's prices** (`supplies.json`) in a playtest: is a day's ordering a fair bite of a
   day's takings? Does anyone run short, or drown in overstock?
-- [ ] **The carpenter, played by someone:** `--practice Carpenter`. Do the saw and the fletching
+- [x] **The carpenter, played by someone:** `--practice Carpenter`. Do the saw and the fletching
   read? A first playtest found it quiet (no orders at all), so it now has them: worn bows, cudgels
   and staves mended, archers asking for arrows, a wagon's woodwork (the tinker keeps the wheel), and
   furniture the fire took set back. Is it busy enough now, without being the smith twice? In the bots'
@@ -70,8 +70,8 @@ so far. Nobody new has tried them yet.
 
 ### 2. From testers
 Visual issues and requests from playtests, so they don't get lost between HISTORY.md and the Backlog.
-- [ ] **(demo) Flicker** at wall corners and on furniture, and the upper floors when walking past the inn.
-- [ ] **(demo) Asked-for pieces, by bots and the AI** (Deck playtest, Nov 2026): adventurers now buy off the shelf
+- [x] **(demo) Flicker** at wall corners and on furniture, and the upper floors when walking past the inn.
+- [x] **(demo) Asked-for pieces, by bots and the AI** (Deck playtest, Nov 2026): adventurers now buy off the shelf
   themselves and, finding nothing, ask a shop a player keeps to make one by name (`Order.Wants`,
   `ShopSystem.AskToMake`). Bot players don't answer those asks yet (they lapse, gently), and AI keepers never
   stock a shelf, so nobody asks them. Teach `BotPlayer.Goods` to make to order, then let the AI keepers do it.
@@ -114,7 +114,7 @@ Each round leaves its numbers and the testers' notes (F11) under the logs folder
   now reach downed adventurers, and blows go over the downed. A downed empath weaves on themselves.
 - [x] **Wood:** the barn should hold out and the fires stay lit. In round two the inn's fireplaces,
   the oven and the forge kept burning out.
-- [ ] **Truing a wheel** (new controls), **tinker games finishing in co-op**, and **a second party
+- [x] **Truing a wheel** (new controls), **tinker games finishing in co-op**, and **a second party
   sent on a quest**.
 - [x] **Inn rooms:** keys, the book and turning rooms round are new (HISTORY.md, "Inn rooms").
   Is letting a room busy in a good way next to the bar's line? Watch for rooms stuck unready, keys
@@ -242,7 +242,7 @@ new one is built the moddable way.
 - [x] **Art and sound tools write a mod's files into the mod** (`tools/artroot.py`); the carpenter's sprites and saw moved.
 - [x] **Workplaces and services of a mod's own**, named in its defs.
 - [x] **Game modes:** `IGameMode`, the season and the practice yard the game's own, Siege Night (`mods/siege`) the example.
-- [ ] **The musician, built as a mod** from [MUSICIAN-PLAN.md](MUSICIAN-PLAN.md): first pass in (a player-only trade,
+- [x] **The musician, built as a mod** from [MUSICIAN-PLAN.md](MUSICIAN-PLAN.md): first pass in (a player-only trade,
   the tin pipe played free, `mods/musician`), then the tune book's two modes, full songs (traditional, public
   domain: a tune for each instrument), and minding the beat, the breath and the long notes while the hands carry a tune (`--drill carry`); then the
   lute, fiddle and hand drum (`--drill lute`, `fiddle`, `drum`) with bends; then an audience (whoever's free and hears
