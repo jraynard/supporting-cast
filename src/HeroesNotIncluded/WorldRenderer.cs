@@ -1028,8 +1028,8 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
     public IEnumerable<(SpriteSheet Sheet, uint Color)> LookLayers(Simulation sim, Entity e, uint color) =>
         sim.World.Get<Creature>(e).Def.Race switch
         {
-            // Mid-swing the weapon is drawn on its own, sweeping (DrawSwings): not in the hand as well.
-            Race.Human => HumanLook.Layers(atlas, HumanLook.Of(sim, e), color, HumanLook.WornOf(sim, e), _swings.ContainsKey(e.Index) ? null : HeldOf(sim, e)),
+            // Mid-swing the weapon stays in hand: the swing frames carry it (DrawSwings adds only the smear).
+            Race.Human => HumanLook.Layers(atlas, HumanLook.Of(sim, e), color, HumanLook.WornOf(sim, e), HeldOf(sim, e)),
             _ => [],
         };
 
@@ -1047,8 +1047,7 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
             _layers.Clear();
             return _layers;
         }
-        return HumanLook.LayersInto(_layers, atlas, LookOf(sim, e), color, HumanLook.WornInto(_worn, sim, e),
-            _swings.ContainsKey(e.Index) ? null : HeldOf(sim, e));
+        return HumanLook.LayersInto(_layers, atlas, LookOf(sim, e), color, HumanLook.WornInto(_worn, sim, e), HeldOf(sim, e));
     }
 
     /// <summary>
@@ -1565,28 +1564,22 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
             var heavy = blow.Heavy;
             // Laid flat, the camera's tilt foreshortens it: drawn a size up from the item art.
             var size = sw.Kind is "longsword" or "spear" ? 1.3f : sw.Kind == "knife" ? 0.7f : 1.0f;
+            // The weapon itself is in hand (the swing frames); on the ground plane only the smear of
+            // the strike, so the way it went reads from any angle.
             if (sw.Landed < 0)
-            {
-                var p = Math.Clamp((now - blow.Start) / Math.Max(1f, blow.Impact - blow.Start), 0f, 1f);
-                if (thrust)
-                    DrawWeapon(sw.Sprite, feet, aim, size, 0.15f - 0.3f * p, 1f);
-                else
-                    DrawWeapon(sw.Sprite, feet, aim + (0.5f + (heavy ? 1.2f : 0.9f) * p), size, 0f, 1f);
                 continue;
-            }
             var q = Math.Clamp((now - sw.Landed) / StrikeTicks, 0f, 1f);
             if (thrust)
             {
-                DrawWeapon(sw.Sprite, feet, aim, size, -0.15f + 1.1f * MathF.Sin(MathF.PI * q), 1f);
+                DrawWeapon(sw.Sprite, feet, aim, size, -0.15f + 1.1f * MathF.Sin(MathF.PI * q), 0.35f * (1f - q));
                 continue;
             }
-            // Swept from the drawn-back side across the aim, fast at first: a smear behind it.
+            // Swept from the drawn-back side across the aim, fast at first, fading as it goes.
             var from = aim + (heavy ? 1.7f : 1.4f);
             var to = aim - (heavy ? 1.7f : 1.4f);
             float At(float t) => from + (to - from) * (1f - (1f - t) * (1f - t));
-            for (var k = 3; k >= 1; k--)
-                DrawWeapon(sw.Sprite, feet, At(Math.Max(0f, q - k * 0.08f)), size, 0f, 0.5f - k * 0.13f);
-            DrawWeapon(sw.Sprite, feet, At(q), size, 0f, 1f);
+            for (var k = 3; k >= 0; k--)
+                DrawWeapon(sw.Sprite, feet, At(Math.Max(0f, q - k * 0.08f)), size, 0f, (0.4f - k * 0.1f) * (1f - q));
         }
     }
 

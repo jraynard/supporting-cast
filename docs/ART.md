@@ -132,6 +132,13 @@ the `_down` frames. Standing about, a person shows their **stance** (`Appearance
 Sat on a stool with a drink or a bowl, `sit_<view>`: the body drops onto the seat (`SIT_DROP`), the
 knees spread, and the cup is held at the lap and lifted for a sip on the third frame. The game draws
 the cup at that hand (`WorldRenderer.LapHand`/`SipHand`, in the same design units).
+A blow, `swing_<view>`: drawn back out to the side, raised clear of the head (a chibi's head hides anything
+overhead), cut across to the far hip, followed down past it. The weapon is the held layer, in hand
+throughout. The animator picks the frame from the blow's `Windup` ticks, not the clock (cocked however long
+it's wound up; `CreatureAnimator.StrikeTicks`/`RecoverTicks` after it lands), and a sheet without the tag
+falls back to `work`. `python3 tools/chibi_people.py --swing-preview` draws the frames beside `work` in every
+view. New frames go after the rest; regenerating means `chibi_people.py`, then `chibi_builds.py`, then a build
+(the build copies whatever's there, half-written sheets included).
 `sleep` and `downed` stay top-down, centred in the frame, and are drawn flat at native scale. Faces have
 big eyes (a lash line, a two-tone iris, a catch-light) and no mouth. Dragons and animals keep side-on
 sheets.

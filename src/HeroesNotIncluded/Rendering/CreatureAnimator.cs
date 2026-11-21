@@ -68,7 +68,17 @@ public sealed class CreatureAnimator
         public long LastDrawn;
         public float3 Mouth;
         public SheetFrame Shown;
+
+        /// <summary>The blow being swung or just landed (<see cref="Sim.Combat.Windup"/>): its ticks, and when it landed (-1 while it's coming).</summary>
+        public long SwingStart = -1, SwingImpact, SwingLanded = -1;
     }
+
+    /// <summary>
+    /// A swing's frames (tools/chibi_people.py, <c>swing_*</c>): drawn back, then cocked until the blow
+    /// lands; the cut for <see cref="StrikeTicks"/> after, then the follow-through until <see cref="RecoverTicks"/>.
+    /// </summary>
+    private const float DrawnBackShare = 0.3f;
+    private const int StrikeTicks = 4, RecoverTicks = 14;
 
     private readonly Dictionary<int, State> _states = [];
     private long _frame;
@@ -140,6 +150,7 @@ public sealed class CreatureAnimator
         "glide" or "takeoff" or "land" => "fly",
         "fly" or "breathe_windup" or "work" or "walk" or "sleep" => "idle",
         "breathe" => "breathe_windup",
+        "swing" => "work",
         "downed" => "sleep",
         "ride" or "sit" => "idle",
         _ => tag.StartsWith("emote_", StringComparison.Ordinal) ? "idle" : null,
@@ -257,8 +268,16 @@ public sealed class CreatureAnimator
         // A player in a hands-on session (at the anvil, the tub, a stain on the floor) isn't in an AI
         // job, but works all the same, facing the work.
         var station = w.TryGet<Sim.Work.WorkSession>(e, out var session) ? session.Focus(sim) : null;
-        // A blow being wound up: the body swings with it (the work swing, until there are frames of its own).
-        var swinging = c.Def.Race == Race.Human && w.Has<Sim.Combat.Windup>(e);
+        // A blow being wound up, and a moment after it lands: the body swings with it (swing_*, or the
+        // work swing on a sheet without those frames).
+        var now = sim.Clock.Tick;
+        if (c.Def.Race == Race.Human && w.TryGet<Sim.Combat.Windup>(e, out var blow))
+            (st.SwingStart, st.SwingImpact, st.SwingLanded) = (blow.Start, blow.Impact, -1);
+        else if (st.SwingStart >= 0 && st.SwingLanded < 0)
+            st.SwingLanded = now;
+        if (st.SwingLanded >= 0 && (now - st.SwingLanded > RecoverTicks || now < st.SwingLanded || c.Dead || c.Downed))
+            st.SwingStart = st.SwingLanded = -1;
+        var swinging = st.SwingStart >= 0;
         var inputs = new AnimInputs(
             c.Dead,
             c.Downed,
@@ -275,6 +294,8 @@ public sealed class CreatureAnimator
             job is Sim.Hospitality.SavourJob { Seated: true } or FestivalJob { Seated: true } or Sim.Systems.SitJob { Seated: true }
         );
         var want = ChooseTag(inputs);
+        if (want == "work" && swinging)
+            want = "swing";
         if (emote is { } shown && want == "idle")
             want = EmoteTag(shown.Kind);
         if (want != st.Want || newBreath)
@@ -282,7 +303,7 @@ public sealed class CreatureAnimator
         st.Want = want;
         var anim = Resolve(sheet, want, out var tag);
         // A finished one-shot gives way to its fallback (takeoff → fly) until something else is wanted.
-        if (anim != null && !anim.Loop && tag != "downed" && (tag == st.Done || (tag == st.Tag && anim.Finished(st.TagTime))))
+        if (anim != null && !anim.Loop && tag is not ("downed" or "swing") && (tag == st.Done || (tag == st.Tag && anim.Finished(st.TagTime))))
         {
             st.Done = tag;
             anim = Resolve(sheet, Fallback(tag) ?? "idle", out tag);
@@ -383,6 +404,10 @@ public sealed class CreatureAnimator
         }
 
         var frameIndex = anim?.FrameAt(st.TagTime) ?? 0;
+        // A swing keeps time with the blow, not the clock: cocked however long it's wound up.
+        if (tag == "swing" && anim is { Frames.Length: 4 })
+            frameIndex = st.SwingLanded >= 0 ? (now - st.SwingLanded < StrikeTicks ? 2 : 3)
+                : (now - st.SwingStart) < DrawnBackShare * Math.Max(1, st.SwingImpact - st.SwingStart) ? 0 : 1;
         var frame = anim != null ? anim.Frames[frameIndex] : sheet.Frames[0];
         var fired = anim != null && anim.EventFrame >= 0 && frameIndex == anim.EventFrame && st.LastFrame != frameIndex;
         st.LastFrame = frameIndex;

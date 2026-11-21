@@ -99,7 +99,16 @@ def sequence():
                          Pose(v, "sit", 2, body_dy=SIT_DROP, head_dy=-0.25, legs=knees),
                          Pose(v, "sit", 3, body_dy=SIT_DROP, head_dy=0.25, blink=face, legs=knees)],
             [1400, 260, 900, 300])
-    for alias in ("idle", "walk", "work", "ride", "sit"):
+    # A blow (after the rest, so the frames above keep their indexes): the weapon drawn back and up,
+    # held cocked while it's wound up, then cut across the body and followed through. The game picks
+    # the frame from the windup's progress (CreatureAnimator), so the timings are only a fallback.
+    for v in VIEWS:
+        add(f"swing_{v}", [Pose(v, "swing", 0, body_dy=0.0, head_dy=-0.2, legs=((0, 0), (0, 0.5))),
+                           Pose(v, "swing", 1, body_dy=-0.4, head_dy=-0.3, legs=((-0.3, 0), (0.3, 0.8))),
+                           Pose(v, "swing", 2, body_dy=0.9, head_dy=0.3, legs=((-0.8, 0), (0.8, 0))),
+                           Pose(v, "swing", 3, body_dy=0.6, head_dy=0.2, legs=((-0.8, 0), (0.8, 0)))],
+            [90, 220, 70, 180], loop=False, event=2)
+    for alias in ("idle", "walk", "work", "ride", "sit", "swing"):
         tags[alias] = tags[f"{alias}_down"]
     return frames, tags
 
@@ -164,6 +173,20 @@ class Fig:
                 elbow, hand, front = (sx + out * 2.4, 37.4 + by), (sx - out * 3.6, 30.5 + by), self.front
             else:
                 elbow, hand, front = (sx + out * 2.0, 37.2 + by), (sx - out * 1.6, 41.2 + by), self.front
+        elif p.anim == "swing" and role == 0:
+            # the weapon arm: drawn back out to the side and raised, clear of the head (a chibi's head
+            # hides anything lifted overhead), then cut across to the far hip and on down past it
+            ox = self.g["shoulders"][1 - side]
+            elbow, hand, front = [((sx + out * 2.6, 35.0 + by), (sx + out * 5.0, 32.0 + by), False),
+                                  ((sx + out * 2.6, 30.5 + by), (sx + out * 5.2, 26.0 + by), False),
+                                  ((sx - out * 3.5, 37.5 + by), (ox - out * 0.5, 41.0 + by), True),
+                                  ((sx - out * 3.0, 41.0 + by), (ox + out * 0.5, 46.5 + by), True)][p.k]
+        elif p.anim == "swing" and role == 1:
+            # the other arm balances it: forward on guard while it's wound up, pulled back as it cuts
+            if p.k < 2:
+                elbow, hand, front = (sx + out * 1.6, 36.5 + by), (sx - out * 1.0, 39.5 + by), True
+            else:
+                elbow, hand, front = (sx + out * 2.4, 36.0 + by), (sx + out * 2.8, 40.5 + by), False
         elif p.anim == "coin" and role == 1:
             lift = 0.6 if p.coin and p.coin > 0 else 0
             elbow, hand, front = (sx + out * 1.6, 38.2 + by), (sx - out * 1.4, 35 + by - lift), True
@@ -2947,11 +2970,19 @@ def tint(img, rgb):
     return out
 
 
-def figure(body, pose, hair="long", eyes="round", beard=None, wear=(), dyes=None, colors=None, folk="human"):
+def figure(body, pose, hair="long", eyes="round", beard=None, wear=(), dyes=None, colors=None, folk="human", held=None):
     """A whole person for one frame, layered as the game does (HumanLook.Layers)."""
     colors = dict(TINTS, **(colors or {}))
     dyes = dyes or {}
     F = Fig(body, pose)
+    held_img = None
+    if held:
+        plain, metal, _ = held_layers(F, held)
+        held_img = tint(metal, (200, 204, 212, 255))
+        plain.alpha_composite(held_img)
+        held_img = plain
+        if not F.front:
+            cut(held_img, base_mask(body, pose))
     hairc = tuple(min(255, int(v * 1.3)) for v in colors["hair"][:3]) + (255,)
     order = []
     worn = {}
@@ -2960,7 +2991,10 @@ def figure(body, pose, hair="long", eyes="round", beard=None, wear=(), dyes=None
         if not (pose.anim == "sleep" and item in HEAD_ITEMS):
             GARMENTS[item](G, F)
         worn[item] = G.finish(base_mask(body, pose))
-    img = base_layer(F)
+    img = Image.new("RGBA", (W, H))
+    if held_img is not None and not F.front:                     # from behind: under everything
+        img.alpha_composite(held_img)
+    img.alpha_composite(base_layer(F))
     front, back = hair_layers(Fig("female", pose), hair)
     cut(back, both_bases(pose))
     dye_of = lambda item: tuple(min(255, int(v * 1.275)) for v in dyes.get(item, colors["dye"])[:3]) + (255,)
@@ -2976,6 +3010,8 @@ def figure(body, pose, hair="long", eyes="round", beard=None, wear=(), dyes=None
     for item in slots:
         if item in wear:
             order += [worn[item][""], tint(worn[item]["_dye"], dye_of(item))]
+    if held_img is not None and F.front:                         # facing us: over the clothes
+        order.append(held_img)
     if beard:
         order.append(tint(beard_layer(Fig("female", pose), beard), hairc))
     order.append(tint(front, hairc))
@@ -3149,8 +3185,40 @@ def hair_preview(path, styles=None, beards=True):
     contact_sheet(imgs, path, scale=1, columns=5, bg=(40, 40, 40, 255), pad=2)
 
 
+def motion_preview(path, tag, looks, before=("work",)):
+    """One action in the four views, a row each per look: the frames of ``before`` (to compare),
+    then the action's own, each at the detail and at the game's size beside it."""
+    imgs = []
+    for look in looks:
+        for v in VIEWS:
+            for name in [f"{b}_{v}" for b in before] + [f"{tag}_{v}"]:
+                first, last, _, _ = TAGS[name]
+                for i in range(first, last + 1):
+                    canvas = Image.new("RGBA", (W, H), (96, 120, 80, 255) if name.startswith(tag) else (84, 104, 72, 255))
+                    canvas.alpha_composite(figure(pose=FRAMES[i][0], **look))
+                    imgs.append(canvas)
+            game = imgs[-1].resize((W // 4, H // 4), Image.BOX).resize((W // 2, H // 2), Image.NEAREST)
+            small = Image.new("RGBA", (W, H), (96, 120, 80, 255))
+            small.alpha_composite(game, ((W - game.width) // 2, (H - game.height) // 2))
+            imgs.append(small)
+    per_row = sum(TAGS[f"{n}_down"][1] - TAGS[f"{n}_down"][0] + 1 for n in (*before, tag)) + 1
+    contact_sheet(imgs, path, scale=1, columns=per_row, bg=(40, 40, 40, 255), pad=2)
+
+
+SWING_LOOKS = (
+    dict(body="male", hair="short", beard="short", held="sword", wear=("tunic", "trousers", "boots", "leather_jerkin")),
+    dict(body="female", hair="ponytail", held="axe", wear=("tunic", "trousers", "boots"), colors={"hair": (60, 44, 36, 255)}),
+)
+
+
 if __name__ == "__main__":
     only = sys.argv[sys.argv.index("--only") + 1] if "--only" in sys.argv else None
+    if "--swing-preview" in sys.argv:
+        out = os.path.join(os.path.dirname(__file__), "..", ".cache", "people", "swing.png")
+        os.makedirs(os.path.dirname(out), exist_ok=True)
+        motion_preview(out, "swing", SWING_LOOKS)
+        print(out)
+        sys.exit(0)
     if "--turn-test" in sys.argv:
         out = os.path.join(os.path.dirname(__file__), "..", ".cache", "people", "turn.png")
         os.makedirs(os.path.dirname(out), exist_ok=True)
