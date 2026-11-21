@@ -1106,6 +1106,9 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
             return sledge;
         if (TongsOf(sim, e, session) is { } tongs)
             return tongs;
+        // What the work itself shows in hand: the spoon at the pot, the quill at the book.
+        if (session?.InHand is { } implement)
+            return new HumanLook.HeldItem(implement, HumanLook.MetalTint(4));
         // A player's weapon's only in hand drawn, in combat mode (Combat.FreeMover).
         if (w.TryGet<Equipment>(e, out var eq) && w.IsAlive(eq.Weapon) && !(w.TryGet<Sim.Combat.FreeMover>(e, out var free) && !free.Drawn)
             && !Sim.Combat.HouseRules.Sheathed(sim, e) // the inn's rule, or a brawler's fists: it stays sheathed

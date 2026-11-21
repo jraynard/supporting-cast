@@ -506,6 +506,98 @@ def log_pile(wood, seed):
     return done(img)
 
 
+def end_disc(img, cx, cy, r, wood):
+    """A log's cut end: bark rim, sapwood, a ring or two, the pith; lit at the upper left."""
+    for y in range(int(cy - r - 1), int(cy + r + 2)):
+        for x in range(int(cx - r - 1), int(cx + r + 2)):
+            d = math.hypot(x + 0.5 - cx, y + 0.5 - cy)
+            if d > r:
+                continue
+            if d > r - 1.1:
+                c = wood.bark[1] if not wood.birch else (wood.bark[2] if (x + y) % 5 else (52, 48, 50, 255))
+            else:
+                lit = (x - cx) + (y - cy) < -1.5
+                c = wood.end[1] if any(abs(d - k) < 0.45 for k in (r * 0.45, r * 0.75)) else wood.end[3 if lit else 2]
+            put(img, x, y, c)
+    put(img, round(cx), round(cy), wood.end[0])
+
+
+def barked(img, pts, wood):
+    """A length of trunk in its bark (``pts`` its outline), furrowed along it."""
+    part(img, poly(pts), wood.bark, line=wood.bark[0], radius=0.8,
+         tex=lambda x, y: (0.3 if (x * 2 + y) % 7 == 0 else 0) if not wood.birch else (-0.7 if (x + y * 5) % 11 == 0 else 0))
+
+
+def log_item(wood):
+    """One log, lying three-quarter on: bark along it, the cut end to the viewer."""
+    img = canvas()
+    barked(img, [(9, 24), (24, 9), (30, 13), (15, 28)], wood)
+    end_disc(img, 10, 23, 6.0, wood)
+    return done(img)
+
+
+def great_log(wood):
+    """A great log: a length of trunk too thick to carry alone, a wide cut end with many rings."""
+    img = canvas()
+    barked(img, [(9, 20), (22, 7), (31, 14), (18, 28)], wood)
+    end_disc(img, 11, 20, 9.5, wood)
+    return done(img)
+
+
+def felled_trunk(wood):
+    """A felled trunk lying long, its branches lopped to stubs, the crown's end tapering away."""
+    img = canvas()
+    barked(img, [(2, 25), (26, 6), (31, 8), (31, 11), (7, 30), (3, 30)], wood)
+    for a, z in (((14, 17), (14, 11)), ((22, 11), (25, 6)), ((19, 18), (23, 21))):                    # lopped branches
+        part(img, stick(a, z, 2.4, 1.8), wood.bark[1:], radius=0.5)
+        put(img, z[0], z[1], wood.end[2])
+    end_disc(img, 4, 27, 3.6, wood)
+    return done(img)
+
+
+def firewood(wood):
+    """Split firewood: a criss-crossed pile of split lengths, the pale split faces up, a strip of
+    bark down each one's back, the ends cut square."""
+    img = canvas()
+    for a, z in (((3, 22), (24, 15)), ((6, 27), (28, 21)), ((8, 12), (26, 27)), ((5, 17), (22, 9)), ((12, 29), (29, 14))):
+        part(img, stick(a, z, 4.2), wood.w[1:], line=wood.w[0], radius=0.6,
+             tex=lambda xx, yy: 0.16 if (xx + yy * 3) % 5 == 0 else 0)
+        dx, dy = z[0] - a[0], z[1] - a[1]
+        n = max(abs(dx), abs(dy))
+        for i in range(n):                                                                       # the bark down its back
+            put(img, a[0] + dx * i // n, a[1] + dy * i // n + 2, wood.bark[1])
+        put(img, z[0], z[1], wood.end[3]); put(img, z[0] - 1, z[1], wood.end[2])                 # the cut end
+    return done(img)
+
+
+def greatsword():
+    """A two-handed sword: a long broad blade corner to corner, a wide straight guard, a long grip, a heavy pommel."""
+    m = METAL["steel"]
+    fit = METAL["iron"]
+    img = canvas()
+    part(img, lambda d: d.polygon(ribbon([(10, 22), (20, 12), (30, 2)], [5.4, 4.6, 1.0]), fill=255), m, radius=0.8, slope=1.7)
+    for k in range(16):                                                                          # the fuller
+        put(img, 12 + k, 20 - k, m[1] if k % 3 else m[2])
+    part(img, poly([(3, 16), (5, 14), (17, 26), (15, 28)]), fit)                                # the guard, wide
+    for k in range(7):                                                                           # the long grip
+        put(img, 8 - k, 24 + k, LEATHER[3] if k % 2 else LEATHER[1])
+        put(img, 9 - k, 24 + k, LEATHER[2] if k % 2 else LEATHER[0])
+    part(img, lambda d: d.ellipse([-1, 27, 4, 32], fill=255), fit)
+    return done(img)
+
+
+def claw_hammer():
+    """A carpenter's claw hammer: a slim ash handle, a round striking face, the split claw curving back."""
+    m = METAL["iron"]
+    img = canvas()
+    haft(img, (8, 29), (19, 11), wood=ASH, width=2.6)
+    part(img, poly([(15, 8), (23, 6), (23, 12), (17, 13)]), m, radius=0.8)                                    # the head's neck
+    part(img, lambda d: d.rounded_rectangle([22, 4, 27, 13], radius=1, fill=255), m, radius=0.8)              # the square face
+    part(img, lambda d: d.polygon(ribbon([(15, 9), (10, 5), (8, 9)], [2.6, 2.0, 0.8]), fill=255), m, radius=0.6)   # the claw
+    put(img, 10, 6, (0, 0, 0, 0)); put(img, 11, 7, m[0])                                                      # its split
+    return done(img)
+
+
 def planks_item(wood, seed):
     rnd = random.Random(seed)
     img = canvas()
@@ -717,6 +809,12 @@ def generate():
         seed = sum(map(ord, suffix))
         out["items/wood" + suffix] = log_pile(wood, seed + 6)
         out["items/planks" + suffix] = planks_item(wood, seed + 11)
+        out["items/log" + suffix] = log_item(wood)
+        out["items/great_log" + suffix] = great_log(wood)
+        out["items/felled_trunk" + suffix] = felled_trunk(wood)
+        out["items/firewood" + suffix] = firewood(wood)
+    out["items/greatsword"] = greatsword()
+    out["items/claw_hammer"] = claw_hammer()
     for name, make in (("berries", berries), ("meat", meat), ("fish", fish), ("meal", meal), ("hide", hide), ("leather", leather),
                        ("leather_pack", leather_pack), ("emberroot", emberroot), ("fiber", fiber),
                        ("bandage", bandage)):

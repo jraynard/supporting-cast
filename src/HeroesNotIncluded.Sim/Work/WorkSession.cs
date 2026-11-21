@@ -216,6 +216,13 @@ public abstract class WorkSession
     public virtual bool HandsMoving => true;
 
     /// <summary>
+    /// Presentation only: what's shown in the working hand while at it, a held shape (the
+    /// <c>apparel/held_&lt;shape&gt;</c> sheets: "spoon" at the pot, "quill" at the book), or null for
+    /// whatever they'd otherwise hold. An implement shown, not an item carried; the sim never reads it.
+    /// </summary>
+    public virtual string? InHand => null;
+
+    /// <summary>
     /// Its sounds carry to whoever's in earshot, not just the worker: an anvil's ring, a pot on the boil, a
     /// keg knocked open. Only for work whose every sound a bystander could hear; never one that sounds out
     /// what only the worker feels (a probe catching on a trap, a wound under the empath's hands, ore behind a

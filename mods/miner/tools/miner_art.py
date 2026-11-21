@@ -107,6 +107,20 @@ def barrow_props():
     return out
 
 
+def sounding_hammer():
+    """The sounding hammer's item picture: a small round iron head on a long, slender ash handle, light enough
+    to tap a wall with all day. Drawn with the game's own icon helpers (tools/norse_gear.py) to sit beside its tools."""
+    import sys
+    sys.path.insert(0, os.path.join(MOD, "..", "..", "tools"))
+    from norse_gear import canvas, part, haft, done, METAL, ASH
+    m = METAL["iron"]
+    img = canvas()
+    haft(img, (6, 30), (21, 9), wood=ASH, width=2.0, grip=False)
+    part(img, lambda d: d.ellipse([18, 3, 27, 12], fill=255), m, radius=1.2)                 # the round head
+    part(img, lambda d: d.ellipse([25, 5, 30, 10], fill=255), m, radius=0.6)                 # its small striking face
+    return done(img)
+
+
 def main():
     out = os.path.join(MOD, "textures", "props")
     os.makedirs(out, exist_ok=True)
@@ -115,9 +129,10 @@ def main():
     items = os.path.join(MOD, "textures", "items")
     os.makedirs(items, exist_ok=True)
     wheelbarrow().save(os.path.join(items, "wheelbarrow.png"))
+    sounding_hammer().save(os.path.join(items, "sounding_hammer.png"))
     for name, img in barrow_props().items():
         img.save(os.path.join(out, name + ".png"))
-    print("miner: wrote props/chalk_seam.png, props/chalk_bare.png, items/wheelbarrow.png, props/barrow_*.png")
+    print("miner: wrote props/chalk_seam.png, props/chalk_bare.png, items/wheelbarrow.png, items/sounding_hammer.png, props/barrow_*.png")
 
 
 if __name__ == "__main__":

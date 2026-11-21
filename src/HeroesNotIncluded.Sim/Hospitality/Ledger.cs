@@ -113,6 +113,9 @@ public static class Ledger
 /// </summary>
 public sealed class SignInSession : WorkSession
 {
+    /// <summary>The quill, writing in the book.</summary>
+    public override string? InHand => "quill";
+
     /// <summary>Seconds the quill takes over a line.</summary>
     public const float WriteSeconds = 1.1f;
 

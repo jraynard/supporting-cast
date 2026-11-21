@@ -76,6 +76,24 @@ def tapping_rod():
     return selective_outline(img)
 
 
+def trip_bell():
+    """Set across a road: a stake with a brass bell hung on a coiled spring from its arm, and the
+    trip-cord pegged low along the ground to a second peg."""
+    img = blank()
+    shape(img, lambda d: d.polygon([(7, 30), (9, 30), (9, 9), (7, 9)], fill=255), OAK, radius=0.6)      # the stake
+    px(img, [(6, 30), (10, 30)], OAK[1])
+    shape(img, lambda d: d.line([(8, 10), (19, 8)], fill=255, width=2), IRON, radius=0.4)                # its iron arm
+    for i in range(4):                                                                                  # the spring
+        px(img, [(18 + (i % 2), 9 + i)], IRON[3 if i % 2 else 1])
+    shape(img, lambda d: d.pieslice([13, 12, 25, 26], 180, 360, fill=255), BRASS, radius=0.8)           # the bell
+    shape(img, lambda d: d.rectangle([13, 18, 25, 20], fill=255), BRASS[1:] + [BRASS[4]], radius=0.4)   # its lip
+    px(img, [(19, 21), (19, 22)], IRON[0])                                                               # the clapper
+    px(img, [(15, 14), (16, 13)], BRASS[4])
+    px(img, [(x, 27 + (x > 18)) for x in range(9, 28)], (214, 196, 150, 255))                            # the trip-cord, low
+    shape(img, lambda d: d.polygon([(27, 30), (29, 30), (29, 25), (27, 25)], fill=255), OAK, radius=0.4)  # the far peg
+    return selective_outline(img)
+
+
 def grapnel():
     """Three hooks on a shank, a coil of line and a small geared winch."""
     img = blank()
@@ -220,7 +238,7 @@ def save(img, rel):
 def generate():
     save(bench(), "buildings/tinker_bench")
     save(collectors_crate(), "buildings/collectors_crate")
-    for name, make in (("door_lock", door_lock), ("key", key), ("tapping_rod", tapping_rod), ("grapnel", grapnel),
+    for name, make in (("door_lock", door_lock), ("key", key), ("tapping_rod", tapping_rod), ("trip_bell", trip_bell), ("grapnel", grapnel),
                        ("clockwork_lantern", clockwork_lantern), ("spring_snare", spring_snare), ("signal_rocket", signal_rocket),
                        ("carved_idol", carved_idol), ("clockwork_bird", clockwork_bird), ("old_seal", old_seal),
                        ("gilded_chalice", gilded_chalice), ("star_chart", star_chart)):

@@ -38,7 +38,7 @@
       "moveSpeed": 5.5, "maxHp": 6,
       "comfortTempMin": -10, "comfortTempMax": 35, "safeTempMin": -30, "safeTempMax": 45,
       "work": [],
-      "lifeStages": [ { "name": "Adult", "label": "rat", "sprite": "creatures/hare", "size": 0.32 } ],
+      "lifeStages": [ { "name": "Adult", "label": "rat", "sprite": "creatures/rat", "size": 0.32 } ],
       "animal": { "plural": "rats", "meatYield": 0, "mass": 0.4, "hideYield": 0, "butcherWork": 30, "herdMin": 1, "herdMax": 1, "commonness": 0, "fleeRadius": 2.5, "stayHours": [ 1, 1 ] }
     },
     // Predators (predator: true) never wander in with the herds (commonness 0): the storyteller sends

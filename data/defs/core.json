@@ -53,7 +53,7 @@
     // below, twice as fast at 60°C (RotSystem). Stacks mix their spoilage by count.
     // Firewood (Carpentry.SplitSession): logs split into billets at the chopping block. The town's
     // hearths, ovens and kilns burn it, not timber: the carter brings most of it, the carpenter the rest.
-    { "name": "Firewood", "label": "firewood", "category": "Item", "materialsOf": "Wood", "mass": 1, "sprite": "items/wood", "stackLimit": 30, "flammability": 1.0, "maxHp": 30,
+    { "name": "Firewood", "label": "firewood", "category": "Item", "materialsOf": "Wood", "mass": 1, "sprite": "items/firewood", "stackLimit": 30, "flammability": 1.0, "maxHp": 30,
       "description": "Split billets for a fire. Hearths, ovens and kilns burn it.",
       "model": [
         { "min": [0.18, 0.2, 0], "max": [0.82, 0.8, 0.1], "top": "props/woodpile_top", "side": "props/woodpile_side", "front": "props/woodpile_end", "minCount": 1 },
@@ -267,7 +267,7 @@
     {
       // A felled tree lying on the ground from its stump (Carpentry.Felling), along its facing; bucked
       // into logs where it lies (Carpentry.BuckSession), and gone when the last is cut.
-      "name": "FelledTrunk", "label": "felled trunk", "category": "Building", "sprite": "items/wood",
+      "name": "FelledTrunk", "label": "felled trunk", "category": "Building", "sprite": "items/felled_trunk",
       "description": "A felled tree lying where it fell. Saw it into logs where it lies.",
       "maxHp": 200, "flammability": 0.6, "pathCost": 2,
       "building": { "buildable": false, "outdoor": true, "cost": [] },

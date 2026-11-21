@@ -2,7 +2,7 @@
 """The wild animals in the people's and dragons' chibi style (round bodies, big heads, big glossy
 eyes, clean outlines), side-on at four times the detail ("density": 4):
 
-    python3 tools/chibi_animals.py              # creatures/deer, boar, hare, wolf, bear into data/textures
+    python3 tools/chibi_animals.py              # creatures/deer, boar, pig, hare, rat, wolf, bear into data/textures
     python3 tools/chibi_animals.py --preview    # ...and .cache/animals.png
 
 Same frame sizes, pivots and tags as before (idle, walk, sleep, downed: a carcass is the animal
@@ -68,7 +68,7 @@ def legs4(cv, body, ground, thick, pose, colors, hoof=None, length_front=1.0):
 
 # ---------------------------------------------------------------- the animals
 
-SCALE = {"deer": 1.55, "boar": 1.75, "pig": 1.7, "hare": 1.3, "wolf": 1.6, "bear": 1.9}   # drawn bigger than their old frames: the deer about 3/4 of a person
+SCALE = {"deer": 1.55, "boar": 1.75, "pig": 1.7, "hare": 1.3, "rat": 1.0, "wolf": 1.6, "bear": 1.9}   # drawn bigger than their old frames: the deer about 3/4 of a person
 
 
 def deer(pose):
@@ -262,6 +262,49 @@ def hare(pose):
     return cv
 
 
+def rat(pose):
+    """A rat: low and long, a pointed whiskered snout, round pink ears, a long bare tail; it scurries."""
+    cv = Canvas(20, 12, K * SCALE["rat"])
+    ground = 11
+    fur = ramp((118, 104, 96), 5, dark=0.5, light=1.35)
+    belly = ramp((176, 164, 150), 3)
+    pink = ramp((222, 160, 156), 3)
+    by = 7.6 + pose["bob"]
+    bx, rx, ry = 8.4, 4.6, 2.6
+    if pose["sleep"]:
+        by, rx, ry = ground - 2.4, 4.8, 2.2
+    # the tail, curving away behind
+    lift = 0 if pose["sleep"] else pose["legs"] * 0.4
+    tail = cv.strip([(bx - rx * 0.9, by + 0.4), (bx - rx - 2.4, by + 1.6 - lift), (bx - rx - 4.6, by - 0.6 - lift), (bx - rx - 5.6, by - 2.0)],
+                    [0.9, 0.7, 0.5, 0.25], steps=5)
+    shade(cv, tail, pink, line=False)
+    cv.ink(tail, 1)
+    # four little legs, scurrying
+    if not pose["sleep"]:
+        for k, (x, sign) in enumerate(((bx - rx * 0.5, -1), (bx + rx * 0.5, 1), (bx - rx * 0.3, 1), (bx + rx * 0.7, -1))):
+            stride = pose["legs"] * sign * 0.5
+            foot = (x + stride, ground - 0.3)
+            leg = cv.strip([(x, by + ry * 0.4), foot], [1.0, 0.8], steps=2)
+            shade(cv, leg, fur if k >= 2 else fur[:3] + [fur[2], fur[2]], bias=-0.2 if k < 2 else 0)
+            cv.fill(cv.ellipse(foot[0] + 0.4, foot[1], 0.7, 0.35), pink[1], "base")
+    torso = cv.ellipse(bx, by, rx, ry)
+    shade(cv, torso, fur, radius=1.2, bias=0.05, tex=lambda x, y: 0.08 if (x + y) % 3 == 0 else 0.0)
+    shade(cv, both(cv.ellipse(bx + 0.8, by + ry * 0.65, rx * 0.7, ry * 0.4), torso), belly, line=False)
+    hx, hy = bx + rx * 0.95, by - ry * 0.35
+    if pose["sleep"]:
+        hx, hy = bx + rx * 0.9, ground - 2.0
+    ear = cv.ellipse(hx - 0.6, hy - 1.9 + pose["ear"] * 0.3, 1.1, 1.2)
+    shade(cv, ear, fur[1:] + [fur[4]])
+    cv.fill(both(cv.ellipse(hx - 0.5, hy - 1.8 + pose["ear"] * 0.3, 0.6, 0.7), ear), pink[1], "base")
+    head = cv.strip([(hx - 1.2, hy), (hx + 1.2, hy + 0.2), (hx + 3.0, hy + 0.8)], [2.6, 2.0, 0.8], steps=4)
+    shade(cv, head, fur, radius=0.9, bias=0.12)
+    cv.fill(cv.ellipse(hx + 3.0, hy + 0.8, 0.4, 0.35), pink[0], "base")
+    for dy in (-0.3, 0.3):                                            # whiskers
+        cv.fill(cv.strip([(hx + 2.4, hy + 0.9), (hx + 4.2, hy + 0.9 + dy * 2)], [0.12, 0.08], steps=2), (220, 212, 200, 255), "base")
+    eye(cv, hx + 0.7, hy - 0.2, 0.9, 1.0, closed=pose["closed"], iris=(30, 24, 26))
+    return cv
+
+
 def wolf(pose):
     """A grey wolf: lean, long-legged, a long muzzle, pointed ears and a bushy tail."""
     cv = Canvas(36, 28, K * SCALE["wolf"])
@@ -354,7 +397,7 @@ def bear(pose):
     return cv
 
 
-KINDS = {"deer": deer, "boar": boar, "pig": pig, "hare": hare, "wolf": wolf, "bear": bear}
+KINDS = {"deer": deer, "boar": boar, "pig": pig, "hare": hare, "rat": rat, "wolf": wolf, "bear": bear}
 
 
 def poses(kind):
@@ -365,8 +408,10 @@ def poses(kind):
         walk = [P(hop=0), P(hop=1.6, legs=1), P(hop=2.2, legs=1.5), P(hop=0.8)]
     else:
         walk = [P(legs=1.6), P(legs=0, bob=-0.3), P(legs=-1.6), P(legs=0, bob=-0.3)]
+    if kind == "rat":
+        walk = [P(legs=1.4, bob=-0.2), P(legs=-1.4), P(legs=1.4), P(legs=-1.4, bob=-0.2)]
     sleep = [P(sleep=True, closed=True, bob=0), P(sleep=True, closed=True, bob=0.25)]
-    return [("idle", idle, 300), ("walk", walk, 130 if kind != "hare" else 110), ("sleep", sleep, 900)]
+    return [("idle", idle, 300), ("walk", walk, {"hare": 110, "rat": 70}.get(kind, 130)), ("sleep", sleep, 900)]
 
 
 def lying(cv):
@@ -392,7 +437,7 @@ def sheet(kind):
     return frames, tags
 
 
-PIVOTS = {"deer": (20, 35), "boar": (18, 25), "pig": (18, 25), "hare": (10, 15), "wolf": (17, 27), "bear": (22, 33)}
+PIVOTS = {"deer": (20, 35), "boar": (18, 25), "pig": (18, 25), "hare": (10, 15), "rat": (10, 11), "wolf": (17, 27), "bear": (22, 33)}
 
 
 def generate():

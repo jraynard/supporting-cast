@@ -15,6 +15,9 @@ namespace HeroesNotIncluded.Sim.Work;
 /// </summary>
 public sealed class ChopSession : WorkSession
 {
+    /// <summary>The kitchen knife.</summary>
+    public override string? InHand => "knife";
+
     /// <summary>How far the fingers draw back a step with A held, in slices: a slice in a third of a second.</summary>
     public const float DrawPerStep = 1f / 20f;
 

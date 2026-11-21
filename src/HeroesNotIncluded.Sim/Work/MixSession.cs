@@ -25,6 +25,9 @@ public struct DrinkMix
 /// </summary>
 public sealed class MixSession : WorkSession
 {
+    /// <summary>A long spoon, to stir it.</summary>
+    public override string? InHand => "spoon";
+
     /// <summary>Steps before the first cue reaches the mark, and between cues.</summary>
     public const int Lead = 60, Gap = 40;
 

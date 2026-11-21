@@ -336,7 +336,7 @@ through every stance.
 | `apparel/<worn>_<body>` | a garment or piece of armor: trim, leather, metal (whatever lies over its cloth is cut from the dye) | as is |
 | `apparel/<worn>_dye_<body>` | its dyed cloth, greyscale (main shade grey 200) | the dye |
 | `apparel/<cloak>_back_<body>` (+ `_dye`) | a cloak's back panel, cut under the base | first |
-| `apparel/held_<shape>_<body>` (+ `_metal`, `_back`, `_back_metal`) | a weapon or tool in the working hand, along the forearm through every pose and swing (front views over the body, back views behind it); the metal is tinted by the item's tier (`HumanLook.MetalTint`) | in hand |
+| `apparel/held_<shape>_<body>` (+ `_metal`, `_back`, `_back_metal`) | a weapon or tool in the working hand, along the forearm through every pose and swing (front views over the body, back views behind it); the metal is tinted by the item's tier (`HumanLook.MetalTint`). Besides items' `held` shapes, a work session can show an implement that isn't an item (`WorkSession.InHand`: the spoon at the pot and the bar, the knife chopping, the cleaver at the block, the quill at the book) | in hand |
 | `apparel/held_tongs_piece_<body>` (+ `_back_piece`) | the bar in the tongs' jaws, near white: drawn unlit in the colour its heat shows (`Rendering/ForgeGlow`), glowing once it's hot | a smith with a piece on the go |
 
 **Folk** (`Appearance.Folk`, `HumanLook.Folks`: each its label, swatches, how often bearded and its build):

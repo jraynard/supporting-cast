@@ -15,14 +15,14 @@
       // Bucked from a felled trunk (Carpentry.BuckSession): carried one at a time in both arms, and
       // slowly. Sawn into planks at the sawhorse or split into firewood at the chopping block.
       "name": "Log", "label": "log", "category": "Item", "materialsOf": "Wood", "mass": 20, "bulky": true, "carrySpeed": 0.8,
-      "sprite": "items/wood", "stackLimit": 1, "flammability": 0.8, "maxHp": 80,
+      "sprite": "items/log", "stackLimit": 1, "flammability": 0.8, "maxHp": 80,
       "description": "A length of trunk, bark on. Heavy: carried in both arms. Saw it into planks, or split it for firewood.",
       "model": [ { "min": [0.1, 0.36, 0], "max": [0.9, 0.64, 0.26], "top": "props/log_side", "side": "props/log_side", "front": "props/log_end" } ]
     },
     {
       // A trunk's butt left whole: two logs' length, too long for one saw (the pitman's work, Work.Pairs).
       "name": "GreatLog", "label": "great log", "category": "Item", "materialsOf": "Wood", "mass": 45, "bulky": true, "carrySpeed": 0.55,
-      "sprite": "items/wood", "stackLimit": 1, "flammability": 0.7, "maxHp": 150,
+      "sprite": "items/great_log", "stackLimit": 1, "flammability": 0.7, "maxHp": 150,
       "description": "The butt of a great trunk, left whole. Very heavy. A top sawyer and a pitman make fine long planks of it.",
       "model": [ { "min": [0.02, 0.3, 0], "max": [0.98, 0.7, 0.36], "top": "props/log_side", "side": "props/log_side", "front": "props/log_end" } ]
     },
@@ -316,7 +316,7 @@
     },
     {
       // The carpenter's: nails driven with the face, drawn with the claw (Carpentry.NailSession).
-      "name": "ClawHammer", "held": "hammer", "label": "claw hammer", "category": "Item", "mass": 0.8, "sprite": "items/hammer", "maxHp": 90,
+      "name": "ClawHammer", "held": "hammer", "label": "claw hammer", "category": "Item", "mass": 0.8, "sprite": "items/claw_hammer", "maxHp": 90,
       "tool": { "kind": "ClawHammer", "speed": 1.0, "tier": "Iron" },
       "description": "A light hammer with a split claw: drives nails, and draws the ones that bend."
     },

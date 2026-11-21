@@ -516,9 +516,8 @@ items into "Now" when a playtest says they matter.
   startle sound for the beasts (spook and frost borrow the chill's for now; docs/AUDIO.md).
 - Co-op: a ridden beast isn't predicted on its rider's screen (`FreeMovePredictor` is the
   character's), so it lags a round trip behind the keys.
-- Rats are small hares. Nobody yet holds a spoon, knife or quill while they work (a held shape each in
-  `tools/chibi_people.py`). Borrowed: the trip-bell is the tapping rod; the greatsword the longsword;
-  the hammers (smith's, claw, sounding) one icon; log, great log, trunk, firewood and timber one icon.
+- Stirring, chopping and writing play the hammering work swing, implement in hand (`WorkSession.InHand`):
+  a stir and a write of their own (`tools/chibi_people.py`). The striker swings the smith's hammer (no sledge).
 - The folk (elves, dwarves, halflings) are only looks; they could have something of their own (an
   elf's keener sight at dusk, a dwarf's ease at the forge, a halfling's quiet step). Halflings
   could go barefoot (villagers' clothes come from the sim, so it isn't only a look).

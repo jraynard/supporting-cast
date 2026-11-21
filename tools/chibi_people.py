@@ -2775,7 +2775,8 @@ METAL = [grey(v) for v in DYE_GREYS]           # tinted by the item's tier (Huma
 PIECE = [grey(v) for v in (196, 222, 240, 252)]  # the work in the tongs: near white, tinted by its heat (Rendering/ForgeGlow)
 HELD_PIECES = ("tongs",)                          # shapes that hold a piece of work (their _piece layers)
 HELD_SHAPES = ("sword", "longsword", "knife", "axe", "pick", "hammer", "mace", "club", "spear", "bow", "rod", "tongs", "saw", "chisel", "brush",
-               "staff", "crossbow")
+               "staff", "crossbow", "spoon", "cleaver", "quill")
+QUILL = ramp((236, 232, 222), 4)
 
 
 def held_layers(F, shape):
@@ -2872,6 +2873,19 @@ def held_layers(F, shape):
     elif shape == "chisel":
         p(plain, wstrip([at(-1.4), at(1.8)], [1.2, 1.1], steps=2), WOOD)
         p(metal, wstrip([at(1.8), at(4.4)], [0.8, 0.5], steps=2), METAL)
+    elif shape == "spoon":                                                    # a long wooden cooking spoon, the bowl at the far end
+        p(plain, wstrip([at(-1.2), at(6.5)], [0.8, 0.7], steps=2), WOOD)
+        c = at(7.6)
+        p(plain, ellipse([c[0] - 1.1 * Z, c[1] - 1.1 * Z, c[0] + 1.1 * Z, c[1] + 1.1 * Z]), WOOD, radius=0.6)
+    elif shape == "cleaver":                                                  # a broad square blade on a short handle
+        p(plain, wstrip([at(-1.2), at(1.2)], [1.2, 1.2], steps=2), GRIP)
+        blade = poly([at(1.2, -0.6), at(5.2, -0.6), at(5.2, 3.4), at(1.6, 3.0)])
+        p(metal, blade, METAL, bias=0.12)
+        curve(metal, [at(1.8, 3.0), at(5.0, 3.2)], METAL[4], 1, blade)                 # the edge's shine
+    elif shape == "quill":                                                    # a goose quill: a fine shaft, a long curved vane
+        p(plain, wstrip([at(-0.6), at(7.0)], [0.35, 0.25], steps=2), QUILL)
+        vane = wstrip([at(1.6, 0.4), at(4.2, 1.2), at(7.4, 0.6)], [0.6, 1.4, 0.3], steps=5)
+        p(plain, vane, QUILL, radius=0.4)
     elif shape == "brush":
         p(plain, wstrip([at(-1.2), at(2.4)], [1.6, 1.6], steps=2), WOOD)
         p(plain, wstrip([at(2.4), at(3.4)], [1.8, 1.8], steps=2), ramp((214, 198, 160), 3))

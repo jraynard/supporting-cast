@@ -15,6 +15,9 @@ namespace HeroesNotIncluded.Sim.Work;
 /// </summary>
 public sealed class StewSession : WorkSession
 {
+    /// <summary>The spoon, going round the pot.</summary>
+    public override string? InHand => "spoon";
+
     public Entity Pot { get; set; } = Entity.Null;
 
     /// <summary>The fire beside it was burning when the work began (if it goes out, the work stops).</summary>
@@ -235,6 +238,9 @@ public sealed class StewSession : WorkSession
 /// </summary>
 public sealed class SeasonSession : WorkSession
 {
+    /// <summary>The spoon, to taste with.</summary>
+    public override string? InHand => "spoon";
+
     /// <summary>Steps between pinches: a hand can't drop them faster.</summary>
     public const int PinchSteps = 12;
 

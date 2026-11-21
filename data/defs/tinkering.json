@@ -85,7 +85,7 @@
 
     // The town's own contraptions (Tinkering.TripBells): set on the ground, never sold.
     // The sprite is the tapping rod's (a bell on a stick) until it has its own.
-    { "name": "TripBell", "label": "trip-bell", "category": "Item", "mass": 1.0, "sprite": "items/tapping_rod", "stackLimit": 1, "maxHp": 60, "tier": 3,
+    { "name": "TripBell", "label": "trip-bell", "category": "Item", "mass": 1.0, "sprite": "items/trip_bell", "stackLimit": 1, "maxHp": 60, "tier": 3,
       "contraption": { "use": "Alarm", "parts": 3 },
       "description": "A cord pegged low across the ground, a spring and a brass bell. Set across a road: whoever trips it rings the alarm, and the bell's clangor shakes them." },
 

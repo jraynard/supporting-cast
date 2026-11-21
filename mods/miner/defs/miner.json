@@ -53,7 +53,7 @@
     // hand, it turns F at a face from hewing to sounding. No tool kind: it breaks nothing and forges nothing.
     {
       "name": "SoundingHammer", "held": "hammer", "label": "sounding hammer", "category": "Item", "mass": 0.6,
-      "sprite": "items/hammer", "maxHp": 80,
+      "sprite": "items/sounding_hammer", "maxHp": 80,
       "description": "A light hammer with a small round head. Tapped along a rock face, sound rock rings back clear; with ore behind it, the note goes dead."
     },
     // The wheelbarrow (Miner.LoadSession, Miner.BarrowSystem): pushed in both hands, its load kept on it (not a container),

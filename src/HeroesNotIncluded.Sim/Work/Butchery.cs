@@ -120,6 +120,9 @@ public static class Butchery
 /// </summary>
 public sealed class ButcherSession : WorkSession
 {
+    /// <summary>The cleaver.</summary>
+    public override string? InHand => "cleaver";
+
     /// <summary>Where the joints lie along the side, 0..1.</summary>
     public static readonly float[] JointsAt = [0.16f, 0.33f, 0.5f, 0.67f, 0.84f];
 
