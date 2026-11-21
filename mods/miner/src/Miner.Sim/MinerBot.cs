@@ -169,6 +169,12 @@ public sealed class MinerBot(BotPlayer bot) : IBotTrade
     private long _walked = -1_000_000;
     private long _pressed = -1_000_000;
 
+    /// <summary>Hewn ore it couldn't set a barrow down beside (stone all round), let be till the tick given.</summary>
+    private readonly Dictionary<Entity, long> _crowded = [];
+
+    /// <summary>How long ore with no room for a barrow beside it is let be.</summary>
+    public const float CrowdedHours = 2f;
+
     public bool Between(Simulation sim, Entity me, PerceptionView view, long now)
     {
         var w = sim.World;
@@ -179,10 +185,12 @@ public sealed class MinerBot(BotPlayer bot) : IBotTrade
             return false;
         var mine = w.Get<PresetBuilding>(shed).Anchor;
         var here = w.Get<Position>(me).Cell;
-        var lying = Lying(sim, mine);
+        foreach (var gone in _crowded.Where(kv => kv.Value <= now || !w.IsAlive(kv.Key)).Select(kv => kv.Key).ToList())
+            _crowded.Remove(gone);
+        var lying = Lying(sim, mine).Where(e => !_crowded.ContainsKey(e)).ToList();
         var held = Barrows.Held(sim, me);
         if (!held.IsNull)
-            return Pushing(sim, me, here, held, lying, now);
+            return Pushing(sim, me, here, mine, held, lying, now);
         // A loaded barrow set down (it's just been loaded, or went over): back for it.
         if (Nearest(sim, here, w.Query<Thing>().Where(e => Barrows.IsBarrow(sim, e) && w.Get<Thing>(e).Spawned && Barrows.LoadOf(sim, e).Pieces.Count > 0
                 && HeroesNotIncluded.Sim.Maps.Map.Distance(w.Get<Thing>(e).Cell, mine) <= OreRuns.Reach * 2)) is { IsNull: false } loaded)
@@ -200,7 +208,7 @@ public sealed class MinerBot(BotPlayer bot) : IBotTrade
     }
 
     /// <summary>With a barrow in hand: loaded enough (or nothing more to load), to the smithy and tipped in; else to the ore lying hewn.</summary>
-    private bool Pushing(Simulation sim, Entity me, int3 here, Entity barrow, List<Entity> lying, long now)
+    private bool Pushing(Simulation sim, Entity me, int3 here, int3 mine, Entity barrow, List<Entity> lying, long now)
     {
         var w = sim.World;
         var load = Barrows.LoadOf(sim, barrow);
@@ -213,12 +221,22 @@ public sealed class MinerBot(BotPlayer bot) : IBotTrade
         if (load.Mass < HaulAt && !more.IsNull)
         {
             bot.Doing = "loading the barrow";
-            return PressAt(sim, me, here, w.Get<Thing>(more).Cell, now);
+            var at = w.Get<Thing>(more).Cell;
+            // At it, and hewn stone all round: no room to set the barrow down. Let that piece be a while.
+            if (AvatarSystem.InReach(here, at) && Barrows.SpotBy(sim, me) == null)
+            {
+                _crowded[more] = now + SimClock.HoursToTicks(CrowdedHours);
+                return true;
+            }
+            return PressAt(sim, me, here, at, now);
         }
         if (load.Pieces.Count == 0)
         {
-            // Nothing in it and nothing to load: set it down, and back to the face.
-            bot.Send(new AvatarDropCommand(me, here));
+            // Nothing in it and nothing to load: set it down where there's room, and back to the face.
+            if (Barrows.SpotBy(sim, me) is { } spot)
+                bot.Send(new AvatarDropCommand(me, spot));
+            else
+                bot.Walk(sim, me, mine, now);
             return true;
         }
         var chest = OreRuns.SmithyChest(sim);

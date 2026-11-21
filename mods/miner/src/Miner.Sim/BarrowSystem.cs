@@ -120,10 +120,10 @@ public sealed class BarrowSystem : ISimSystem
         foreach (var (_, i) in spilled.OrderByDescending(x => x.i))
             load.Pieces.RemoveAt(i);
         w.Get<Carrying>(who).Item = Entity.Null;
-        sim.PlaceItemNear(barrow, cell);
+        Barrows.PutDown(sim, who, barrow); // on their own level: in a tunnel, "near" alone can be the hilltop
         (load.LastCell, load.LastStep, load.Lean, load.Nudge, load.Still) = (new int3(-1, -1, -1), default, 0f, 0, 0);
         foreach (var group in spilled.GroupBy(x => x.p.Def))
-            sim.PlaceItemNear(sim.CreateItem(group.Key, group.Count()), cell);
+            Barrows.PutDown(sim, who, sim.CreateItem(group.Key, group.Count()));
         if (load.Pieces.Count == 0)
             w.Remove<BarrowLoad>(barrow);
         sim.Messages.Tell(who, MessageKind.Warning, $"The barrow goes over to the {(side < 0 ? "left" : "right")}: {Barrows.Describe(spilled.Select(x => x.p))} spills out. Load it again, the weight square and near the wheel, and lean it back with {"Q/E"} as you go.", cell);

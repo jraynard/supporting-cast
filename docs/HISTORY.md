@@ -3029,3 +3029,13 @@ to nobody's trade. A **commission** does: so many of a thing a shop makes, for a
   it's beside the thing (`Ai/Claims`); the villager gives that errand up and finds another. A player's or bot's holds.
 - Taking it on the belt or putting on gear lying in reach lets a villager's claim go too, as picking up did.
 - `InventoryTests`: a villager on its way to a bucket lets a player take it; one already beside it keeps it.
+
+### The barrow stays on your level in a tunnel (2026-11-20)
+
+- Set down with no room in reach (a tunnel heaped with hewn stone), a barrow went to the nearest free cell in any
+  direction: the hilltop three levels up, through the rock. `Barrows.PutDown` now looks along the miner's own level, for
+  a cell they can walk to, first; a barrow going over does the same with it and its spill.
+- "Set the barrow down and load" is offered only with room beside you (`Barrows.SpotBy`): step back first.
+- The bot lets ore with no room beside it be for a while (`MinerBot`, `CrowdedHours`) and sets an empty barrow down
+  only where there's room. `TheMinerBotSoundsHewsAndWheelsOreToTheSmithyForPay`, failing since the labourer went (its
+  tunnel filled differently), passes again; `InATunnelFullOfStoneTheBarrowStaysOnYourLevel`.

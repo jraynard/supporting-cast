@@ -803,6 +803,40 @@ public class MinerModTests
     });
 
     [Fact]
+    public void InATunnelFullOfStoneTheBarrowStaysOnYourLevel() => WithMiner(() =>
+    {
+        var (sim, me) = Miner();
+        var w = sim.World;
+        // Down the tunnel, every free cell in reach heaped with hewn stone and a lump of coal before you.
+        var mine = w.Get<PresetBuilding>(ShopSystem.WorkplaceOf(sim, me)).Anchor;
+        var here = sim.SpiralFrom(mine, 30).First(c => sim.Map.InBounds(c) && sim.Map.InBounds(c + new int3(0, 0, 1)) && sim.Map.Passable(c)
+            && sim.Map.Standable(sim.Map.Idx(c)) && sim.Map.IsSolid(sim.Map.Idx(c + new int3(0, 0, 1)))); // rock overhead: a tunnel
+        w.Get<Position>(me).Cell = here;
+        w.Get<Position>(me).Pos = Position.CenterOf(here);
+        var coal = Entity.Null;
+        foreach (var c in sim.SpiralFrom(here, 1).Where(c => c.Z == here.Z && sim.Map.Passable(c) && AvatarSystem.InReach(here, c)))
+        {
+            if (!sim.Map.Item[sim.Map.Idx(c)].IsNull)
+                sim.DestroyThing(sim.Map.Item[sim.Map.Idx(c)]);
+            sim.SpawnItem(sim.Defs.Thing(coal.IsNull && c != here ? "Coal" : "Stone"), 1, c);
+            if (coal.IsNull && c != here)
+                coal = sim.Map.Item[sim.Map.Idx(c)];
+        }
+        var barrow = sim.CreateItem(sim.Defs.Thing(Barrows.BarrowDef), 1);
+        w.Get<Carrying>(me).Item = barrow;
+        Assert.Null(Barrows.SpotBy(sim, me));
+        // No room to set it down: F at the coal doesn't offer to.
+        Assert.DoesNotContain("Set the barrow down", AvatarSystem.ActionAt(sim, me, w.Get<Thing>(coal).Cell).Label ?? "");
+        // Set down anyway (it went over): along the tunnel, not on the hilltop above.
+        w.Get<Carrying>(me).Item = Entity.Null;
+        Barrows.PutDown(sim, me, barrow);
+        var at = w.Get<Thing>(barrow).Cell;
+        Assert.Equal(here.Z, at.Z);
+        Assert.True(sim.Regions.CanReach(here, at, PathEnd.OnTile));
+        return 0;
+    });
+
+    [Fact]
     public void AMinerWhosePlayerLeftTakesTheHewnOreToTheSmithy() => WithMiner(() =>
     {
         var (sim, me) = Miner();

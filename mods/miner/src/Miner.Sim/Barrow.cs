@@ -126,18 +126,40 @@ public static class Barrows
         return SideRisk * MathF.Abs(across) + ForeRisk * MathF.Abs(back - IdealRow);
     }
 
-    /// <summary>
-    /// Set something down where <paramref name="who"/> can reach it again: a free cell of open ground on their own level in
-    /// reach (where they stand first), else wherever there's room near. A tunnel's narrow; "near" alone may find the hilltop.
-    /// </summary>
-    public static Entity PutDown(Simulation sim, Entity who, Entity item)
+    /// <summary>A free cell of open ground on <paramref name="who"/>'s own level in their reach (where they stand first), or null: room to set a barrow down beside them.</summary>
+    public static int3? SpotBy(Simulation sim, Entity who)
     {
         var map = sim.Map;
         var here = sim.World.Get<Position>(who).Cell;
         foreach (var c in sim.SpiralFrom(here, 1))
-            if (c.Z == here.Z && map.InBounds(c) && map.Passable(c) && map.Item[map.Idx(c)].IsNull && HeroesNotIncluded.Sim.Systems.AvatarSystem.InReach(here, c))
+            if (Free(sim, c, here.Z) && HeroesNotIncluded.Sim.Systems.AvatarSystem.InReach(here, c))
+                return c;
+        return null;
+    }
+
+    /// <summary>How far along their own level something set down may go when there's no room in reach (a tunnel full of hewn stone).</summary>
+    public const int PutDownRange = 8;
+
+    /// <summary>
+    /// Set something down where <paramref name="who"/> can get at it again: in reach on their own level (<see cref="SpotBy"/>),
+    /// else the nearest free cell on that level they can walk to, else wherever there's room near. A tunnel's narrow, and
+    /// hewn stone fills it: "near" alone found the hilltop three levels up, through the rock.
+    /// </summary>
+    public static Entity PutDown(Simulation sim, Entity who, Entity item)
+    {
+        var here = sim.World.Get<Position>(who).Cell;
+        if (SpotBy(sim, who) is { } spot)
+            return sim.PlaceItemNear(item, spot);
+        foreach (var c in sim.SpiralFrom(here, PutDownRange))
+            if (Free(sim, c, here.Z) && sim.Regions.CanReach(here, c, PathEnd.OnTile))
                 return sim.PlaceItemNear(item, c);
         return sim.PlaceItemNear(item, here);
+    }
+
+    private static bool Free(Simulation sim, int3 c, int z)
+    {
+        var map = sim.Map;
+        return c.Z == z && map.InBounds(c) && map.Passable(c) && map.Item[map.Idx(c)].IsNull && map.Standable(map.Idx(c));
     }
 
     /// <summary>Pieces in a slot.</summary>

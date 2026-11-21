@@ -75,8 +75,9 @@ public sealed class MinerModule : ITradeModule
                 return (Deed.Tip, paid
                     ? $"Tip the barrow into the smithy's chest ({Barrows.Describe(load.Pieces)}: {Barrows.Worth(sim, load.Pieces)} silver)"
                     : $"Tip the barrow into the chest ({Barrows.Describe(load.Pieces)})", chest);
+            // Only with room to set it down beside you: in a tunnel full of hewn stone, step back first.
             if (!item.IsNull && w.TryGet<Thing>(item, out var lying) && Barrows.Loadable(sim, lying.Def)
-                && AvatarSystem.InReach(here, cell) && load.Mass + lying.Def.Mass <= Barrows.MaxMass + 1e-4f)
+                && AvatarSystem.InReach(here, cell) && load.Mass + lying.Def.Mass <= Barrows.MaxMass + 1e-4f && Barrows.SpotBy(sim, avatar) != null)
                 return (Deed.SetDownAndLoad, $"Set the barrow down and load the {lying.Def.Label}", held);
             return null;
         }
