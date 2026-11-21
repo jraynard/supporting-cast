@@ -798,6 +798,14 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
     private void DrawAnimated(Simulation sim, Entity e, SpriteSheet sheet, in Position p, uint tint, uint level, bool seated = false)
     {
         var w = sim.World;
+        // Struck a moment ago: the whole figure flares white (Impact).
+        if (_flashes.TryGetValue(e.Index, out var flash))
+        {
+            if (_now < flash)
+                level |= Quad.Unlit | Quad.Glow;
+            else
+                _flashes.Remove(e.Index);
+        }
         var map = sim.Map;
         var c = w.Get<Creature>(e);
         var mind = w.Get<Mind>(e);
@@ -1693,6 +1701,7 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
             if (_firstSeen.ContainsKey(b) || !w.IsAlive(b.Target) || !w.Has<Position>(b.Target) || !Seen(b.Target))
                 continue;
             _firstSeen[b] = _now;
+            Impact(sim, b);
             var (text, color) = b.Outcome switch
             {
                 Sim.Combat.BlowOutcome.Parried => ("Parried!", new float4(1f, 0.95f, 0.6f, 1f)),
@@ -1705,6 +1714,39 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
             };
             if (text != null)
                 Float(w.Get<Position>(b.Target).Pos + WorldScale.Rise(1.45f), text, color);
+        }
+    }
+
+    /// <summary>Until when (<see cref="_now"/>) a struck figure is drawn flaring white, by entity index.</summary>
+    private readonly Dictionary<int, float> _flashes = [];
+
+    /// <summary>How long a struck figure flares: a light blow, and a heavy one or a riposte.</summary>
+    private const float FlashLight = 0.09f, FlashHeavy = 0.14f;
+
+    /// <summary>
+    /// A blow landing, as anyone watching sees it: whoever it hurt flares white; steel meeting steel
+    /// (a block, a parry, a guard broken) throws sparks where the two meet. Fists in the inn don't spark.
+    /// </summary>
+    private void Impact(Simulation sim, Sim.Combat.BlowEvent b)
+    {
+        var w = sim.World;
+        switch (b.Outcome)
+        {
+            case Sim.Combat.BlowOutcome.Hit or Sim.Combat.BlowOutcome.Riposte:
+                _flashes[b.Target.Index] = _now + (b.Heavy || b.Outcome == Sim.Combat.BlowOutcome.Riposte ? FlashHeavy : FlashLight);
+                break;
+            case Sim.Combat.BlowOutcome.Blocked or Sim.Combat.BlowOutcome.Parried or Sim.Combat.BlowOutcome.GuardBroken:
+                if (!w.IsAlive(b.Attacker) || !w.Has<Position>(b.Attacker) || Sim.Combat.HouseRules.Sheathed(sim, b.Attacker))
+                    break;
+                var from = DrawPos(sim, b.Attacker, w.Get<Position>(b.Attacker).Pos);
+                var to = DrawPos(sim, b.Target, w.Get<Position>(b.Target).Pos);
+                var along = to - from;
+                along.Z = 0;
+                var len = MathF.Sqrt(along.X * along.X + along.Y * along.Y);
+                along = len > 1e-4f ? along * (1f / len) : new float3(1, 0, 0);
+                var at = from + (to - from) * 0.6f + new float3(0, 0, 0.55f);
+                _particles.Sparks(at, -along, b.Outcome == Sim.Combat.BlowOutcome.Blocked ? 6 : 12);
+                break;
         }
     }
 

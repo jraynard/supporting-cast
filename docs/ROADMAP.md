@@ -84,9 +84,11 @@ Visual issues and requests from playtests, so they don't get lost between HISTOR
   it's been dragged, its position and folded state kept in `Settings`, a fold button like the tutorial card's
   (`_tutorialFolded`), `_hud.Took()` reserving no room for a panel that's moved, and "Reset layout" in Settings.
   The character block's lines are in `VillageGame.Needs` (`DrawNeedsPanel`: `all = !SimpleHud || hovered`).
-- [ ] **Combat feedback: a better hit stop** (brawl playtest, Nov 2026): a blow landing doesn't read strongly
-  enough yet. Improve the hit stop (the freeze, the shake and the flash on impact) so you can feel each hit
-  land, given or taken. Part of a combat refinement pass to plan separately.
+- [ ] **Combat feedback: a better hit stop** (brawl playtest, Nov 2026): a blow landing didn't read strongly
+  enough. Built, to be felt in a playtest: blows have frames of their own (swing, thrust, punch); the struck
+  figure flares white (`WorldRenderer.Impact`, everyone who sees it), steel on steel sparks; your own blows
+  given or taken hold the attacker on the cut a little longer (60/120 ms, `VillageGame.HitFeel`) and knock
+  the camera the way the blow went. Too much, or not enough? Part of a combat refinement pass to plan separately.
 
 ### 3. The tuning playtest
 **(demo)** The connection checks and a pass on the season's numbers, for the demo's shorter season.

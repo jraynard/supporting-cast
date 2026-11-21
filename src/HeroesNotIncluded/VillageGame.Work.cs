@@ -686,7 +686,7 @@ public sealed partial class VillageGame
         var (lo, hi) = _hud.Area;
         var centre = (lo + hi) * 0.5f;
         float2? pivot = new float2(0.5f, 0.5f);
-        if (_workAside)
+        if (_workAside || WorkPanelAside)
         {
             // Work out in the world (a tree to fell): against the right edge, the middle of the screen left clear.
             (centre, pivot) = (new float2(hi.X, centre.Y), new float2(1f, 0.5f));

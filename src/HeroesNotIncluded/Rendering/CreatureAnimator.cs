@@ -118,6 +118,12 @@ public sealed class CreatureAnimator
         return t >= SoarFlapSeconds;
     }
 
+    /// <summary>
+    /// A hit-stop is on (VillageGame.HitFeel): a blow that's landed stays on its strike frame, as the
+    /// rest of the animation holds, though the sim's ticks (which time blows) go on.
+    /// </summary>
+    public bool Holding { get; set; }
+
     /// <summary>The local player's aim (radians on the map), which their character faces before the sim hears of it.</summary>
     public (Entity E, float Aim)? LocalAim { get; set; }
 
@@ -301,6 +307,8 @@ public sealed class CreatureAnimator
         }
         else if (st.SwingStart >= 0 && st.SwingLanded < 0)
             st.SwingLanded = now;
+        else if (Holding && st.SwingLanded >= 0 && now - st.SwingLanded < StrikeTicks)
+            st.SwingLanded = Math.Max(st.SwingLanded, now - StrikeTicks + 1); // held on the cut
         if (st.SwingLanded >= 0 && (now - st.SwingLanded > RecoverTicks || now < st.SwingLanded || c.Dead || c.Downed))
             st.SwingStart = st.SwingLanded = -1;
         var swinging = st.SwingStart >= 0;

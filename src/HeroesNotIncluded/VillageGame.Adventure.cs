@@ -936,7 +936,7 @@ public sealed partial class VillageGame
             }
             _lookingAt = null;
         }
-        _camera.Target = AvatarDrawPos() + ShakeOffset() + DrunkSway();
+        _camera.Target = AvatarDrawPos() + ShakeOffset() + DrunkSway() + WorkLeanOffset();
     }
 
     /// <summary>Seconds a look elsewhere holds the camera before it comes back to your character.</summary>

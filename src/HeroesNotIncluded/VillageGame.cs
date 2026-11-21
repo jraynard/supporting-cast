@@ -587,6 +587,7 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
         UpdateHomeMark();
         UpdateWork(dt);
         RunBots();
+        UpdateWorkCamera(dt);
         FollowAvatar(); // after the ticks, so the camera shows this frame's position
         UpdateGhost();
         EaseCameraHome(dt);

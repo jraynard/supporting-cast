@@ -41,17 +41,21 @@ public sealed partial class VillageGame
         DrawTopBar();
         _hud.BeginFrame(Screen, ImGui.GetFrameHeight());
         // Top right: the day, always first, then the journal panels that aren't your trade's, stacked.
+        BeginQuietHud(); // at work, what isn't about the work quiets (BeginQuietHud): the day, the board, you, your shop, the bars
         DrawClock();
         DrawQuestBoard();
+        EndQuietHud();
         DrawSpeech();
         DrawMessages();
         // Top left: you, then your trade: the practice yard or ring, the gift, your shop.
         // Top centre: the tutorial's card, a headline's ribbon, the village (god mode) and the toasts.
+        BeginQuietHud();
         DrawNeedsPanel();
         DrawPractice();
         DrawArena();
         DrawGift();
         DrawShop();
+        EndQuietHud();
         DrawHeadline();
         DrawVillagerBar();
         DrawGhostBanner();
@@ -63,6 +67,7 @@ public sealed partial class VillageGame
         DrawToasts();
         DrawHandsAimHint();
         // Bottom left, before the centre so the centre keeps clear of it.
+        BeginQuietHud();
         DrawInspector();
         // Bottom right: which way north is, and the town round you above it.
         DrawCompass();
@@ -71,6 +76,7 @@ public sealed partial class VillageGame
         DrawToolbar();
         DrawHotbar();
         DrawJournalBar();
+        EndQuietHud();
         DrawVoice();
         if (HasAvatar && _sim.World.Has<ButtsTurn>(_avatar))
             DrawButtsHint();

@@ -350,6 +350,12 @@ public sealed partial class SettingsWindow(GameHost host)
             _draft.SimpleHud = simple;
 
         ImGui.Dummy(in gap);
+        Row("Lean in at work", "At the anvil, the pot or the bench, the view comes in close on you at the work, its panel to one side and the rest of the screen quieted. Off keeps the view where it is and the panel in the middle.");
+        var lean = _draft.WorkCamera;
+        if (ImGui.Checkbox("##workcamera"u8, ref lean))
+            _draft.WorkCamera = lean;
+
+        ImGui.Dummy(in gap);
         Row("Screen shake", "The camera shakes a little with heavy blows you deal or take, and with dragon fire nearby.");
         var shake = _draft.ScreenShake;
         if (ImGui.Checkbox("##shake"u8, ref shake))

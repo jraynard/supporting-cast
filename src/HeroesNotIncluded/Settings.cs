@@ -40,6 +40,9 @@ public sealed class Settings
     /// </summary>
     public bool SimpleHud { get; set; } = true;
 
+    /// <summary>At hands-on work the view leans in on you at the station, the work's panel to one side and the rest of the HUD quieted.</summary>
+    public bool WorkCamera { get; set; } = true;
+
     /// <summary>The camera shakes a little with heavy blows you deal or take, and rumbles with dragon fire nearby.</summary>
     public bool ScreenShake { get; set; } = true;
 

@@ -267,12 +267,14 @@ public sealed partial class VillageGame
         return (from, from + dir * reach, drawn, drawn >= 1f, winded);
     }
 
-    /// <summary>Seconds of hit-stop left (the animation holds), and the shake's strength (cells) and seed.</summary>
+    /// <summary>Seconds of hit-stop left (the animation holds), the shake's strength (cells), and the way the blow went (unit, on the map).</summary>
     private float _hitStop, _shake;
+    private float3 _shakeDir = new(1, 0, 0);
+    private float _shakeAge;
     private long _blowsFelt = -1;
 
     /// <summary>A heavy hit holds this long; a light one less; a parry or broken guard as long as a heavy hit.</summary>
-    private const float HitStopHeavy = 0.09f, HitStopLight = 0.04f;
+    private const float HitStopHeavy = 0.12f, HitStopLight = 0.06f;
 
     /// <summary>
     /// Hit-stop and shake for blows you deal or take (<see cref="Sim.Combat.BlowEvent"/>): the
@@ -282,6 +284,7 @@ public sealed partial class VillageGame
     /// </summary>
     private float HitFeel(float dt, float animDt)
     {
+        var w = _sim.World;
         if (HasAvatar)
             foreach (var b in _sim.RecentBlows)
             {
@@ -289,25 +292,36 @@ public sealed partial class VillageGame
                     continue;
                 var (stop, shake) = b.Outcome switch
                 {
-                    Sim.Combat.BlowOutcome.Parried or Sim.Combat.BlowOutcome.GuardBroken => (HitStopHeavy, 0.08f),
+                    Sim.Combat.BlowOutcome.Parried or Sim.Combat.BlowOutcome.GuardBroken => (HitStopHeavy, 0.11f),
                     Sim.Combat.BlowOutcome.Hit or Sim.Combat.BlowOutcome.Riposte => b.Heavy || b.Outcome == Sim.Combat.BlowOutcome.Riposte
-                        ? (HitStopHeavy, b.Target == _avatar ? 0.12f : 0.07f) : (HitStopLight, b.Target == _avatar ? 0.06f : 0.025f),
-                    Sim.Combat.BlowOutcome.Blocked => (HitStopLight, 0.04f),
+                        ? (HitStopHeavy, b.Target == _avatar ? 0.16f : 0.10f) : (HitStopLight, b.Target == _avatar ? 0.08f : 0.045f),
+                    Sim.Combat.BlowOutcome.Blocked => (HitStopLight, 0.06f),
                     _ => (0f, 0f),
                 };
                 _hitStop = Math.Max(_hitStop, stop);
+                if (shake >= _shake && w.IsAlive(b.Attacker) && w.IsAlive(b.Target) && w.Has<Position>(b.Attacker) && w.Has<Position>(b.Target))
+                {
+                    var d = w.Get<Position>(b.Target).Pos - w.Get<Position>(b.Attacker).Pos;
+                    var len = MathF.Sqrt(d.X * d.X + d.Y * d.Y);
+                    if (len > 1e-4f)
+                        _shakeDir = new float3(d.X / len, d.Y / len, 0);
+                    _shakeAge = 0f;
+                }
                 _shake = Math.Max(_shake, shake);
             }
         if (_sim.RecentBlows.Count > 0)
             _blowsFelt = Math.Max(_blowsFelt, _sim.RecentBlows[^1].Tick);
         BreathRumble();
         _shake *= MathF.Exp(-dt * 14f);
+        _shakeAge += dt;
         _rumble *= MathF.Exp(-dt * 3.5f);
         if (_hitStop > 0)
         {
             _hitStop -= dt;
+            _renderer.Animator.Holding = true;
             return 0f;
         }
+        _renderer.Animator.Holding = false;
         return animDt;
     }
 
@@ -340,10 +354,19 @@ public sealed partial class VillageGame
         static float Distance(float3 a, float3 b) => MathF.Sqrt((a.X - b.X) * (a.X - b.X) + (a.Y - b.Y) * (a.Y - b.Y));
     }
 
-    /// <summary>The camera's shake this frame: a jitter on the ground plane, fading, and a breath's slower rumble under it.</summary>
-    private float3 ShakeOffset() => (_shake < 0.003f && _rumble < 0.003f) || !Settings.Current.ScreenShake ? default
-        : new float3(MathF.Sin(_time * 91f) * _shake + (MathF.Sin(_time * 31f) + 0.5f * MathF.Sin(_time * 53f)) * _rumble,
-            MathF.Cos(_time * 77f) * _shake + (MathF.Cos(_time * 27f) + 0.5f * MathF.Sin(_time * 47f)) * _rumble, 0);
+    /// <summary>
+    /// The camera's shake this frame: knocked the way the blow went and ringing back, a little
+    /// jitter across it, fading; and a breath's slower rumble under it.
+    /// </summary>
+    private float3 ShakeOffset()
+    {
+        if ((_shake < 0.003f && _rumble < 0.003f) || !Settings.Current.ScreenShake)
+            return default;
+        var across = new float3(-_shakeDir.Y, _shakeDir.X, 0);
+        var knock = _shakeDir * (MathF.Cos(_shakeAge * 62f) * _shake) + across * (MathF.Sin(_time * 91f) * _shake * 0.3f);
+        return knock + new float3((MathF.Sin(_time * 31f) + 0.5f * MathF.Sin(_time * 53f)) * _rumble,
+            (MathF.Cos(_time * 27f) + 0.5f * MathF.Sin(_time * 47f)) * _rumble, 0);
+    }
 
     /// <summary>How far the drink's got to you, 0 sober to 1 out cold: what the sway and the blur follow.</summary>
     private float DrunkAmount => HasAvatar ? Math.Clamp(View.OwnDrink / Sim.Hospitality.DrinkingSystem.OutAt, 0f, 1f) : 0f;
@@ -399,7 +422,8 @@ public sealed partial class VillageGame
         var dl = ImGui.GetBackgroundDrawList(ImGui.GetMainViewport());
         var min = float2.Zero;
         var max = Screen;
-        dl.AddRectFilled(in min, in max, new ImColor8(0, 0, 0, (byte)(60 * _workFocus)), 0f, ImDrawFlags.None);
+        if (!WorkCameraOn) // leaned in, the station itself stays lit: only the edges darken, framing it
+            dl.AddRectFilled(in min, in max, new ImColor8(0, 0, 0, (byte)(60 * _workFocus)), 0f, ImDrawFlags.None);
         var edge = new ImColor8(0, 0, 0, (byte)(110 * _workFocus));
         var clear = new ImColor8(0, 0, 0, 0);
         var band = new float2(Screen.X * 0.18f, Screen.Y * 0.22f);
