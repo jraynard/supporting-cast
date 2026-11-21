@@ -67,9 +67,11 @@ public class CrisisTests
         Assert.True(Food() < before && Food() >= before / 2, $"{Food()} of {before} left: a quarter spoiled");
         Assert.Equal(ShortageCrisis.Rats, sim.World.Query<Hospitality.Vermin>().Count(e => sim.World.Get<Hospitality.Vermin>(e).Larder == larder));
 
-        sim.Clock.Tick = sim.Round.TickAt(sim, 2, InnSupplySystem.DeliveryHour) - 1;
-        sim.TickMany(SimClock.TicksPerHour / 2);
-        Assert.Contains(sim.Messages.Messages, m => m.Text.StartsWith("The carter didn't come"));
+        // No food comes while it lasts: the kitchen's standing orders send for none of what's scarce.
+        var after = Food();
+        CarterOrderTests.NextMorning(sim);
+        Assert.True(Food() <= after, $"{after} -> {Food()}");
+        Assert.DoesNotContain(CarterOrders.Of(sim).All, o => sim.Defs.Supply(o.Supply).Scarce);
         Assert.True(sim.Director.Active.Contains(shortage) || sim.Director.Met + sim.Director.Unmet == 1);
     }
 

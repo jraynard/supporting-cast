@@ -186,7 +186,7 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. ` (R3
     wheelbarrow (`Barrows`: its load a `BarrowLoad` on the barrow, not a container): loaded a piece at a time (`LoadSession`, the
     balance where the weight centres), wheeled (`BarrowSystem`: it leans as it's pushed, Q/E lean it back through `BarrowLeanCommand` from the mod's `GameRegistry.Overlay`; over the edge it spills), tipped into the smithy's chest
     and paid for by whoever works it at the mod's `ores` prices (`OreDef`; short, it's owed: `OreTally`); the trade `mines` (`RoundSystem.MayMine`) and `supplies` iron ore, so the carter brings
-    less (`OreCarterSystem.Delivered`). Underground, the view cuts at your level (`VillageGame.UpdateFollowedLevel`).
+    less (`CarterOrders.MostLots`). Underground, the view cuts at your level (`VillageGame.UpdateFollowedLevel`).
   - `Tinkering/`: the Tinker. Lockwork on strongboxes from quests: a box's trap is hidden item
     state, shown only through `PerceptionView.Strongbox`, which never says an armed one is there.
     Locks pinned at the bench (`PinSession`) and fitted to doors (`LockCut`), keys (`Key`);
@@ -230,7 +230,12 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. ` (R3
     Wood-burning fires burn `Firewood`, never timber (`Wood`): the carter's barn load (`season.json`, none in a shortage) and the carpenter's splitting.
     What's crafted (hafts, contraptions, furniture) takes `Planks`; timber is for building and mending. Charcoal is baked from
     firewood at the kiln outside each smithy, kept in by the AI smith through `TradeDef.Keeps` (`Crafting.Kept`); the shrine's
-    cloth for bandages comes with the carter (`shrineDelivery`).
+    cloth for bandages comes from the carter.
+  - Supplies come to order (`Shops/CarterOrders`, `supplies.json`): a tradesman orders from the shop window (From the
+    carter, `OrderSuppliesCommand`), pays at once, and it's in the workplace's store (a supply's `into`) at six next
+    morning; with the road cut it waits, in a shortage `scarce` ones don't come. A shop no player steers is kept in
+    by its trade's `standingOrders` at 18:00 on the town's account; a bot orders by them itself (`BotPlayer.Carter`).
+    Only the barn's timber and firewood (`OreCarterSystem.DeliverWood`) and the cottages' bread come unordered.
   - `Appearance` is cosmetic and left out of the hash, its `Folk` (human, elf) included. AI villagers
     have none: `HumanLook.Derived` hashes their look (and folk) from the entity, the same on every peer.
   - Fights are real time and readable (docs/ROADMAP.md, "Combat pass"): a melee blow is wound up

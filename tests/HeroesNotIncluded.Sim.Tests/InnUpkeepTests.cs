@@ -282,15 +282,15 @@ public class InnUpkeepTests
     }
 
     [Fact]
-    public void TheCarterCallsEachMorning()
+    public void AnAiInnIsKeptInKegs()
     {
         var (sim, _) = Tavern("Empath");
-        var parts = Buildings.Parts(sim, Inn(sim));
-        int Kegs() => parts.SelectMany(p => sim.StoredIn(p)).Where(e => sim.World.Get<Thing>(e).Def.Name == "Keg").Sum(e => sim.World.Get<Stack>(e).Count);
-        var before = Kegs();
-        sim.Clock.Tick = sim.Round.TickAt(sim, 2, InnSupplySystem.DeliveryHour) - 1;
-        sim.TickMany(SimClock.TicksPerHour / 2);
-        Assert.True(Kegs() >= before + InnSupplySystem.Kegs[0].Count - 1, $"{before} -> {Kegs()}"); // less any the keeper's knocked in since
+        var keg = sim.Defs.Supply("Keg");
+        var store = CarterOrders.Into(sim, Inn(sim), keg);
+        Stock.TakeFrom(sim, store, "Keg", Stock.CountIn(sim, store, "Keg"));
+        CarterOrderTests.NextMorning(sim); // the evening's standing order, then the cart
+        var keep = sim.Defs.Trade("Innkeeper").StandingOrders.Single(o => o.SupplyDef == keg).Keep;
+        Assert.True(Stock.CountIn(sim, store, "Keg") >= keep - 1, $"{Stock.CountIn(sim, store, "Keg")} of {keep}"); // less any knocked in since
         Assert.Contains(sim.Messages.Messages, m => m.Text.Contains("carter"));
     }
 }

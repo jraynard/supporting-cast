@@ -74,11 +74,8 @@
       "townPurse": 40,
       "armsPrice": 6,
       "armsWanted": 6,
-      // What the carter leaves at the smithy each morning from the second day (Shops/Deliveries.cs): ore, and
-      // planks for hafts. No charcoal: the smith bakes it from firewood at the kiln.
-      // And copper and tin ore, to alloy bronze at the kiln (copper bars from 4 ore, then 3 bars and 2 tin make 4 bronze).
-      "oreDelivery": [ { "def": "IronOre", "count": 12 }, { "def": "Planks", "material": "Pine", "count": 4 },
-                       { "def": "CopperOre", "count": 6 }, { "def": "TinOre", "count": 2 } ],
+      // The shops' ore, kegs, food, cloth and feathers come to order (supplies.json, Shops/CarterOrders.cs):
+      // what a player orders, or a shop the AI runs keeps in by its trade's standing orders.
       // In the smithy's chest at the deal, beside its iron ore and planks: bronze for the first pieces asked for in it,
       // and copper and tin to alloy more.
       "smithyStock": [ { "def": "BronzeBar", "count": 4 }, { "def": "CopperOre", "count": 8 }, { "def": "TinOre", "count": 4 } ],
@@ -101,10 +98,6 @@
       // short of the season's burning on purpose: the carpenter splits logs to make it up.
       "barnFirewood": 150,
       "firewoodDelivery": [ { "def": "Firewood", "material": "Pine", "count": 100 } ],
-      // Goose feathers for the carpenter's arrows, left in the woodshop's chest with the ore.
-      "woodshopDelivery": [ { "def": "Feathers", "count": 6 } ],
-      // Cloth at the shrine each morning, for the empath to tear into bandages: nobody in town weaves.
-      "shrineDelivery": [ { "def": "Cloth", "count": 2 } ],
       // How the Director paces it (Director/Tension.cs, Director/RuleMind.cs): it eases off a town
       // that's struggling and pushes one that's coasting, against where a town on course would be
       // (renownAtFestival of the target by the festival; the rest comes at its end). A beat waits in

@@ -297,6 +297,7 @@ public sealed partial class Simulation
             .AddSystem(new Healing.FeverSystem(seed))
             .AddSystem(new Tinkering.CollectorSystem())
             .AddSystem(new Shops.OreCarterSystem())
+            .AddSystem(new Shops.CarterOrders())
             .AddSystem(new Tinkering.RelockSystem())
             .AddSystem(sim.Expeditions)
             .AddSystem(sim.Reckoning)

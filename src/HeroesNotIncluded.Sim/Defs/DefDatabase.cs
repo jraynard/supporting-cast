@@ -7,7 +7,7 @@ namespace HeroesNotIncluded.Sim.Defs;
 /// <summary>
 /// All loaded defs. Each JSON file under the defs directory is an object with any of the keys
 /// "blocks", "things", "creatures", "needs", "bodies", "materials", "difficulties", "raiderKinds", "wildlife", "seasons", "thoughts", "interactions", "recipes", "tiers", "veins",
-/// "dragonInteractions", "trustLevels", "tricks", "outfits", "elements", "buildings", "kits", "trades", "adventurerKinds", "parties", "services", "mendings", "ghostErrands", "quests",
+/// "dragonInteractions", "trustLevels", "tricks", "outfits", "elements", "buildings", "kits", "trades", "adventurerKinds", "parties", "services", "supplies", "mendings", "ghostErrands", "quests",
 /// each an array of defs (and "basics", the tutorial's first chapter: one lesson, the last loaded). Files are merged in name
 /// order, directory by directory (the game's, then each mod's), so later files can add content, replace a def by
 /// naming it again, or change only some of its fields with <c>"$patch": "merge"</c> (objects merge, anything else is
@@ -39,6 +39,7 @@ public sealed class DefDatabase
     private readonly Dictionary<string, AdventurerKindDef> _adventurerKinds = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, PartyDef> _parties = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, ServiceDef> _services = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, SupplyDef> _supplies = new(StringComparer.OrdinalIgnoreCase);
     private ServiceDef?[] _byServiceKind = new ServiceDef?[Enum.GetValues<ServiceKind>().Length];
 
     /// <summary>The services a mod's defs added (names the game's enum hasn't), numbered after the game's, in load order.</summary>
@@ -113,6 +114,9 @@ public sealed class DefDatabase
 
     /// <summary>How each kind of order goes (data/defs/orders.json).</summary>
     public List<ServiceDef> AllServices { get; } = [];
+
+    /// <summary>What the carter brings to order (<see cref="SupplyDef"/>), in load order.</summary>
+    public List<SupplyDef> AllSupplies { get; } = [];
 
     /// <summary>Who adventuring parties are made of (data/defs/adventurers.json).</summary>
     public List<AdventurerKindDef> AllAdventurerKinds { get; } = [];
@@ -233,6 +237,7 @@ public sealed class DefDatabase
         public List<AdventurerKindDef> AdventurerKinds { get; set; } = [];
         public List<PartyDef> Parties { get; set; } = [];
         public List<ServiceDef> Services { get; set; } = [];
+        public List<SupplyDef> Supplies { get; set; } = [];
         public List<MendingDef> Mendings { get; set; } = [];
         public List<GhostErrandDef> GhostErrands { get; set; } = [];
         public List<BotTemperDef> BotTempers { get; set; } = [];
@@ -445,6 +450,7 @@ public sealed class DefDatabase
         AddAll(file.AdventurerKinds, _adventurerKinds, AllAdventurerKinds, source);
         AddAll(file.Parties, _parties, AllParties, source);
         AddAll(file.Services, _services, AllServices, source);
+        AddAll(file.Supplies, _supplies, AllSupplies, source);
         AddAll(file.Mendings, _mendings, AllMendings, source);
         AddAll(file.GhostErrands, _ghostErrands, AllGhostErrands, source);
         AddAll(file.BotTempers, _botTempers, AllBotTempers, source);
@@ -508,6 +514,7 @@ public sealed class DefDatabase
         foreach (var d in AllOutfits) d.Resolve(this);
         foreach (var d in AllKits) d.Resolve(this);
         foreach (var d in AllBuildings) d.Resolve(this); // after things and thoughts: their parts, furniture, feasts
+        foreach (var d in AllSupplies) d.Resolve(this); // before trades: their standing orders
         foreach (var d in AllTrades) d.Resolve(this); // after buildings: their workplaces
         Basics.Resolve(this, "Basics");
         foreach (var lesson in _sharedLessons)
@@ -692,6 +699,8 @@ public sealed class DefDatabase
     public AdventurerKindDef AdventurerKind(string name) => Lookup(_adventurerKinds, name);
     public PartyDef Party(string name) => Lookup(_parties, name);
     public ServiceDef Service(string name) => Lookup(_services, name);
+    public SupplyDef Supply(string name) => Lookup(_supplies, name);
+    public SupplyDef? SupplyOrNull(string name) => _supplies.TryGetValue(name, out var d) ? d : null;
     public MendingDef Mending(string name) => Lookup(_mendings, name);
     public RuneDef Rune(string name) => Lookup(_runes, name);
 

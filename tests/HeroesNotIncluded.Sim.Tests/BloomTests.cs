@@ -116,21 +116,20 @@ public class BloomTests
     }
 
     [Fact]
-    public void TheSmithStartsWithOreAndTheCarterBringsMoreEachMorning()
+    public void TheSmithStartsWithOreAndMoreComesOnlyWhenOrdered()
     {
-        var (sim, _, _) = ExpeditionTests.Round("Blacksmith");
+        var (sim, me, _) = ExpeditionTests.Round("Blacksmith");
         int Ore() => sim.World.Query<Thing>().Where(e => sim.World.Get<Thing>(e).Def.Name == "IronOre").Sum(e => sim.World.Get<Stack>(e).Count);
         Assert.Equal(VillageRound.SmithyOre, Ore());
-        // The carter keeps only the day and the hour: on to the next morning's call.
-        sim.TickMany(SimClock.TicksPerHour);
-        sim.Clock.Tick = sim.Round.TickAt(sim, 2, OreCarterSystem.DeliveryHour) - 1;
-        sim.TickMany(SimClock.TicksPerHour);
-        var delivered = sim.Defs.Season.OreDelivery.Single(t => t.Def == "IronOre").Count;
-        Assert.Equal(VillageRound.SmithyOre + delivered, Ore());
+        // A player's smithy isn't kept in for them: nothing comes unordered.
+        CarterOrderTests.NextMorning(sim);
+        Assert.Equal(VillageRound.SmithyOre, Ore());
+        Inventory.Stow(sim, me, sim.CreateItem(sim.Defs.Thing(Coin.Silver), 20));
+        var iron = sim.Defs.Supply("IronOre");
+        Assert.Null(CarterOrders.Of(sim).Order(sim, me, iron, 2));
+        CarterOrderTests.NextMorning(sim);
+        Assert.Equal(VillageRound.SmithyOre + 2 * iron.Per, Ore());
         Assert.Contains(sim.Messages.Messages, m => m.Text.Contains("carter"));
-        // Once a morning.
-        sim.TickMany(SimClock.TicksPerHour * 3);
-        Assert.Equal(VillageRound.SmithyOre + delivered, Ore());
     }
 
     [Fact]

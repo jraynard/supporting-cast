@@ -45,7 +45,8 @@ mods/<id>/
 Most content is already defs (`data/defs`, merged in name order; references resolve once everything
 is loaded):
 - **New things:** buildings, furniture, items, recipes, quests, parties, adventurer kinds, incidents,
-  barks, runes and mendings, outfits, and maps (a town is a `MapDef` with a building in the Tavern role).
+  barks, runes and mendings, outfits, supplies (what the carter brings a workplace to order, `supplies.json`),
+  and maps (a town is a `MapDef` with a building in the Tavern role).
   A map may be any width and height, and says what's under its ground: `veins`, the seeded veins it has
   (none named: all of them); `seams`, ore bodies it's sure of (`{ block, at, radius, levels }`, their edge the
   seed's); `tunnels`, passages carved at a level (`{ level, cells }`, with rock two levels above them).
@@ -98,7 +99,9 @@ The core registers its own trades the same way. What can be registered, and what
 ### A new trade
 
 A trade is the unit both this doc and the agent skills teach: the trade's def (`trades.json`: workplace,
-kit, priorities, services, lessons' words), its workplace's role and building, and two modules:
+kit, priorities, services, lessons' words, and `standingOrders`: what the carter keeps its workplace in
+while the AI runs it, from `supplies` the mod lists for its role), its workplace's role and building, and two
+modules (its workplace's chests are its own without any flag: the AI takes only from its own workplace):
 - **`ITradeModule`** (sim): its work sessions, station actions, AI jobs and work givers, lessons,
   and setup.
 - **`ITradeView`** (game): its work views, HUD, bot hook and sounds.

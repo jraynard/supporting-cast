@@ -362,15 +362,19 @@ public class ProvisionsTests
     public void ACutCausewayStopsTheCarterAtTheWater()
     {
         var sim = Round(ReedmereMapTests.Map);
-        sim.TickMany(SimClock.TicksPerHour / 2); // the ore carter's first day is the deal's
-        // Down overnight, the next morning (the tinker would mend it before then).
-        sim.Clock.Tick = sim.Round.TickAt(sim, 2, InnSupplySystem.DeliveryHour) - 1;
+        // The inn's and the cookhouse's stores run down, so their standing orders send for more.
+        foreach (var building in new[] { Provisions.Inn(sim), Provisions.Cookhouse(sim) })
+            foreach (var part in Buildings.Parts(sim, building))
+                foreach (var e in sim.StoredIn(part).Where(e => sim.Defs.AllSupplies.Any(s => s.ThingDef == sim.World.Get<Thing>(e).Def)).ToList())
+                    sim.World.Destroy(sim.TakeFromStack(e, sim.World.Get<Stack>(e).Count));
+        // Down overnight, before the cart (the tinker would mend it before then).
         Assert.NotNull(sim.Repairs.BreakBridge(sim, sim.Rand));
         var seen = sim.Messages.Total;
-        sim.TickMany(SimClock.TicksPerHour / 4 + 1);
+        CarterOrderTests.NextMorning(sim);
         var said = sim.Messages.Messages.Skip(sim.Messages.IndexAfter(seen)).Select(m => m.Text).Where(t => t.Contains("carter")).ToList();
-        // Reedmere's inn and cookhouse both stand out on the water: neither is reached, nor the forge's ore.
-        Assert.True(said.Any(t => t.Contains("couldn't get through") && t.Contains("the inn and the cookhouse")), string.Join("\n", said));
-        Assert.DoesNotContain(said, t => t.Contains("left a load of ore"));
+        // Reedmere's inn and cookhouse both stand out on the water: neither is reached, and their orders wait.
+        Assert.True(said.Any(t => t.Contains("couldn't get through") && t.Contains("inn")), string.Join("\n", said));
+        Assert.True(said.Any(t => t.Contains("couldn't get through") && t.Contains("cookhouse")), string.Join("\n", said));
+        Assert.Contains(CarterOrders.Of(sim).All, o => o.Building == Provisions.Inn(sim));
     }
 }

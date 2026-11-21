@@ -55,10 +55,12 @@ so far. Nobody new has tried them yet.
   number may play, `TradeDef.Unlimited`), and the lobby says so; the town keeps one villager with no trade,
   a hand when called. No villager hauls, runs errands or the hamper over, and the AI takes only from its
   own workplace and the stockpile (`Simulation.AiMayTake`), so a new trade's chest is safe by default.
-- [ ] **Supplies ordered from the carter** (next): the tradesman orders what their shop needs at the shop
-  window, paid in silver, in their chest next morning; standing orders keep an AI-held shop going. Replaces
-  the carter's fixed daily drop at the smithy, woodshop and shrine and the inn's carter. Ordering well (not
-  short, not overstocked, not overpaying in a shortage) is the reward.
+- **Done:** supplies ordered from the carter (`Shops/CarterOrders`, `supplies.json`): the tradesman orders at
+  the shop window (From the carter), paid in silver, in their store next morning; standing orders keep an
+  AI-held shop going, and bots order by them. Replaces the fixed daily drop at the smithy, woodshop, shrine
+  and inn. The basics teach it (a "carter" step).
+- [ ] **Tune the carter's prices** (`supplies.json`) in a playtest: is a day's ordering a fair bite of a
+  day's takings? Does anyone run short, or drown in overstock?
 - [ ] **The carpenter, played by someone:** `--practice Carpenter`. Do the saw and the fletching
   read? A first playtest found it quiet (no orders at all), so it now has them: worn bows, cudgels
   and staves mended, archers asking for arrows, a wagon's woodwork (the tinker keeps the wheel), and

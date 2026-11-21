@@ -49,6 +49,7 @@ public sealed partial class VillageGame
             return;
         BeginJournal("Shop###orders", ref _showShop, side: Anchor.TopLeft);
         DrawSign();
+        DrawCarter();
         var now = _sim.Clock.Tick;
         var any = false;
         var closed = 0;
@@ -191,6 +192,71 @@ public sealed partial class VillageGame
             if (ImGui.SmallButton("Point the way"u8))
                 Issue(new Sim.Hospitality.DirectCommand(_avatar, a.Id));
             ImGui.PopID();
+        }
+        Gui.Rule();
+    }
+
+    /// <summary>
+    /// What your workplace can have from the carter (<see cref="CarterOrders"/>): a lot at a time, paid now,
+    /// in its store at first light. Folded away like the sign; its header says what's coming. Nothing's sent
+    /// for you: a shop kept well is the trade's.
+    /// </summary>
+    private void DrawCarter()
+    {
+        var catalogue = View.SupplyCatalogue();
+        if (catalogue.Count == 0)
+            return;
+        var waiting = View.CarterOrders().ToList();
+        if (TutorialStep == "carter")
+            ImGui.SetNextItemOpen(true, ImGuiCond.Always);
+        var open = ImGui.CollapsingHeader(waiting.Count == 0 ? "From the carter###carter" : $"From the carter: {waiting.Count} coming###carter", ImGuiTreeNodeFlags.None);
+        if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
+            Tip("Order what your workplace needs. Paid now, it's in your store at first light. Order short and you'll run out; order too much and it's left on the floor.");
+        GuideGlow(TutorialStep == "carter" && !open);
+        if (!open)
+            return;
+        var purse = Coin.Count(_sim, _avatar);
+        var shortage = _sim.Director.Active.Any(c => c.Kind == Sim.Defs.CrisisKind.Shortage);
+        TextC(Theme.Dim, shortage ? $"You've {purse} silver. A shortage: prices doubled, some things not to be had." : $"You've {purse} silver.");
+        foreach (var supply in catalogue)
+        {
+            ImGui.PushID(supply.Name);
+            var price = CarterOrders.Price(_sim, supply);
+            var coming = waiting.Where(o => o.Supply == supply.Name).Sum(o => o.Lots) * supply.Per;
+            var why = CarterOrders.Of(_sim).Refusal(_sim, _avatar, supply, 1);
+            ImGui.BeginDisabled(why != null);
+            if (Gui.IconButton("##order", "ui/icon_good", Gui.S(22), false) && why == null)
+                Issue(new OrderSuppliesCommand(_avatar, supply.Name, 1));
+            ImGui.EndDisabled();
+            if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
+                Tip(why == null ? $"Order {supply.Per} {supply.Label} for {price} silver." : $"Can't order it: {why}.");
+            ImGui.SameLine(0, Gui.S(8));
+            ImGui.AlignTextToFramePadding();
+            TextC(why == null ? Theme.Text : Theme.Dim, $"{supply.Per} {supply.Label}, {price} silver");
+            if (coming > 0)
+            {
+                ImGui.SameLine(0, Gui.S(8));
+                TextC(Theme.Good, $"{coming} coming");
+            }
+            ImGui.PopID();
+        }
+        if (waiting.Count > 0)
+        {
+            TextC(Theme.Dim, "On order, for the morning:");
+            foreach (var o in waiting)
+            {
+                if (_sim.Defs.SupplyOrNull(o.Supply) is not { } supply)
+                    continue;
+                ImGui.PushID(o.Id + 200000);
+                if (Gui.IconButton("##cancel", "ui/icon_cancel", Gui.S(22), false))
+                    Issue(new CancelSuppliesCommand(_avatar, o.Id));
+                if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
+                    Tip($"Call it off: your {o.Paid} silver back.");
+                ImGui.SameLine(0, Gui.S(8));
+                ImGui.AlignTextToFramePadding();
+                ImGui.Text($"{o.Lots * supply.Per} {supply.Label} ({o.Paid} silver)");
+                ImGui.PopID();
+            }
         }
         Gui.Rule();
     }

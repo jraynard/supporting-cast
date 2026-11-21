@@ -1,8 +1,13 @@
 {
+  // Feathers from the carter (supplies.json): nobody in town grows them.
+  "supplies": [
+    { "name": "Feathers", "def": "Feathers", "per": 4, "price": 1, "max": 3, "for": "Woodshop" }
+  ],
   "trades": [
     // The carpenter works the woodshop: planks at the sawhorse, arrows at the bench for the parties'
     // archers, the bridge braced when a raid brings it down, and the festival put up (Carpentry/).
     { "name": "Carpenter", "label": "carpenter", "level": "Intermediate", "description": "Wood and arrows: saws planks, fletches quivers for the parties' archers, mends their bows and cudgels, braces the bridge when it's down and puts up the festival.",
+      "standingOrders": [ { "supply": "Feathers", "keep": 8 } ],
       "workplace": "Woodshop", "workPriorities": { "Craft": 1, "Construct": 2 }, "skills": { "Crafting": 5, "Construction": 6, "Shooting": 4 }, "mendsTown": true, "builds": true,
       "wants": [ { "thing": "Wood", "below": 6, "count": 12, "price": 6 } ],
       "fells": true,

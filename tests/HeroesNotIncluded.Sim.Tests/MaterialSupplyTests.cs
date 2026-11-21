@@ -43,8 +43,11 @@ public class MaterialSupplyTests
         Assert.Equal(4, Stock.CountIn(sim, chest, "BronzeBar"));
         Assert.Equal(8, Stock.CountIn(sim, chest, "CopperOre"));
         Assert.Equal(4, Stock.CountIn(sim, chest, "TinOre"));
-        // The carter's morning load brings more copper and tin with the iron.
-        OreCarterSystem.Deliver(sim);
+        // More copper and tin come to order, with the iron.
+        Inventory.Stow(sim, me, sim.CreateItem(sim.Defs.Thing(Coin.Silver), 20));
+        Assert.Null(CarterOrders.Of(sim).Order(sim, me, sim.Defs.Supply("CopperOre"), 2));
+        Assert.Null(CarterOrders.Of(sim).Order(sim, me, sim.Defs.Supply("TinOre"), 1));
+        CarterOrderTests.NextMorning(sim);
         Assert.Equal(8 + 6, Stock.CountIn(sim, chest, "CopperOre"));
         Assert.Equal(4 + 2, Stock.CountIn(sim, chest, "TinOre"));
         // The ores handled, copper's smelted and bronze alloyed at the smithy's kiln, which charcoal brings hot enough.
@@ -72,7 +75,7 @@ public class MaterialSupplyTests
         Assert.Contains(defs.Thing("Table").Building!.Cost, c => c.Def == Stock.PlanksDef);
         Assert.Contains(defs.Thing("WoodWall").Building!.Cost, c => c.Def == Stock.TimberDef); // building stays timber
         Assert.Contains(defs.Recipe("BakeCharcoal").Ingredients, x => x.Def == Stock.FirewoodDef);
-        Assert.DoesNotContain(defs.Season.OreDelivery, t => t.Def == "Charcoal"); // the kiln makes it now
+        Assert.DoesNotContain(defs.AllSupplies, s => s.Def == "Charcoal"); // the kiln makes it now
     }
 
     [Theory]
@@ -148,21 +151,23 @@ public class MaterialSupplyTests
     }
 
     [Fact]
-    public void TheCarterBringsClothToTheShrineButNotOverABrokenBridge()
+    public void AnAiShrineIsKeptInClothButNotOverABrokenBridge()
     {
         var (sim, _) = Round("Tinker");
         var store = VillageRound.ShrineStore(sim, ShopSystem.BuildingFor(sim, Defs.TownRole.Shrine));
-        var cloth = sim.Defs.Season.ShrineDelivery.Single(t => t.Def == Bandaging.ClothDef).Count;
-        OreCarterSystem.Deliver(sim);
-        Assert.Equal(sim.Defs.Season.ShrineCloth + cloth, Stock.CountIn(sim, store, Bandaging.ClothDef));
+        var keep = sim.Defs.Trade("Empath").StandingOrders.Single(o => o.SupplyDef.ThingDef.Name == Bandaging.ClothDef).Keep;
+        Stock.TakeFrom(sim, store, Bandaging.ClothDef, Stock.CountIn(sim, store, Bandaging.ClothDef));
+        CarterOrderTests.NextMorning(sim); // the evening's standing order, then the cart
+        Assert.True(Stock.CountIn(sim, store, Bandaging.ClothDef) >= keep, $"{Stock.CountIn(sim, store, Bandaging.ClothDef)} of {keep}");
 
-        // With the bridge down, it's left only where the carter can still get to from the road (as the ore is).
+        // With the bridge down, it's left only where the carter can still get to from the road; else it waits.
+        Stock.TakeFrom(sim, store, Bandaging.ClothDef, Stock.CountIn(sim, store, Bandaging.ClothDef));
         Assert.NotNull(sim.Repairs.BreakBridge(sim, new SimRandom(3)));
         sim.RebuildDerivedIfNeeded();
         var cut = OreCarterSystem.CutOff(sim, sim.World.Get<Thing>(store).Cell);
-        OreCarterSystem.DeliverToShrine(sim);
-        Assert.Equal(sim.Defs.Season.ShrineCloth + cloth * (cut ? 1 : 2), Stock.CountIn(sim, store, Bandaging.ClothDef));
-        Assert.Equal(cut, sim.Messages.Messages.Any(m => m.Text.StartsWith("The carter couldn't get the cloth through to the shrine")));
+        CarterOrderTests.NextMorning(sim);
+        Assert.Equal(cut, Stock.CountIn(sim, store, Bandaging.ClothDef) == 0);
+        Assert.Equal(cut, CarterOrders.Of(sim).All.Any(o => o.Supply == "Cloth"));
     }
 
     [Fact]

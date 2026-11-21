@@ -273,6 +273,13 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
     /// The trade the viewer's in, if any. The other side's table is what they've put out to be
     /// seen: labels anyone could read off the things, never their hidden state.
     /// </summary>
+    /// <summary>What the viewer's workplace can order from the carter (<see cref="Shops.CarterOrders.Catalogue"/>): public knowledge.</summary>
+    public IReadOnlyList<Defs.SupplyDef> SupplyCatalogue() => viewer.IsNull ? [] : Shops.CarterOrders.Catalogue(sim, viewer);
+
+    /// <summary>The viewer's own orders waiting for the carter's cart, oldest first.</summary>
+    public IEnumerable<Shops.SupplyOrder> CarterOrders() =>
+        viewer.IsNull ? [] : Shops.CarterOrders.Of(sim).All.Where(o => o.By == viewer);
+
     public PerceivedBarter? Barter()
     {
         if (viewer.IsNull || sim.Barter.Of(viewer) is not { } deal)

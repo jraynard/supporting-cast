@@ -832,16 +832,12 @@ public class MinerModTests
     public void WithAPlayerTheMinerTheCarterBringsLessOre() => WithMiner(() =>
     {
         var defs = MinerDefs();
-        var load = defs.Season.OreDelivery.Single(t => t.Def == "IronOre").Count;
+        var iron = defs.Supply("IronOre");
         var without = Round(defs, (Bea, "Blacksmith"));
-        var before = OreInTheSmithy(without);
-        OreCarterSystem.Deliver(without);
-        Assert.Equal(before + load, OreInTheSmithy(without));
-
+        Assert.Equal(iron.Max, CarterOrders.MostLots(without, iron));
         var with = Round(defs, (Arin, "Miner"), (Bea, "Blacksmith"));
-        before = OreInTheSmithy(with);
-        OreCarterSystem.Deliver(with);
-        Assert.Equal(before + (int)MathF.Round(load * defs.Season.SuppliedShare), OreInTheSmithy(with));
+        Assert.Equal(Math.Max(1, (int)MathF.Round(iron.Max * defs.Season.SuppliedShare)), CarterOrders.MostLots(with, iron));
+        _ = OreInTheSmithy(with);
         return 0;
     });
 }

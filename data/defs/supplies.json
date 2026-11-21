@@ -1,0 +1,44 @@
+// What the carter brings to order (Shops/CarterOrders.cs): a tradesman orders from their shop window
+// (the Carter tab), paying at once; it's in their workplace's container next morning at six (none with
+// the road cut: it waits). "per" of the thing a lot for "price" silver, at most "max" lots a morning;
+// "for": the role of the workplace that orders it, "into": the container it's left in there (by def,
+// "Chest" unless said); "scarce": not to be had in a shortage. A shop the AI runs keeps itself in by its
+// trade's "standingOrders" (trades.json) on the town's account. A player's trade that supplies a thing
+// itself (the miner's ore, "supplies") leaves the carter only season.json's suppliedShare of its "max".
+// Prices sit near what the shop gets for its work: a lot of ore is a little under a repair's worth a
+// blade, a keg a few drinks. What's ordered and not used piles up: ordering well is the trade's.
+{
+  "supplies": [
+    // The smithy's chest: ore to smelt and planks for hafts (charcoal's baked at the kiln, from barn firewood).
+    { "name": "IronOre", "def": "IronOre", "per": 4, "price": 3, "max": 6, "for": "Forge" },
+    { "name": "CopperOre", "def": "CopperOre", "per": 3, "price": 2, "max": 4, "for": "Forge" },
+    { "name": "TinOre", "def": "TinOre", "per": 2, "price": 2, "max": 3, "for": "Forge" },
+    { "name": "SmithyPlanks", "def": "Planks", "material": "Pine", "per": 2, "price": 1, "max": 4, "for": "Forge" },
+
+    // The shrine's linen basket: cloth to tear into bandages; nobody in town weaves.
+    { "name": "Cloth", "def": "Cloth", "per": 2, "price": 2, "max": 3, "for": "Shrine", "into": "LinenBasket" },
+
+    // The tinker's chest: planks for contraptions and stocks.
+    { "name": "TinkerPlanks", "def": "Planks", "material": "Pine", "per": 2, "price": 1, "max": 4, "for": "TinkerShop" },
+
+    // The inn's storeroom: kegs for the casks, and the bar's stock for mixing.
+    { "name": "Keg", "def": "Keg", "per": 1, "price": 3, "max": 3, "for": "Tavern" },
+    { "name": "Spirits", "def": "Spirits", "per": 2, "price": 2, "max": 3, "for": "Tavern" },
+    { "name": "Honey", "def": "Honey", "per": 2, "price": 1, "max": 3, "for": "Tavern" },
+    { "name": "BarHerbs", "def": "Herbs", "per": 2, "price": 1, "max": 3, "for": "Tavern" },
+    { "name": "BarBerries", "def": "Berries", "per": 3, "price": 1, "max": 3, "for": "Tavern", "scarce": true },
+
+    // The kitchen's larder, and its log basket.
+    { "name": "Cabbage", "def": "Cabbage", "per": 3, "price": 1, "max": 3, "for": "Kitchen", "into": "Larder", "scarce": true },
+    { "name": "Meat", "def": "Meat", "per": 3, "price": 2, "max": 3, "for": "Kitchen", "into": "Larder", "scarce": true },
+    { "name": "Berries", "def": "Berries", "per": 4, "price": 1, "max": 3, "for": "Kitchen", "into": "Larder", "scarce": true },
+    { "name": "Emberroot", "def": "Emberroot", "per": 3, "price": 1, "max": 2, "for": "Kitchen", "into": "Larder", "scarce": true },
+    { "name": "Herbs", "def": "Herbs", "per": 3, "price": 1, "max": 2, "for": "Kitchen", "into": "Larder" },
+    { "name": "Flour", "def": "Flour", "per": 3, "price": 1, "max": 3, "for": "Kitchen", "into": "Larder", "scarce": true },
+    { "name": "Oats", "def": "Oats", "per": 4, "price": 1, "max": 2, "for": "Kitchen", "into": "Larder", "scarce": true },
+    { "name": "PorkSide", "def": "PorkSide", "per": 1, "price": 2, "max": 2, "for": "Kitchen", "into": "Larder", "scarce": true },
+    { "name": "Fowl", "def": "Fowl", "per": 1, "price": 2, "max": 2, "for": "Kitchen", "into": "Larder", "scarce": true },
+    { "name": "CoarseSalt", "def": "CoarseSalt", "per": 2, "price": 1, "max": 2, "for": "Kitchen", "into": "Larder" },
+    { "name": "KitchenFirewood", "def": "Firewood", "per": 8, "price": 1, "max": 4, "for": "Kitchen", "into": "LogBasket", "scarce": true }
+  ]
+}

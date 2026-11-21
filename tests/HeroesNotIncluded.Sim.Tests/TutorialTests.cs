@@ -99,6 +99,10 @@ public class TutorialTests
         run.Passed.Add("pack");
         Assert.Equal("shop", Stage().Step);
         run.Passed.Add("shop");
+        // The smithy's supplied by the carter: send for one thing (an order waiting is the step done).
+        Assert.Equal("carter", Stage().Step);
+        Inventory.Stow(sim, me, sim.CreateItem(sim.Defs.Thing(Shops.Coin.Silver), 10));
+        Assert.Null(Shops.CarterOrders.Of(sim).Order(sim, me, sim.Defs.Supply("TinOre"), 1));
         Assert.Equal("controls", Stage().Step);
         Assert.False(Stage().Done);
         run.Passed.Add("controls");

@@ -156,6 +156,7 @@ public sealed partial class BotPlayer(Func<Simulation> world, Guid player, Actio
     private void Think(Simulation sim, Entity me, PerceptionView view, long now)
     {
         Shout(sim, me, view, now);
+        OrderSupplies(sim, me); // the evening's order from the carter: a command from the shop window, not a walk
         if (Douse(sim, me, view, now) || Safety(sim, me, view, now) || BindOwn(sim, me) || PitchIn(sim, me, view, now)
             || SeeTheEmpath(sim, me, now) || Bedtime(sim, me, now))
             return;

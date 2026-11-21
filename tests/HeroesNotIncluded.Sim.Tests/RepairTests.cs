@@ -122,11 +122,14 @@ public class RepairTests
         Assert.False(Across(sim, me, a, b), "nobody walks over a gap");
         Assert.Null(sim.Repairs.BreakBridge(sim, new SimRandom(4))); // it's down already
 
-        // The next morning the carter can't get across.
+        // The next morning the carter can't get across to what was ordered (the cottages' bread, and the smithy's ore).
         var dread = sim.Reckoning.Dread;
-        sim.Clock.Tick = sim.Round.TickAt(sim, 2, Shops.InnSupplySystem.DeliveryHour) - 1;
-        sim.TickMany(SimClock.TicksPerHour);
-        Assert.Contains(sim.Messages.Messages, m => m.Text.StartsWith("The carter couldn't get through, the stone bridge down"));
+        var smithy = Shops.ShopSystem.BuildingFor(sim, Defs.TownRole.Forge);
+        var box = Shops.CarterOrders.Into(sim, smithy, sim.Defs.Supply("IronOre"));
+        Stock.TakeFrom(sim, box, "IronOre", Stock.CountIn(sim, box, "IronOre"));
+        CarterOrderTests.NextMorning(sim);
+        if (Shops.OreCarterSystem.CutOff(sim, sim.World.Get<Thing>(box).Cell))
+            Assert.Contains(sim.Messages.Messages, m => m.Text.StartsWith("The carter couldn't get through to the") && m.Text.Contains("stone bridge down"));
         Assert.True(sim.Reckoning.Dread > dread, "a cut road weighs on the valley");
     }
 

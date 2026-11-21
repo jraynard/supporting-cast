@@ -163,6 +163,13 @@ public sealed class TradeDef : Def
     /// </summary>
     public List<TradeWant> Wants { get; set; } = [];
 
+    /// <summary>
+    /// What its workplace keeps in from the carter while the AI runs it (<c>Shops.CarterOrders</c>): each
+    /// evening a supply (<see cref="SupplyDef"/>) is topped up to so many, on the town's account. A player
+    /// holding the trade orders for themselves instead (and a bot by these, as its own judgement).
+    /// </summary>
+    public List<StandingOrder> StandingOrders { get; set; } = [];
+
     /// <summary>The holder names the shop (<c>Shops.ShopName</c>): the innkeeper, not the cook.</summary>
     public bool NamesShop { get; set; } = true;
 
@@ -194,6 +201,12 @@ public sealed class TradeDef : Def
             want.ThingDef = db.Thing(want.Thing);
             if (want.ThingDef.Category != ThingCategory.Item || want.Below < 1 || want.Count < 1 || want.Price < 0 || want.Hours <= 0)
                 throw new Exception($"Trade '{Name}': a want of {want.Thing} needs an item, below and count of 1 or more, a price and hours");
+        }
+        foreach (var order in StandingOrders)
+        {
+            order.Resolve(db, Name);
+            if (order.SupplyDef.ForRole != Role)
+                throw new Exception($"Trade '{Name}': its standing order for {order.Supply} is for the {order.SupplyDef.For}, not its own workplace");
         }
         foreach (var keep in Keeps)
         {

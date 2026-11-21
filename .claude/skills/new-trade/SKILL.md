@@ -50,7 +50,9 @@ bow's tiller, the pipe's lead-in). So:
      defaults to "not mine"): work at a station, mending, what F does (`EarlyActionAt`, `SiteActionAt`,
      then `Perform`), the AI's jobs (`JobFor`), stocking its workplace, practice customers, a lesson's own setup
      (`SetUpLesson`). Its workplace's chests are its own without any flag: in a round the AI takes only from its
-     own workplace and the stockpile (`Simulation.AiMayTake`), and nobody hauls;
+     own workplace and the stockpile (`Simulation.AiMayTake`), and nobody hauls. What the workplace needs from
+     outside comes from the carter: list it as `supplies` for the trade's role in the mod's defs (sold in lots,
+     `into` its container), and give the trade `standingOrders` so an AI-run shop keeps itself in;
    - its work sessions (subclasses of `WorkSession`: found by scanning, nothing to register);
    - `registry.Component<T>(...)` for every component it adds (an unsaved one vanishes on load);
    - `registry.System(...)` for a system, placed `after:`/`before:` a named one;

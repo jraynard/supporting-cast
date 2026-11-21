@@ -107,11 +107,8 @@ public sealed class SeasonDef : Def
     /// <summary>The most weapons a call to arms asks for, however many are unarmed.</summary>
     public int ArmsWanted { get; set; } = 6;
 
-    /// <summary>What the carter leaves at the smithy each morning from the second day: ore to smelt, and fuel.</summary>
-    public List<ThingCount> OreDelivery { get; set; } = [];
-
     /// <summary>
-    /// The share of a delivery's thing the carter still brings while a player's trade supplies it
+    /// The share of the most of a thing the carter brings a morning (<see cref="SupplyDef.Max"/>) while a player's trade supplies it
     /// (<see cref="TradeDef.Supplies"/>: the miner's ore): enough to get by on, not to keep the forge busy.
     /// </summary>
     public float SuppliedShare { get; set; } = 0.25f;
@@ -128,7 +125,7 @@ public sealed class SeasonDef : Def
     /// </summary>
     public int SmithyCharcoal { get; set; } = 30;
 
-    /// <summary>Cloth in the shrine's basket at the deal, to tear into bandages; <see cref="ShrineDelivery"/> brings more.</summary>
+    /// <summary>Cloth in the shrine's basket at the deal, to tear into bandages; the carter brings more to order (supplies.json).</summary>
     public int ShrineCloth { get; set; } = 4;
 
     /// <summary>Planks laid in the barn's stockpile at the deal: for what the town makes (hafts, contraptions, furniture), till the carpenter saws more.</summary>
@@ -153,11 +150,6 @@ public sealed class SeasonDef : Def
     /// <summary>Firewood the carter leaves in the barn each morning from the second day, but not in a shortage.</summary>
     public List<ThingCount> FirewoodDelivery { get; set; } = [];
 
-    /// <summary>What the carter leaves in the woodshop's chest each morning from the second day: feathers for fletching, which nobody in town grows.</summary>
-    public List<ThingCount> WoodshopDelivery { get; set; } = [];
-
-    /// <summary>What the carter leaves at the shrine each morning from the second day: cloth to tear into bandages, which nobody in town weaves.</summary>
-    public List<ThingCount> ShrineDelivery { get; set; } = [];
 
     internal override void Resolve(DefDatabase db)
     {
@@ -171,12 +163,6 @@ public sealed class SeasonDef : Def
             if (beat.AfterHours.Length != 2 || beat.AfterHours[1] < beat.AfterHours[0])
                 throw new Exception($"Season {Name}: a beat's afterHours is [earliest, latest]");
         }
-        foreach (var t in WoodshopDelivery)
-            t.Resolve(db);
-        foreach (var t in ShrineDelivery)
-            t.Resolve(db);
-        foreach (var t in OreDelivery)
-            t.Resolve(db);
         foreach (var t in SmithyStock)
             t.Resolve(db);
         foreach (var t in WoodDelivery)
