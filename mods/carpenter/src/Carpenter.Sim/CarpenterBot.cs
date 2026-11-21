@@ -74,7 +74,7 @@ public sealed class CarpenterBot(BotPlayer bot) : IBotTrade
             return true;
         if (!bench.IsNull && Refurnish(sim, me, view, bench, now))
             return true;
-        if (Firewood(sim, me, view, now))
+        if (FirewoodOrdered(sim, me, view, now) || Firewood(sim, me, view, now))
             return true;
         // A piece asked for by name (a bow, a cudgel), or a commission off the board (planks, firewood): made at
         // whichever of its stations makes it, whatever's in stock.
@@ -153,11 +153,30 @@ public sealed class CarpenterBot(BotPlayer bot) : IBotTrade
     /// chopping block if there's one to be had; else the nearest tree felled and its trunk bucked
     /// into logs, to split. True while at it.
     /// </summary>
-    private bool Firewood(Simulation sim, Entity me, PerceptionView view, long now)
+    /// <summary>
+    /// Firewood a workplace sent for (<see cref="FirewoodOrders"/>): a bundle or more on it, carried to that workplace's store and
+    /// put in (F there); short of a bundle, more split at the block first, whatever the town's stock. True while at it.
+    /// </summary>
+    private bool FirewoodOrdered(Simulation sim, Entity me, PerceptionView view, long now)
+    {
+        var orders = FirewoodOrders.Of(sim);
+        if (orders.All.OrderBy(o => o.Id).FirstOrDefault() is not { } order || FirewoodOrders.StoreFor(sim, order.Building) is not { IsNull: false } store)
+            return false;
+        if (FirewoodOrders.Carried(sim, me) < FirewoodOrders.Bundle)
+            return Firewood(sim, me, view, now, ordered: true);
+        bot.Doing = "carrying firewood that was sent for";
+        return bot.AtStation(sim, me, store, now, s =>
+        {
+            bot.Send(new AvatarWorkCommand(me, true, sim.World.Get<Thing>(s).Cell));
+            bot.Send(new AvatarWorkCommand(me, false));
+        });
+    }
+
+    private bool Firewood(Simulation sim, Entity me, PerceptionView view, long now, bool ordered = false)
     {
         var w = sim.World;
         var block = BotPlayer.Nearest(sim, me, Carpenters.BlockDef);
-        if (block.IsNull || Carpenters.TownFirewood(sim) >= Carpenters.FirewoodLow)
+        if (block.IsNull || (!ordered && Carpenters.TownFirewood(sim) >= Carpenters.FirewoodLow))
             return false;
         if (w.TryGet<Workbench>(block, out var b) && b.Active is { } begun && b.By == me && !b.Untouched)
             return bot.Make(sim, me, view, block, begun, now);

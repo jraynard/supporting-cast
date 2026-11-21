@@ -34,11 +34,19 @@ public sealed class SimRegistry
     internal readonly Dictionary<string, Func<Simulation, Entity, Entity>> Drills = new(StringComparer.OrdinalIgnoreCase);
     internal readonly Dictionary<string, string> Formerly = new(StringComparer.Ordinal);
     internal readonly List<Director.CrisisType> Crises = [];
+    internal readonly List<Func<Simulation, Entity, Defs.ThingDef, int>> Incomings = [];
 
     /// <summary>The game's own registrations (its bundled trades) keep their names unprefixed.</summary>
     internal bool IsCore => ModId.Length == 0;
 
     private string Qualify(string name) => IsCore ? name : $"{ModId}:{name}";
+
+    /// <summary>
+    /// What a mod is already bringing a workplace (the carpenter's firewood to order): how many of a thing are on their
+    /// way to a building. The carter's standing orders count it as good as there (<see cref="Shops.CarterOrders.Wanted"/>),
+    /// so a shop isn't sent the same twice.
+    /// </summary>
+    public void Incoming(Func<Simulation, Entity, Defs.ThingDef, int> coming) => Incomings.Add(coming);
 
     /// <summary>
     /// A trade's sim half (<see cref="ITradeModule"/>): the hooks the core calls at a station, for the
@@ -194,6 +202,9 @@ public static class SimContent
         Assemblies.SelectMany(a => (a == Core ? a.GetTypes() : ExportedTypes(a)).Where(t => typeof(T).IsAssignableFrom(t) && t is { IsAbstract: false, IsInterface: false }));
 
     internal static IEnumerable<PlacedSystem> ModSystems => Registries.SelectMany(r => r.Systems);
+
+    /// <summary>How many of <paramref name="def"/> the mods are bringing <paramref name="building"/> (<see cref="SimRegistry.Incoming"/>).</summary>
+    public static int Incoming(Simulation sim, Entity building, Defs.ThingDef def) => Registries.Sum(r => r.Incomings.Sum(f => f(sim, building, def)));
 
     internal static IEnumerable<ComponentCodec> ModCodecs => Registries.SelectMany(r => r.Codecs);
 

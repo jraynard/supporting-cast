@@ -196,7 +196,10 @@ public static class Carpenters
     {
         var shop = WoodshopOf(sim, pawn);
         var block = StationOf(sim, shop, BlockDef);
-        if (block.IsNull || sim.Reservations.IsReservedByOther(block, pawn) || TownFirewood(sim) >= FirewoodLow)
+        // Split for the town when its firewood's low, or for the workplaces that sent for more than lies split.
+        var forOrders = FirewoodOrders.Of(sim).All.Sum(o => o.Bundles - o.Delivered) * FirewoodOrders.Bundle
+            > FirewoodRunJob.Split(sim, pawn).Sum(e => sim.World.Get<Stack>(e).Count);
+        if (block.IsNull || sim.Reservations.IsReservedByOther(block, pawn) || (TownFirewood(sim) >= FirewoodLow && !forOrders))
             return null;
         var w = sim.World;
         var from = w.Get<Position>(pawn).Cell;

@@ -185,7 +185,8 @@ public sealed class CarterOrders : ISimSystem, ISaveState
         var supply = order.SupplyDef;
         if (supply.Scarce && Shortage(sim))
             return 0;
-        var short_ = order.Keep - InStock(sim, building, supply) - Ordered(building, supply) * supply.Per;
+        var short_ = order.Keep - InStock(sim, building, supply) - Ordered(building, supply) * supply.Per
+            - Modding.SimContent.Incoming(sim, building, supply.ThingDef); // already on its way some other way (the carpenter's)
         if (short_ <= 0)
             return 0;
         return Math.Min((short_ + supply.Per - 1) / supply.Per, MostLots(sim, supply) - Ordered(building, supply));

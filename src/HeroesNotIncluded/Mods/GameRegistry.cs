@@ -44,6 +44,7 @@ public sealed class GameRegistry
     internal readonly List<StationTab> StationTabs = [];
     internal readonly List<Func<WorkView, Entity, Entity, string?>> MendHints = [];
     internal readonly List<Action<WorkView, Entity>> WagonPanels = [];
+    internal readonly List<ShopSection> ShopSections = [];
     internal readonly Dictionary<Type, Func<WorkView, WorkSession, IEnumerable<int>>> Inputs = [];
 
     /// <summary>
@@ -127,6 +128,12 @@ public sealed class GameRegistry
 
     /// <summary>A part of a wagon's window (its woodwork's mending): drawn under the wagon's own.</summary>
     public void WagonPanel(Action<WorkView, Entity> draw) => WagonPanels.Add(draw);
+
+    /// <summary>
+    /// A section of the shop window (as the carter's is), shown where <paramref name="applies"/>: the carpenter's firewood to
+    /// order for a keeper, or the orders waiting for the carpenter. Drawn after the carter's.
+    /// </summary>
+    public void ShopSection(string name, Func<WorkView, bool> applies, Action<WorkView> draw) => ShopSections.Add(new ShopSection(name, applies, draw));
 }
 
 /// <summary>A line on the ground from <see cref="From"/> to <see cref="To"/>, drawn <see cref="Drawn"/> (0..1) of the way; ember once <see cref="Ready"/>.</summary>
@@ -137,6 +144,9 @@ public readonly record struct Tilt(float Degrees, float Angle);
 
 /// <summary>A tab a mod adds to a station's window.</summary>
 public sealed record StationTab(string Name, Func<WorkView, Entity, bool> Applies, Action<WorkView, Entity> Draw, string? Footer);
+
+/// <summary>A mod's section of the shop window (<see cref="GameRegistry.ShopSection"/>).</summary>
+public sealed record ShopSection(string Name, Func<WorkView, bool> Applies, Action<WorkView> Draw);
 
 /// <summary>A mod's sounds of the world, asked once a frame (<see cref="GameRegistry.WorldSounds"/>).</summary>
 public interface IWorldSounds
@@ -367,6 +377,7 @@ public static class GameMods
         _registries.SelectMany(r => r.MendHints).Select(h => h(view, station, item)).FirstOrDefault(h => h != null);
 
     internal static IEnumerable<Action<WorkView, Entity>> WagonPanels => _registries.SelectMany(r => r.WagonPanels);
+    internal static IEnumerable<ShopSection> ShopSections => _registries.SelectMany(r => r.ShopSections);
 
     /// <summary>This frame's inputs of a mod's own for the session in hand; null if no mod reads any for it.</summary>
     internal static List<int>? InputsFor(WorkView view, WorkSession? session) =>

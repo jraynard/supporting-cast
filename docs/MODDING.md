@@ -250,6 +250,10 @@ The game's own rules (CLAUDE.md) bind its mods:
   `WorkView` is the drawing API they use. The game never names it (`ModBoundaryTests` in both test
   projects), never references it, and builds the mods it ships after itself (`BuildBundledMods`).
   Drills are a mod's too (`SimRegistry.Drill`, `--drill felling`).
+- [x] Firewood to order from the carpenter (`FirewoodOrders` in `Carpenter.Sim`): a keeper sends for bundles from
+  a section of their shop window (`GameRegistry.ShopSection`, drawn after the carter's), the carpenter carries them to
+  that workplace's fuel store and F there (`AvatarActionKind.Custom`), and what's on its way is counted against the
+  carter's standing orders (`SimRegistry.Incoming`), so a shop isn't sent the same twice.
 - [x] The carpenter's defs (its trade, stations, recipes, the woodshop and its services) moved into
   `mods/carpenter/defs` (`tools/move_defs.py` lifts defs out with their comments). Turned off
   (`--mods -carpenter`, or the Mods panel), a round deals no carpenter, the woodshop's plot stands

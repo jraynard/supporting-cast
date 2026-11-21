@@ -19,6 +19,9 @@ public sealed class CarpenterMod : ISimMod
     public void Register(SimRegistry registry)
     {
         registry.Trade(new CarpenterModule());
+        // Firewood to order: the keepers' orders, and what's on its way counted against the carter's.
+        registry.System(() => new FirewoodOrders());
+        registry.Incoming((sim, building, def) => def.Name == Stock.FirewoodDef ? FirewoodOrders.Of(sim).Owed(building) * FirewoodOrders.Bundle : 0);
         registry.Lesson([.. CarpenterLessons.All]);
         registry.Bot(bot => new CarpenterBot(bot));
         registry.Drill("fell", Scenarios.FellDrill.Stage); // --fell-test: by a pine in the open, axe and saw to hand
@@ -77,14 +80,23 @@ public sealed class CarpenterModule : ITradeModule
     public void Made(Simulation sim, List<Entity> made, Entity maker) => Carpenters.Made(sim, made, maker);
 
     public Job? JobFor(Simulation sim, Entity pawn, WorkType type) => type == WorkType.Craft
-        ? Carpenters.Arrows(sim, pawn) ?? Refurnishing.Furnish(sim, pawn) ?? Carpenters.Split(sim, pawn) ?? Carpenters.Saw(sim, pawn) ?? Carpenters.Fletch(sim, pawn)
+        ? Carpenters.Arrows(sim, pawn) ?? Refurnishing.Furnish(sim, pawn) ?? FirewoodRunJob.For(sim, pawn) ?? Carpenters.Split(sim, pawn) ?? Carpenters.Saw(sim, pawn) ?? Carpenters.Fletch(sim, pawn)
         : null;
 
-    public AvatarAction? EarlyActionAt(Simulation sim, Entity avatar, int3 cell, int3 here) =>
+    public AvatarAction? EarlyActionAt(Simulation sim, Entity avatar, int3 cell, int3 here)
+    {
         // Where a piece of furniture burned, with a new one in your arms: set it there.
-        Refurnishing.Of(sim).At(cell) is { } loss && AvatarSystem.InReach(here, cell) && !Refurnishing.Held(sim, avatar).IsNull
-            ? new AvatarAction(AvatarActionKind.SetFurniture, $"Set the new {loss.Label} here", cell, Entity.Null)
-            : null;
+        if (Refurnishing.Of(sim).At(cell) is { } loss && AvatarSystem.InReach(here, cell) && !Refurnishing.Held(sim, avatar).IsNull)
+            return new AvatarAction(AvatarActionKind.SetFurniture, $"Set the new {loss.Label} here", cell, Entity.Null);
+        // At a workplace's fuel store with firewood it sent for: put it in, and be paid.
+        if (sim.Map.InBounds(cell) && sim.Map.Structure[sim.Map.Idx(cell)] is { IsNull: false } store && AvatarSystem.InReach(here, cell)
+            && FirewoodOrders.CanDeliver(sim, avatar, store))
+        {
+            var owed = FirewoodOrders.Of(sim).Owed(Buildings.Of(sim, store));
+            return new AvatarAction(AvatarActionKind.Custom, $"Put in the firewood ({FirewoodOrders.Bundles(owed)} wanted)", cell, store);
+        }
+        return null;
+    }
 
     public AvatarAction? SiteActionAt(Simulation sim, Entity avatar, Entity site, int3 cell)
     {
@@ -102,6 +114,9 @@ public sealed class CarpenterModule : ITradeModule
     {
         switch (action.Kind)
         {
+            case AvatarActionKind.Custom when Work.FuelStores.IsStore(sim, action.Target):
+                FirewoodOrders.Of(sim).Deliver(sim, avatar, action.Target);
+                break;
             case AvatarActionKind.SetFurniture:
                 Refurnishing.Set(sim, avatar, Refurnishing.Of(sim).At(action.Cell));
                 break;

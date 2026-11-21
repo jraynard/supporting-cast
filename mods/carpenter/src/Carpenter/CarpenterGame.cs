@@ -48,6 +48,10 @@ public sealed class CarpenterGame : IGameMod
             "Carry it over in your arms, and ~F~ where the old one stood to set it down. The town pays for it.");
         r.MendHint(MendHint);
         r.WagonPanel(DrawWagon);
+        // Firewood to order (FirewoodOrders): a keeper sends for it from their shop window; the carpenter sees what's wanted in theirs.
+        r.ShopSection("From the carpenter", v => !FirewoodOrders.WorkplaceOf(v.Sim, v.Me).IsNull && FirewoodOrders.HasCarpenter(v.Sim), DrawSendForFirewood);
+        r.ShopSection("Firewood sent for", v => v.Sim.World.TryGet<Sim.Components.Trade>(v.Me, out var t) && t.Def.Name == CarpenterModule.TradeName
+            && FirewoodOrders.Of(v.Sim).All.Count > 0, DrawFirewoodWanted);
     }
 
     /// <summary>
@@ -67,6 +71,55 @@ public sealed class CarpenterGame : IGameMod
     private static string Cap(string s) => s.Length == 0 ? s : char.ToUpperInvariant(s[0]) + s[1..];
 
     /// <summary>The Rebuild tab (the carpenter's bench): each piece the fire took, and a button to join a new one.</summary>
+    /// <summary>A keeper's shop window: firewood sent for from the carpenter, paid now, brought to their store.</summary>
+    private static void DrawSendForFirewood(WorkView v)
+    {
+        var orders = FirewoodOrders.Of(v.Sim);
+        var building = FirewoodOrders.WorkplaceOf(v.Sim, v.Me);
+        var coming = orders.Owed(building);
+        var open = ImGui.CollapsingHeader(coming == 0 ? "From the carpenter###carpenterwood" : $"From the carpenter: {FirewoodOrders.Bundles(coming)} coming###carpenterwood", ImGuiTreeNodeFlags.None);
+        if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
+            v.Tip($"Split firewood, carried to your fuel store by the carpenter: {FirewoodOrders.Price} silver a bundle of {FirewoodOrders.Bundle}, paid now. It comes as soon as it's split, not with the morning cart, and the silver stays in town.");
+        if (!open)
+            return;
+        foreach (var o in orders.For(building))
+        {
+            ImGui.PushID(o.Id);
+            ImGuiText.Colored(Theme.Dim, o.Delivered > 0 ? $"{o.Delivered} of {FirewoodOrders.Bundles(o.Bundles)} brought" : $"{FirewoodOrders.Bundles(o.Bundles)} sent for");
+            if (o.By == v.Me)
+            {
+                ImGui.SameLine(0, 8);
+                if (ImGui.SmallButton("Call it off"u8))
+                    v.Issue(new CancelFirewoodCommand(v.Me, o.Id));
+                if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
+                    v.Tip("What's not been brought is paid back.");
+            }
+            ImGui.PopID();
+        }
+        var why = orders.Refusal(v.Sim, v.Me, 1);
+        ImGui.BeginDisabled(why != null);
+        if (ImGui.Button($"Send for a bundle ({FirewoodOrders.Price} silver)###sendwood", v.ButtonSize ?? default))
+            v.Issue(new OrderFirewoodCommand(v.Me, 1));
+        ImGui.EndDisabled();
+        if (why != null && ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
+            v.Tip(char.ToUpperInvariant(why[0]) + why[1..] + ".");
+    }
+
+    /// <summary>The carpenter's shop window: what each workplace has sent for, and how it's paid.</summary>
+    private static void DrawFirewoodWanted(WorkView v)
+    {
+        var orders = FirewoodOrders.Of(v.Sim);
+        var total = orders.All.Sum(o => o.Bundles - o.Delivered);
+        if (!ImGui.CollapsingHeader($"Firewood sent for: {FirewoodOrders.Bundles(total)}###woodwanted", ImGuiTreeNodeFlags.DefaultOpen))
+            return;
+        foreach (var building in orders.All.Select(o => o.Building).Distinct())
+        {
+            var label = v.Sim.World.TryGet<Sim.Components.PresetBuilding>(building, out var b) ? b.Def.Label : "a workplace";
+            ImGuiText.Colored(Theme.Text, $"The {label}: {FirewoodOrders.Bundles(orders.Owed(building))}");
+        }
+        ImGuiText.Colored(Theme.Dim, Controls.Keys($"Split logs at the chopping block, carry a bundle ({FirewoodOrders.Bundle}) to their fuel store and ~F~ at it: {FirewoodOrders.Price} silver a bundle."));
+    }
+
     private static void DrawRebuild(WorkView v, Entity station)
     {
         var losses = v.Perceived.Losses().ToList();

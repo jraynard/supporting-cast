@@ -50,6 +50,9 @@ public sealed partial class VillageGame
         BeginJournal("Shop###orders", ref _showShop, side: Anchor.TopLeft);
         DrawSign();
         DrawCarter();
+        foreach (var section in Mods.GameMods.ShopSections) // a mod's own (the carpenter's firewood to order)
+            if (section.Applies(ModWorkView))
+                section.Draw(ModWorkView);
         var now = _sim.Clock.Tick;
         var any = false;
         var closed = 0;
