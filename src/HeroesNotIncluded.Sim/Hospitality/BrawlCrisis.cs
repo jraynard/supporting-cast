@@ -15,6 +15,9 @@ namespace HeroesNotIncluded.Sim.Hospitality;
 public struct Brawler
 {
     public long Since;
+
+    /// <summary>Since when they've had nobody to swing at (0: they have): long enough and they give it up.</summary>
+    public long Idle;
 }
 
 /// <summary>
@@ -27,6 +30,11 @@ public struct Brawler
 /// (they sleep it off where they fall; one dropped by a mate gets back up and back at it); settle the
 /// ringleader and those who aren't rowdy lose heart. Met when every brawler's settled, nobody's died, and it never boiled over.
 /// Nobody's told who the ringleader is: it's the one who started it, and who shouts the others on.
+/// A player can start one too, by punching guests in the inn past their patience (<see cref="Patience"/>,
+/// <see cref="HitBack"/>): then it's the guest who hit back who leads, the crowd turns on the player
+/// (<see cref="Instigator"/>), rowdy onlookers pile in once it's two or more, and it ends when they've all
+/// been settled or given up for want of anyone to hit. Settling that one earns the town nothing
+/// (<see cref="Reckoned"/>); letting it boil over is as bad as any.
 /// </summary>
 public sealed class BrawlCrisis : ICrisis
 {
@@ -42,6 +50,9 @@ public sealed class BrawlCrisis : ICrisis
 
     /// <summary>Who started it. Shown to nobody; the reveal may name them.</summary>
     public Entity Ringleader { get; private set; }
+
+    /// <summary>The player whose fists started it (<see cref="Patience"/>), or Entity.Null for a crowd's brawl. Shown to nobody.</summary>
+    public Entity Instigator { get; private set; } = Entity.Null;
 
     /// <summary>The first punch has been thrown.</summary>
     public bool Begun { get; private set; }
@@ -88,6 +99,56 @@ public sealed class BrawlCrisis : ICrisis
         Barks.Say(sim, crisis.Ringleader, "brawl_crowd", Volume.Shout, "Landlord! Ale, and plenty of it!");
         return crisis;
     }
+
+    /// <summary>
+    /// A brawl a player started (<see cref="HitBack"/>): <paramref name="guest"/>, struck past their patience by
+    /// <paramref name="by"/>, swings back, in <paramref name="inn"/>. Sent by <see cref="Director.Director.SendBrawl"/>.
+    /// </summary>
+    internal static BrawlCrisis Provoked(Simulation sim, Entity inn, Entity guest, Entity by)
+    {
+        var w = sim.World;
+        var crisis = new BrawlCrisis
+        {
+            Started = sim.Clock.Tick,
+            _deadline = sim.Clock.Tick + SimClock.HoursToTicks(sim.Defs.Season.CrisisHours),
+            _lastCheck = sim.Clock.Tick,
+            _deadBefore = Dead(sim),
+            _inn = inn,
+            Ringleader = guest,
+            Instigator = by,
+            Begun = true,
+        };
+        crisis.Enlist(sim, guest);
+        Barks.Say(sim, guest, "brawl_hits_back", Volume.Shout, "Right! You asked for it!", who: w.Get<Creature>(by).Name);
+        sim.Messages.Add(MessageKind.Danger, $"A fight breaks out in {Buildings.Called(sim, inn)}!", w.Get<Position>(guest).Cell);
+        return crisis;
+    }
+
+    /// <summary>
+    /// <paramref name="guest"/> has had enough of <paramref name="by"/>'s fists (<see cref="Patience"/>) and swings
+    /// back: into the brawl already going in <paramref name="inn"/>, or a new one. Nothing outside a round the
+    /// Director's running (no brawl could be seen through to its end).
+    /// </summary>
+    public static void HitBack(Simulation sim, Entity guest, Entity by, Entity inn)
+    {
+        var w = sim.World;
+        RealtimeAttacks.Provoke(sim, guest, by); // it's them they're after (FoeFor)
+        if (In(sim, inn) is { } brawl)
+        {
+            brawl.Enlist(sim, guest);
+            Barks.Say(sim, guest, "brawl_hits_back", Volume.Shout, "Right! You asked for it!", who: w.Get<Creature>(by).Name);
+            return;
+        }
+        sim.Director.SendBrawl(sim, inn, guest, by);
+    }
+
+    /// <summary>The brawl going on in <paramref name="inn"/>, if any.</summary>
+    public static BrawlCrisis? In(Simulation sim, Entity inn) =>
+        sim.Director.Active.OfType<BrawlCrisis>().FirstOrDefault(b => b._inn == inn);
+
+    /// <summary>The brawl <paramref name="e"/> is in, if any.</summary>
+    public static BrawlCrisis? Holding(Simulation sim, Entity e) =>
+        sim.World.Has<Brawler>(e) ? sim.Director.Active.OfType<BrawlCrisis>().FirstOrDefault(b => b._brawlers.Contains(e)) : null;
 
     private static string Cap(string s) => s.Length == 0 ? s : char.ToUpperInvariant(s[0]) + s[1..];
 
@@ -136,7 +197,7 @@ public sealed class BrawlCrisis : ICrisis
                 return Over(sim, met: true); // they never got as far as the inn
             return null;
         }
-        Join(sim, since);
+        Join(sim, since, hours);
         Settle(sim);
         Soothe(sim, hours);
         var fighting = _brawlers.Count(e => Fighting(sim, e));
@@ -190,29 +251,6 @@ public sealed class BrawlCrisis : ICrisis
 
     /// <summary>"The watch is coming!" has been tried: it works once.</summary>
     private bool _watchCalled;
-
-    /// <summary>
-    /// A bucket of well water lands at <paramref name="at"/> (<see cref="Environment.Buckets.Splash"/>): anyone
-    /// in its patch is the soberer for it, and a brawler sobered past clumsy splutters and is out of it.
-    /// </summary>
-    public static void Doused(Simulation sim, int3 at)
-    {
-        var w = sim.World;
-        var brawl = Of(sim);
-        var sobers = sim.Defs.Season.Brawl.DouseSobers;
-        foreach (var e in sim.Creatures().ToList())
-        {
-            if (!w.TryGet<Position>(e, out var p) || Math.Abs(p.Cell.X - at.X) > 1 || Math.Abs(p.Cell.Y - at.Y) > 1 || p.Cell.Z != at.Z
-                || !w.Has<Tipsy>(e))
-                continue;
-            w.Get<Tipsy>(e).Level = Math.Max(0f, w.Get<Tipsy>(e).Level - sobers);
-            if (brawl != null && Fighting(sim, e) && w.Get<Tipsy>(e).Level < DrinkingSystem.ClumsyAt)
-            {
-                brawl.Settled(sim, e);
-                Barks.Say(sim, e, "brawl_doused", Volume.Shout, "Pfah! All right! All right!");
-            }
-        }
-    }
 
     /// <summary>
     /// A quick line said aloud (<see cref="SayCommand"/>, <c>barks_quick.json</c>) that means something to a
@@ -331,32 +369,57 @@ public sealed class BrawlCrisis : ICrisis
         AiSystem.Order(sim, e, new BrawlerJob());
     }
 
-    /// <summary>Guests in the inn struck by a brawler since the last look: the rowdy and the drunk join in.</summary>
-    private void Join(Simulation sim, long since)
+    /// <summary>
+    /// Guests in the inn struck by a brawler since the last look: the rowdy and the drunk join in. In a brawl
+    /// a player started, once it's got out of hand (<see cref="BrawlDef.OnlookersJoinAt"/> fighting) the rowdy
+    /// and the drunk among the onlookers pile in unasked now and then, by a hash, not the dice.
+    /// </summary>
+    private void Join(Simulation sim, long since, float hours)
     {
         var w = sim.World;
-        var join = sim.Defs.Season.Brawl.JoinTipsy;
+        var tuning = sim.Defs.Season.Brawl;
+        var join = tuning.JoinTipsy;
+        var outOfHand = !Instigator.IsNull && _brawlers.Count(e => Fighting(sim, e)) >= tuning.OnlookersJoinAt;
+        var chance = Math.Clamp(tuning.OnlookerJoinPerHour * hours, 0f, 1f);
         foreach (var e in w.Query<Adventurer>())
         {
-            if (w.Has<Brawler>(e) || _brawlers.Contains(e) || !w.Get<Creature>(e).Able || w.Has<Leaving>(e) || Players.Steered(sim, e)
-                || !w.TryGet<Provoked>(e, out var p) || p.Tick < since - StruckWithin || !w.Has<Brawler>(p.By) || !InInn(sim, e))
+            if (w.Has<Brawler>(e) || _brawlers.Contains(e) || !w.Get<Creature>(e).Able || w.Has<Leaving>(e) || Players.Steered(sim, e) || !InInn(sim, e))
                 continue;
             if (Adventurers.Tempers.Of(sim, e) != Adventurers.Temper.Rowdy && DrinkingSystem.LevelOf(sim, e) < join)
                 continue;
-            Enlist(sim, e);
-            Barks.Say(sim, e, "brawl_join", Volume.Shout, "Right, that's it!", who: w.Get<Creature>(p.By).Name);
+            if (w.TryGet<Provoked>(e, out var p) && p.Tick >= since - StruckWithin && w.Has<Brawler>(p.By))
+            {
+                Enlist(sim, e);
+                Barks.Say(sim, e, "brawl_join", Volume.Shout, "Right, that's it!", who: w.Get<Creature>(p.By).Name);
+            }
+            else if (outOfHand && SimRandom.Hash(e.Index, (int)(sim.Clock.Tick & 0x7FFFFFFF), (uint)sim.Seed ^ 0x0B1E7u) % 1000 < chance * 1000)
+            {
+                Enlist(sim, e);
+                Barks.Say(sim, e, "brawl_onlooker", Volume.Shout, "Brawl! Brawl!");
+            }
         }
     }
 
-    /// <summary>Who's done: knocked down by someone not in it. Anyone else still in it is set back to it.</summary>
+    /// <summary>
+    /// Who's done: knocked down by someone not in it, or given up for want of anyone to hit
+    /// (<see cref="BrawlDef.CoolOffSeconds"/>). Anyone else still in it is set back to it.
+    /// </summary>
     private void Settle(Simulation sim)
     {
         var w = sim.World;
-        foreach (var e in _brawlers)
+        var coolOff = (long)(sim.Defs.Season.Brawl.CoolOffSeconds * SimClock.TicksPerSecond);
+        foreach (var e in _brawlers.ToList())
         {
             if (!w.IsAlive(e) || !w.Has<Brawler>(e))
                 continue;
             var c = w.Get<Creature>(e);
+            // Nobody left to swing at, for a while now: they've lost the taste for it.
+            if (c.Able && w.Get<Brawler>(e).Idle is > 0 and var idle && sim.Clock.Tick - idle >= coolOff)
+            {
+                Settled(sim, e);
+                Barks.Say(sim, e, "brawl_cooled", Volume.Say, "Hmph. Not worth it.");
+                continue;
+            }
             // Shaken by the dead (a ghost's chill, knock or spook): they want out of here.
             if (c.Able && Afterlife.Hauntings.IsUnnerved(sim, e))
             {
@@ -404,6 +467,8 @@ public sealed class BrawlCrisis : ICrisis
     private bool Over(Simulation sim, bool met)
     {
         var w = sim.World;
+        // A brawl a player started has no crowd: those who were in it go off sour instead.
+        var sour = Instigator.IsNull ? _crowd : _brawlers;
         foreach (var e in _brawlers)
             if (w.IsAlive(e) && w.Has<Brawler>(e))
             {
@@ -412,7 +477,7 @@ public sealed class BrawlCrisis : ICrisis
                     w.Add(e, new Leaving());
             }
         if (!met)
-            foreach (var e in _crowd)
+            foreach (var e in sour)
                 if (w.IsAlive(e) && w.Has<Adventurer>(e))
                 {
                     ref var a = ref w.Get<Adventurer>(e);
@@ -423,7 +488,11 @@ public sealed class BrawlCrisis : ICrisis
         return met;
     }
 
-    /// <summary>Whom this brawler swings at: whoever last hit them, else the nearest other brawler, else any guest in the inn.</summary>
+    /// <summary>
+    /// Whom this brawler swings at: whoever last hit them, else the nearest other brawler (or the player who
+    /// started it), else, in a crowd's brawl, any guest in the inn. A brawl a player started doesn't go looking
+    /// for strangers: with nobody left in it to hit, they cool off.
+    /// </summary>
     public Entity FoeFor(Simulation sim, Entity e)
     {
         var w = sim.World;
@@ -439,7 +508,10 @@ public sealed class BrawlCrisis : ICrisis
         foreach (var o in _brawlers)
             if (o != e && Fighting(sim, o) && InInn(sim, o) && w.TryGet<Position>(o, out var op) && op.Cell is var c && c.Z == at.Z && Maps.Map.Distance(c, at) is var d && d < bestD)
                 (best, bestD) = (o, d);
-        if (!best.IsNull)
+        if (!Instigator.IsNull && Instigator != e && w.IsAlive(Instigator) && w.TryGet<Creature>(Instigator, out var ic) && ic.Able && InInn(sim, Instigator)
+            && w.Get<Position>(Instigator).Cell is var ip && ip.Z == at.Z && Maps.Map.Distance(ip, at) < bestD)
+            best = Instigator;
+        if (!best.IsNull || !Instigator.IsNull)
             return best;
         foreach (var o in w.Query<Adventurer>())
             if (o != e && w.Get<Creature>(o).Able && !w.Has<Leaving>(o) && InInn(sim, o)
@@ -448,9 +520,16 @@ public sealed class BrawlCrisis : ICrisis
         return best;
     }
 
-    public string Outcome(bool met) => met
-        ? "The brawl's done with: the inn's quiet again, if not tidy."
-        : "The brawl got the better of the town, and the crowd's gone off cursing it.";
+    public string Outcome(bool met) => (met, Instigator.IsNull) switch
+    {
+        (true, true) => "The brawl's done with: the inn's quiet again, if not tidy.",
+        (true, false) => "The scuffle at the inn's over, no thanks to whoever started it.",
+        (false, true) => "The brawl got the better of the town, and the crowd's gone off cursing it.",
+        (false, false) => "The fight at the inn got out of hand, and its guests have gone off cursing the town.",
+    };
+
+    /// <summary>A brawl a player started earns the town nothing for settling it; boiling over counts as any brawl's would.</summary>
+    public bool Reckoned(bool met) => Instigator.IsNull || !met;
 
     public void Save(SaveWriter w)
     {
@@ -470,6 +549,7 @@ public sealed class BrawlCrisis : ICrisis
         w.Int(_brawlers.Count);
         foreach (var e in _brawlers)
             w.Entity(e);
+        w.Entity(Instigator);
     }
 
     internal static BrawlCrisis Read(SaveReader r)
@@ -483,6 +563,8 @@ public sealed class BrawlCrisis : ICrisis
             crisis._crowd.Add(r.Entity());
         for (var n = r.Count(1000); n > 0; n--)
             crisis._brawlers.Add(r.Entity());
+        if (r.Version >= 67) // a player's brawl came with format 67
+            crisis.Instigator = r.Entity();
         return crisis;
     }
 
@@ -677,10 +759,13 @@ public sealed class BrawlerJob : Job
             _foe = brawl.FoeFor(Sim, Pawn);
             if (_foe.IsNull)
             {
+                if (Get<Brawler>(Pawn).Idle == 0)
+                    Sim.World.Get<Brawler>(Pawn).Idle = Sim.Clock.Tick; // long enough of this and they give up (BrawlCrisis.Settle)
                 Report = "Spoiling for a fight";
                 foreach (var s in Wait(SimClock.TicksPerSecond * 2)) yield return s;
                 yield break; // think again
             }
+            Sim.World.Get<Brawler>(Pawn).Idle = 0;
             Report = $"Brawling with {Get<Creature>(_foe).Name}";
             // A few seconds at them, footwork and all (among themselves the punches are pulled:
             // HouseRules.Pulled), then a look round for who's next.

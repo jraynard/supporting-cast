@@ -317,6 +317,24 @@ public sealed class BrawlDef
 
     /// <summary>What a crowd that boiled over, or was never settled, thinks of the town as it goes.</summary>
     public float SourSatisfaction { get; set; } = -3f;
+
+    /// <summary>
+    /// Punches from a player a guest in the inn puts up with before hitting back (<c>Hospitality.Patience</c>): a
+    /// haymaker counts two, and a rowdy guest or one loud with drink has one less.
+    /// </summary>
+    public float Tolerance { get; set; } = 3;
+
+    /// <summary>Real seconds for a guest to forget one punch.</summary>
+    public float GrudgeFadeSeconds { get; set; } = 20;
+
+    /// <summary>With this many fighting, rowdy or drunk onlookers in the inn join in unasked.</summary>
+    public int OnlookersJoinAt { get; set; } = 2;
+
+    /// <summary>The chance a game hour that one such onlooker joins.</summary>
+    public float OnlookerJoinPerHour { get; set; } = 1.5f;
+
+    /// <summary>Real seconds a brawler with nobody to swing at keeps spoiling for it before they give up.</summary>
+    public float CoolOffSeconds { get; set; } = 25;
 }
 
 /// <summary>

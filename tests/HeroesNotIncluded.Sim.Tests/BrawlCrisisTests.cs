@@ -261,6 +261,8 @@ public class BrawlCrisisTests(ITestOutputHelper output)
         var wet = brawl.Brawlers.First(e => BrawlCrisis.Fighting(sim, e));
         var before = DrinkingSystem.LevelOf(sim, wet);
         Environment.Buckets.Splash(sim, sim.World.Get<Position>(wet).Cell);
+        Assert.True(sim.World.Has<Brawler>(wet), "the water's still in the air");
+        sim.TickMany(SimClock.TicksPerSecond);
         Assert.True(DrinkingSystem.LevelOf(sim, wet) < before);
         Assert.False(sim.World.Has<Brawler>(wet));
         Assert.Contains(brawl, sim.Director.Active); // the rest are still at it
@@ -373,5 +375,242 @@ public class BrawlCrisisTests(ITestOutputHelper output)
         Assert.True(Shops.Coin.Count(sim, me) < silver, "the keeper stood a round");
         Assert.DoesNotContain(brawl, sim.Director.Active);
         Assert.Equal(met + 1, sim.Director.Met);
+    }
+
+    // ---------------- A player's fists ----------------
+
+    /// <summary>A round with Ana, and <paramref name="guests"/> adventurers stood in the inn beside her, none rowdy nor in their cups.</summary>
+    private static (Simulation Sim, Entity Me, Entity Inn, List<Entity> Guests) InTheInn(int guests = 1)
+    {
+        var sim = VillageRound.NewSimulation(TestWorld.LoadDefs(), 1234);
+        sim.Presets.PresetMode = true;
+        VillageRound.Setup(sim);
+        sim.Director.Enable(sim.Defs.Difficulty("Normal"));
+        sim.Round.OpenLobby();
+        sim.ApplyNow(new JoinLobbyCommand(Ana, "Ana", default));
+        sim.ApplyNow(new StartRoundCommand());
+        var me = Players.CharacterOf(sim, Ana);
+        var inn = Shops.ShopSystem.BuildingFor(sim, TownRole.Tavern);
+        var cells = sim.SpiralFrom(sim.World.Get<PresetBuilding>(inn).Anchor, 12)
+            .Where(c => sim.Map.InBounds(c) && sim.Map.Passable(c) && Buildings.At(sim, c) == inn).ToList();
+        var here = cells[cells.Count / 2];
+        Scenarios.FireDrill.MoveTo(sim, me, here);
+        var calm = new List<Entity>();
+        foreach (var party in sim.Defs.AllParties.Where(p => !p.Crowd))
+        {
+            calm.AddRange(sim.Parties.Send(sim, party).Where(e => Adventurers.Tempers.Of(sim, e) != Adventurers.Temper.Rowdy));
+            if (calm.Count >= guests)
+                break;
+        }
+        Assert.True(calm.Count >= guests, "not enough even-tempered guests");
+        var spots = cells.Where(c => c != here && c.Z == here.Z).OrderBy(c => Maps.Map.Distance(c, here)).ToList();
+        for (var i = 0; i < guests; i++)
+        {
+            sim.World.Remove<Tipsy>(calm[i]);
+            Scenarios.FireDrill.MoveTo(sim, calm[i], spots[i]);
+        }
+        return (sim, me, inn, calm.Take(guests).ToList());
+    }
+
+    private static AttackDef Fists(Simulation sim, Entity e) => sim.World.Get<Creature>(e).Def.Attacks.First(a => !a.Ranged);
+
+    [Fact]
+    public void APlayersRealPunchInTheInnIsHeldAgainstThem()
+    {
+        var (sim, me, _, guests) = InTheInn();
+        var guest = guests[0];
+        // A real blow, through Blows: tried till one lands (the guest may duck the first).
+        for (var i = 0; i < 10 && !sim.World.Has<Grudge>(guest); i++)
+        {
+            Scenarios.FireDrill.MoveTo(sim, guest, sim.World.Get<Position>(me).Cell + new int3(1, 0, 0));
+            var them = sim.World.Get<Position>(guest).Pos - sim.World.Get<Position>(me).Pos;
+            Combat.Blows.Begin(sim, me, guest, Fists(sim, me), aim: DetMath.Atan2(them.Y, them.X));
+            sim.TickMany(SimClock.TicksPerSecond);
+        }
+        var g = sim.World.Get<Grudge>(guest);
+        Assert.Equal(me, g.By);
+        Assert.Equal(1f, g.Count);
+        Assert.Empty(sim.Director.Active.OfType<BrawlCrisis>());
+        Assert.Contains(sim.Speech.Kept, u => u.Speaker == guest);
+    }
+
+    [Fact]
+    public void APunchOrTwoIsForgivenAndForgotten()
+    {
+        var (sim, me, _, guests) = InTheInn();
+        var guest = guests[0];
+        Patience.Struck(sim, me, guest, heavy: false);
+        Patience.Struck(sim, me, guest, heavy: false);
+        Assert.Empty(sim.Director.Active.OfType<BrawlCrisis>());
+        Assert.False(sim.World.Has<Brawler>(guest));
+        // Given time, it's forgotten: two more and they've still not had enough.
+        sim.TickMany((int)(sim.Defs.Season.Brawl.GrudgeFadeSeconds * 2 * SimClock.TicksPerSecond));
+        Patience.Struck(sim, me, guest, heavy: false);
+        Patience.Struck(sim, me, guest, heavy: false);
+        Assert.Empty(sim.Director.Active.OfType<BrawlCrisis>());
+        // Outside the inn nobody's keeping count.
+        Scenarios.FireDrill.MoveTo(sim, guest, new int3(5, 5, sim.World.Get<Position>(guest).Cell.Z) is var o && sim.Map.Passable(o) && Buildings.At(sim, o).IsNull
+            ? o : sim.SpiralFrom(new int3(5, 5, 0), 20).First(c => sim.Map.InBounds(c) && sim.Map.Passable(c) && Buildings.At(sim, c).IsNull));
+        sim.World.Remove<Grudge>(guest);
+        Patience.Struck(sim, me, guest, heavy: true);
+        Assert.False(sim.World.Has<Grudge>(guest));
+    }
+
+    [Fact]
+    public void PunchedPastTheirPatienceTheyHitBackAndItsABrawl()
+    {
+        var (sim, me, inn, guests) = InTheInn();
+        var guest = guests[0];
+        Patience.Struck(sim, me, guest, heavy: true); // a haymaker's two
+        Assert.Empty(sim.Director.Active.OfType<BrawlCrisis>());
+        Patience.Struck(sim, me, guest, heavy: false);
+        var brawl = Assert.Single(sim.Director.Active.OfType<BrawlCrisis>());
+        Assert.Equal(me, brawl.Instigator);
+        Assert.Equal(guest, brawl.Ringleader);
+        Assert.Equal(inn, brawl.Inn);
+        Assert.True(brawl.Begun);
+        Assert.True(sim.World.Has<Brawler>(guest));
+        Assert.Equal(me, brawl.FoeFor(sim, guest));
+        var swings = 0;
+        for (var t = 0; t < SimClock.TicksPerSecond * 10; t++)
+        {
+            sim.Tick();
+            if (sim.World.TryGet<Combat.Windup>(guest, out var wu) && wu.Start == sim.Clock.Tick - 1)
+                swings++;
+        }
+        Assert.True(swings > 0, "they swing back");
+        Assert.Contains(sim.RecentBlows, b => b.Attacker == guest && b.Target == me);
+    }
+
+    [Fact]
+    public void OnceItsStartedAnyoneElseTheyHitJoinsAndTheRowdyPileIn()
+    {
+        var (sim, me, _, guests) = InTheInn(5);
+        for (var i = 0; i < 3; i++)
+            Patience.Struck(sim, me, guests[0], heavy: false);
+        var brawl = Assert.Single(sim.Director.Active.OfType<BrawlCrisis>());
+        Patience.Struck(sim, me, guests[1], heavy: false); // no benefit of the doubt now
+        Assert.True(sim.World.Has<Brawler>(guests[1]));
+        // Two at it: the drunk and the rowdy among the onlookers join in unasked.
+        foreach (var e in guests.Skip(2))
+            sim.World.Add(e, new Tipsy { Level = 0.64f });
+        for (var t = 0; t < SimClock.HoursToTicks(2) && brawl.Brawlers.Count < 3; t += 60)
+            sim.TickMany(60);
+        Assert.True(brawl.Brawlers.Count >= 3, "nobody piled in");
+        Assert.Contains(brawl.Brawlers, e => e != guests[0] && e != guests[1]);
+    }
+
+    [Fact]
+    public void LayingOutAPlayersBrawlEarnsTheTownNothing()
+    {
+        var (sim, me, _, guests) = InTheInn();
+        for (var i = 0; i < 3; i++)
+            Patience.Struck(sim, me, guests[0], heavy: false);
+        var brawl = Assert.Single(sim.Director.Active.OfType<BrawlCrisis>());
+        var (met, unmet, renown, dread) = (sim.Director.Met, sim.Director.Unmet, sim.Reckoning.Renown, sim.Reckoning.Dread);
+        LayOut(sim, guests[0], me);
+        for (var i = 0; i < 6 && sim.Director.Active.Contains(brawl); i++)
+            sim.TickMany(SimClock.TicksPerHour / 6);
+        Assert.DoesNotContain(brawl, sim.Director.Active);
+        Assert.Equal((met, unmet), (sim.Director.Met, sim.Director.Unmet));
+        Assert.Equal(renown, sim.Reckoning.Renown);
+        Assert.Equal(dread, sim.Reckoning.Dread);
+        Assert.Contains(sim.Messages.Messages, m => m.Text.Contains("no thanks to whoever started it"));
+    }
+
+    [Fact]
+    public void APlayersBrawlBoilingOverIsDreadForTheTown()
+    {
+        var (sim, me, _, guests) = InTheInn(2);
+        for (var i = 0; i < 3; i++)
+            Patience.Struck(sim, me, guests[0], heavy: false);
+        Patience.Struck(sim, me, guests[1], heavy: false);
+        var brawl = Assert.Single(sim.Director.Active.OfType<BrawlCrisis>());
+        typeof(BrawlCrisis).GetProperty(nameof(BrawlCrisis.Heat))!.SetValue(brawl, 0.999f);
+        var (unmet, dread) = (sim.Director.Unmet, sim.Reckoning.Dread);
+        for (var i = 0; i < 6 && sim.Director.Active.Contains(brawl); i++)
+            sim.TickMany(SimClock.TicksPerHour / 6);
+        Assert.DoesNotContain(brawl, sim.Director.Active);
+        Assert.Equal(unmet + 1, sim.Director.Unmet);
+        Assert.True(sim.Reckoning.Dread > dread);
+        Assert.All(guests, e => Assert.True(sim.World.Has<Combat.Leaving>(e), "they go off sour"));
+    }
+
+    [Fact]
+    public void WalkAwayFromItAndTheyCoolOff()
+    {
+        var (sim, me, _, guests) = InTheInn();
+        for (var i = 0; i < 3; i++)
+            Patience.Struck(sim, me, guests[0], heavy: false);
+        var brawl = Assert.Single(sim.Director.Active.OfType<BrawlCrisis>());
+        var met = sim.Director.Met;
+        var away = sim.SpiralFrom(sim.World.Get<Position>(me).Cell + new int3(30, 0, 0), 20)
+            .First(c => sim.Map.InBounds(c) && sim.Map.Passable(c) && Buildings.At(sim, c).IsNull);
+        Scenarios.FireDrill.MoveTo(sim, me, away);
+        for (var i = 0; i < 12 && sim.Director.Active.Contains(brawl); i++)
+            sim.TickMany(SimClock.TicksPerHour / 6);
+        Assert.DoesNotContain(brawl, sim.Director.Active);
+        Assert.False(sim.World.Has<Brawler>(guests[0]));
+        Assert.False(sim.World.Has<Combat.Leaving>(guests[0]), "settled, not driven off");
+        Assert.Equal(met, sim.Director.Met);
+    }
+
+    [Fact]
+    public void NobodyKeepsCountWhileARaidsOn()
+    {
+        var (sim, me, _, guests) = InTheInn();
+        Assert.NotNull(sim.Director.SendRaid(sim, 0));
+        for (var i = 0; i < 5; i++)
+            Patience.Struck(sim, me, guests[0], heavy: true);
+        Assert.False(sim.World.Has<Grudge>(guests[0]));
+        Assert.Empty(sim.Director.Active.OfType<BrawlCrisis>());
+    }
+
+    [Fact]
+    public void ABucketOverASoberBrawlerCoolsThemAndTheySayItOnce()
+    {
+        var (sim, me, _, guests) = InTheInn();
+        var guest = guests[0];
+        for (var i = 0; i < 3; i++)
+            Patience.Struck(sim, me, guest, heavy: false);
+        var brawl = Assert.Single(sim.Director.Active.OfType<BrawlCrisis>());
+        Assert.False(sim.World.Has<Tipsy>(guest));
+        var said = sim.Speech.Kept.Count(u => u.Speaker == guest);
+        Environment.Buckets.Splash(sim, sim.World.Get<Position>(guest).Cell, me);
+        sim.TickMany(SimClock.TicksPerSecond * 2);
+        Assert.False(sim.World.Has<Brawler>(guest), "sober or not, they're out of it");
+        Assert.Equal(said + 1, sim.Speech.Kept.Count(u => u.Speaker == guest)); // their own line, not the splash's as well
+        for (var i = 0; i < 3 && sim.Director.Active.Contains(brawl); i++)
+            sim.TickMany(SimClock.TicksPerHour / 6);
+        Assert.DoesNotContain(brawl, sim.Director.Active);
+    }
+
+    [Fact]
+    public void ABucketOverABarFightStopsIt()
+    {
+        var (sim, _, _, guests) = InTheInn(2);
+        var (a, b) = (guests[0], guests[1]);
+        Brawls.Start(sim, a, b);
+        sim.TickMany(SimClock.TicksPerSecond);
+        Assert.True(Brawls.InOne(sim, a) && Brawls.InOne(sim, b));
+        Environment.Buckets.Splash(sim, sim.World.Get<Position>(a).Cell);
+        sim.TickMany(SimClock.TicksPerSecond * 4);
+        Assert.False(Brawls.InOne(sim, a), "the wet one's done");
+        Assert.False(Brawls.InOne(sim, b), "and nobody fights a man dripping");
+    }
+
+    [Fact]
+    public void APlayersBrawlSurvivesASave()
+    {
+        var (sim, me, _, guests) = InTheInn();
+        for (var i = 0; i < 3; i++)
+            Patience.Struck(sim, me, guests[0], heavy: false);
+        Patience.Struck(sim, me, guests[0], heavy: false);
+        sim.TickMany(SimClock.TicksPerSecond * 3);
+        var (loaded, _) = SaveGame.Read(SaveGame.Write(sim), sim.Defs);
+        var again = Assert.IsType<BrawlCrisis>(Assert.Single(loaded.Director.Active));
+        Assert.Equal(me, again.Instigator);
+        Assert.True(loaded.World.Has<Brawler>(guests[0]));
+        Assert.Equal(sim.World.Get<Brawler>(guests[0]).Idle, loaded.World.Get<Brawler>(guests[0]).Idle);
     }
 }

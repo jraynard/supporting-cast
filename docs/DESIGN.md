@@ -288,8 +288,13 @@ do it.
     fists: knock them down, or settle the ringleader and the rest lose heart. Once it's hot they smash
     tables and stools (`breaksInBrawls`), the carpenter's to make again (`Refurnishing`, through
     `ITradeModule.Lost`); boiling over may knock a lamp into a fire. Stools are thrown (brawlers', and
-    a player's, fists up: `Combat/Hurling`). Other ways to settle it: a bucket of well water sobers a
-    brawler out of it; a ghost's spook sends one running; the musician's tender air calms them, a reel
+    a player's, fists up: `Combat/Hurling`). A player can start one too (`Hospitality/Patience`): a guest
+    puts up with a punch or two in a crowded inn, says so, then hits back, and that's the brawl, with the
+    crowd turning on the player, anyone else they hit joining at once and rowdy or drunk onlookers piling in
+    once two are at it. Settling one you started earns nothing; letting it boil over is Dread like any. With
+    nobody left to hit, a brawler cools off. Other ways to settle it: a bucket of well water, as it lands,
+    puts a brawler out of it, sober or not (only the blind drunk shake it off), stops a fistfight and cools a
+    grudge; a ghost's spook sends one running; the musician's tender air calms them, a reel
     makes dancers of them, sour playing riles them (`ITradeModule.Soothe`); and quick lines off the wheel
     while it's on: "Take it outside!" (only the ringleader can take them out), "The watch is coming!"
     (once, and only on those who've sobered a little), "Drinks on the house!" (the keeper, so much a head).

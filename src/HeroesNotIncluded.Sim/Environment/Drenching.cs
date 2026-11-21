@@ -19,6 +19,9 @@ public struct Drenched
 
     /// <summary>They've reacted to this soaking already (or weren't going to).</summary>
     public bool Reacted;
+
+    /// <summary>The water's reached them, and done what well water does (<see cref="Hospitality.Patience.Doused"/>).</summary>
+    public bool Landed;
 }
 
 /// <summary>Who a splash soaks, and how long it takes to dry off.</summary>
@@ -60,8 +63,9 @@ public static class Drenching
 }
 
 /// <summary>
-/// Soakings landing: an AI villager or adventurer splutters a line and laughs it off, or (one in three)
-/// is cross about it. Picked by a hash, not the sim's dice. Dried off, the soaking's dropped.
+/// Soakings landing: well water sobers a drunk and puts a fighter out of it (<see cref="Hospitality.Patience.Doused"/>,
+/// who then has their own say), and an AI villager or adventurer splutters a line and laughs it off, or (one in
+/// three) is cross about it. Picked by a hash, not the sim's dice. Dried off, the soaking's dropped.
 /// </summary>
 public sealed class DrenchSystem : ISimSystem
 {
@@ -69,12 +73,27 @@ public sealed class DrenchSystem : ISimSystem
     public int Interval => 1;
 
     private readonly List<Entity> _dry = [];
+    private readonly List<Entity> _landed = [];
 
     public void Update(Simulation sim)
     {
         var w = sim.World;
         var now = sim.Clock.Tick;
         _dry.Clear();
+        _landed.Clear();
+        foreach (var e in w.Each<Drenched>())
+        {
+            ref var d = ref w.Get<Drenched>(e);
+            if (now >= d.Since && !d.Landed)
+            {
+                d.Landed = true;
+                _landed.Add(e);
+            }
+        }
+        // Outside the loop: settling a brawler ends jobs and moves components about.
+        foreach (var e in _landed)
+            if (Hospitality.Patience.Doused(sim, e) && w.Has<Drenched>(e))
+                w.Get<Drenched>(e).Reacted = true;
         foreach (var e in w.Each<Drenched>())
         {
             ref var d = ref w.Get<Drenched>(e);

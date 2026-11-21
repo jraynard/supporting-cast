@@ -100,7 +100,7 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. ` (R3
     (quests unanswered or gone badly; its limit ends the round). Players see words for them,
     through `PerceptionView.Standing`. `Director` sends the season's crises (`season.json` beats:
     raid, fire, shortage, plague, a brawl at the inn, the dragon), each an `ICrisis` that's met or not, registered by name
-    (`SimRegistry.Crisis`, `Director/CrisisTypes`). The brawl (`Hospitality/BrawlCrisis`) is fists: no steel in the inn
+    (`SimRegistry.Crisis`, `Director/CrisisTypes`). The brawl (`Hospitality/BrawlCrisis`) is fists (a player who punches guests past their patience starts one, `Hospitality/Patience`; water calms it as it lands, `Patience.Doused`): no steel in the inn
     (`Combat/HouseRules`, a building def's `noSteel`, lifted while a raid's on). It paces them like a game master
     (`Tension`, `RuleMind`: eases off a struggling town, pushes a coasting one, waits for calm, settles a beat's
     kind a warning ahead), lets a beat follow a quest (`followsQuest`) and fills lulls with `incidents.json`

@@ -56,7 +56,12 @@
         // (under clumsy, they're out of it); a tune calms (a sour one riles) musicPerHour for every
         // perBrawlers who hear it, and a reel they can dance to turns one into a dancer (danceChance a
         // look); "Drinks on the house!" costs the keeper drinksCost a brawler.
-        "douseSobers": 0.35, "musicPerHour": 0.4, "danceChance": 0.35, "drinksCost": 2 },
+        "douseSobers": 0.35, "musicPerHour": 0.4, "danceChance": 0.35, "drinksCost": 2,
+        // A player's fists in the inn (Hospitality/Patience.cs): a guest puts up with tolerance punches (a haymaker is
+        // two, the rowdy or loud one fewer), forgetting one every grudgeFadeSeconds, then hits back, and that's a brawl
+        // (no Renown for settling one you started). With onlookersJoinAt fighting, rowdy or drunk onlookers join, about
+        // onlookerJoinPerHour each; a brawler with nobody to hit gives up after coolOffSeconds.
+        "tolerance": 3, "grudgeFadeSeconds": 20, "onlookersJoinAt": 2, "onlookerJoinPerHour": 1.5, "coolOffSeconds": 25 },
       // Raid points (storyteller.json's formula) times this: at 0.85 a town of six meets a bandit or
       // two on the first evening and three on the second day. Left to itself the town loses that
       // one (at 1 it was wiped out): it needs its players. At 1.6 the combat sweep's sixteen

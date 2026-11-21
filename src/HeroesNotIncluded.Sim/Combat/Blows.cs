@@ -513,6 +513,7 @@ public static class Blows
         RealtimeAttacks.Strike(sim, attacker, target, attack, damage * Reach.SkillDamage(sim, attacker, attack));
         Report(sim, attacker, target, outcome, windup.Heavy);
         Hospitality.BrawlCrisis.Knocked(sim, attacker, target, windup.Aim); // in the inn's brawl: into the table behind
+        Hospitality.Patience.Struck(sim, attacker, target, windup.Heavy);  // a player's fists at a guest: their patience, or a brawl
     }
 
     internal static void Report(Simulation sim, Entity attacker, Entity target, BlowOutcome outcome, bool heavy)

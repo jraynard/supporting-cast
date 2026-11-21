@@ -58,11 +58,12 @@ public static class Brawls
     /// <summary>In a fight now.</summary>
     public static bool InOne(Simulation sim, Entity e) => sim.World.TryGet<Mind>(e, out var m) && m.Job is BrawlJob;
 
-    /// <summary>On their feet, not on their way out, not hurt enough to stop: fit to fight.</summary>
+    /// <summary>On their feet, not on their way out, not hurt enough to stop, not dripping from a bucket's water: fit to fight.</summary>
     public static bool Ready(Simulation sim, Entity e)
     {
         var w = sim.World;
         return w.IsAlive(e) && w.Get<Creature>(e).Able && !w.Has<Combat.Leaving>(e) && !Players.Steered(sim, e) && !w.Has<Brawler>(e)
+            && !(w.TryGet<Environment.Drenched>(e, out var wet) && sim.Clock.Tick >= wet.Since)
             && (!w.TryGet<Health>(e, out var h) || h.Injuries.Sum(i => i.Damage) < EnoughDamage);
     }
 }

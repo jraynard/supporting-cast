@@ -19,6 +19,9 @@ public interface ICrisis
     /// <summary>What the town hears once it's over.</summary>
     string Outcome(bool met);
 
+    /// <summary>Whether this outcome counts for the town (<see cref="Reckoning"/>, met and unmet): a brawl a player started earns nothing for settling it.</summary>
+    bool Reckoned(bool met) => true;
+
     void Save(SaveWriter w);
 }
 
@@ -175,11 +178,14 @@ public sealed class Director(ulong seed) : ISimSystem, ISaveState
                 continue;
             var crisis = _active[i];
             _active.RemoveAt(i--);
-            if (met)
-                Met++;
-            else
-                Unmet++;
-            sim.Reckoning.CrisisResolved(sim, crisis.Kind, met);
+            if (crisis.Reckoned(met))
+            {
+                if (met)
+                    Met++;
+                else
+                    Unmet++;
+                sim.Reckoning.CrisisResolved(sim, crisis.Kind, met);
+            }
             if (crisis.Kind == CrisisKind.Raid)
                 sim.Militia.StandDown(sim);
             sim.Messages.Add(met ? MessageKind.Good : MessageKind.Warning, crisis.Outcome(met), null);
@@ -463,6 +469,22 @@ public sealed class Director(ulong seed) : ISimSystem, ISaveState
     }
 
     /// <summary>A fire now in this building (the fire drill). Null if nothing in it will burn.</summary>
+    /// <summary>Whether crises are being seen through now (<see cref="Update"/> checks them): enabled, in a live round, not peaceful.</summary>
+    public bool Running(Simulation sim) => Enabled && sim.Round.Live && Difficulty is not { Peaceful: true };
+
+    /// <summary>
+    /// A brawl a player started (<see cref="Hospitality.BrawlCrisis.HitBack"/>): <paramref name="guest"/> swings back
+    /// at <paramref name="by"/> in <paramref name="inn"/>. Null while crises aren't being seen through.
+    /// </summary>
+    public Hospitality.BrawlCrisis? SendBrawl(Simulation sim, Entity inn, Entity guest, Entity by)
+    {
+        if (!Running(sim))
+            return null;
+        var brawl = Hospitality.BrawlCrisis.Provoked(sim, inn, guest, by);
+        _active.Add(brawl);
+        return brawl;
+    }
+
     public FireCrisis? SendFire(Simulation sim, Entity building)
     {
         var fire = FireCrisis.Begin(sim, _rand, building);

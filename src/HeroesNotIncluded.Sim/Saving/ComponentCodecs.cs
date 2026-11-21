@@ -314,7 +314,8 @@ internal static class ComponentCodecs
             w.Long(d.Since);
             w.Long(d.Until);
             w.Bool(d.Reacted);
-        }, r => new Environment.Drenched { Since = r.Long(), Until = r.Long(), Reacted = r.Bool() }),
+            w.Bool(d.Landed);
+        }, r => new Environment.Drenched { Since = r.Long(), Until = r.Long(), Reacted = r.Bool(), Landed = r.Version < 67 || r.Bool() }), // landed came with format 67
         Codec("Doused", (w, d) =>
         {
             w.Long(d.Until);
@@ -892,7 +893,17 @@ internal static class ComponentCodecs
         Codec("Tipsy", (w, t) => w.Float(t.Level), r => new Hospitality.Tipsy { Level = r.Float() }),
         Codec("Hefting", (w, h) => { w.Def(h.Def); w.Int3(h.From); w.Byte(h.Facing); w.Long(h.DrawnSince); },
             r => new Combat.Hefting { Def = r.Def<ThingDef>(), From = r.Int3(), Facing = r.Byte(), DrawnSince = r.Long() }),
-        Codec("Brawler", (w, b) => w.Long(b.Since), r => new Hospitality.Brawler { Since = r.Long() }),
+        Codec("Brawler", (w, b) =>
+        {
+            w.Long(b.Since);
+            w.Long(b.Idle);
+        }, r => new Hospitality.Brawler { Since = r.Long(), Idle = r.Version >= 67 ? r.Long() : 0 }), // idle came with format 67
+        Codec("Grudge", (w, g) =>
+        {
+            w.Entity(g.By);
+            w.Float(g.Count);
+            w.Long(g.Last);
+        }, r => new Hospitality.Grudge { By = r.Entity(), Count = r.Float(), Last = r.Long() }),
         Codec("Savouring", (w, s) =>
         {
             w.Entity(s.Item);

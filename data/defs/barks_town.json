@@ -170,6 +170,31 @@
       { "text": "That's cold! That's... all right, I'm done." },
       { "text": "Who threw that? Oh. Me. Fair." }
     ] },
+    { "name": "brawl_bumped", "lines": [
+      { "text": "Oi! Watch it!" },
+      { "text": "Mind your elbows, friend." },
+      { "text": "Steady on!" }
+    ] },
+    { "name": "brawl_warned", "lines": [
+      { "text": "Do that again. Go on." },
+      { "text": "Once more and you'll be wearing that tankard." },
+      { "text": "That's twice. There won't be a third." }
+    ] },
+    { "name": "brawl_hits_back", "lines": [
+      { "text": "Right! You asked for it!" },
+      { "text": "That's it. Come here!" },
+      { "text": "You want a fight? You've got one!" }
+    ] },
+    { "name": "brawl_onlooker", "lines": [
+      { "text": "Brawl! Brawl!" },
+      { "text": "Save some for me!" },
+      { "text": "Ha! Now it's a party!" }
+    ] },
+    { "name": "brawl_cooled", "lines": [
+      { "text": "Hmph. Not worth it." },
+      { "text": "Coward. Fine. Where's my ale?" },
+      { "text": "Ah, they've run off." }
+    ] },
     { "name": "brawl_spooked", "lines": [
       { "text": "This place is cursed! I'm off!" },
       { "text": "Something touched me. Something DEAD touched me." },
