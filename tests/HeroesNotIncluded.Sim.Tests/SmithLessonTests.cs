@@ -54,6 +54,7 @@ public class SmithLessonTests
         {
             var forge = Run.Station(Sim, "Forge");
             Sim.World.Get<Fueled>(forge).Fuel = 10;
+            HeroesNotIncluded.Sim.Work.Kindling.Light(Sim, forge); // as the practice yard keeps it
             Sim.Map.Temperature[Sim.Map.Idx(Sim.World.Get<Thing>(forge).Cell)] = 1200;
         }
     }

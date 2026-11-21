@@ -84,6 +84,7 @@ public class BotBenchTests
     public void TheSmithBotPutsABladeOnShowOnceThePartyHasSettledInAndSellsIt()
     {
         var (sim, me, bot) = Round("Blacksmith");
+        Work.Kindling.LightAll(sim); // lit already: the sale, not the morning's lighting (it would put the sale after the evening's order from the carter)
         Inventory.Stow(sim, me, sim.CreateItem(sim.Defs.Thing("IronBar"), 4));
         var smithy = ShopSystem.BuildingOf(sim, sim.Defs.Building("Smithy"));
         Assert.True(Run(sim, bot, () => MadeAndWaiting(sim, me).Count >= 1, SimClock.TicksPerHour * 6), Why(sim, bot));
@@ -95,8 +96,14 @@ public class BotBenchTests
         Inventory.Stow(sim, club, sim.CreateItem(sim.Defs.Thing("SilverCoin"), 30));
         var purse = Coin.Count(sim, me);
         var seen = new HashSet<Entity>();
+        var supplies = new Dictionary<int, int>(); // what it paid the carter meanwhile (its evening order: firewood for the kiln)
+        void Ordered()
+        {
+            foreach (var o in Shops.CarterOrders.Of(sim).All.Where(o => o.By == me))
+                supplies[o.Id] = o.Paid;
+        }
         Order? Sold() => sim.Shops.All.FirstOrDefault(o => o.Kind.Kind == ServiceKind.Goods && o.Status == OrderStatus.Done && o.Assignee == me);
-        Assert.True(Run(sim, bot, () => { seen.UnionWith(OnShowBy(sim, me)); return Sold() != null; }, SimClock.TicksPerHour * 16),
+        Assert.True(Run(sim, bot, () => { seen.UnionWith(OnShowBy(sim, me)); Ordered(); return Sold() != null; }, SimClock.TicksPerHour * 16),
             Why(sim, bot) + "\n" + string.Join("\n", sim.Shops.All.Where(o => o.Kind.Kind == ServiceKind.Goods).Select(o => $"{o.Text} {o.Status} {o.AssigneeName}")));
         var sale = Sold()!;
         // Off the shelf; or, kept back while they were new in town and asked for by name meanwhile, taken to them by hand.
@@ -105,7 +112,7 @@ public class BotBenchTests
         Assert.Equal(smithy, sale.Where);
         Assert.Equal(me, sim.World.Get<Crafted>(sale.Subject).Maker);
         Assert.True(Inventory.OnPerson(sim, sale.Poster, sale.Subject));
-        Assert.True(Coin.Count(sim, me) >= purse + sale.Price);
+        Assert.True(Coin.Count(sim, me) >= purse + sale.Price - supplies.Values.Sum(), $"{Coin.Count(sim, me)} < {purse} + {sale.Price} - {supplies.Values.Sum()}");
     }
 
     [Fact]

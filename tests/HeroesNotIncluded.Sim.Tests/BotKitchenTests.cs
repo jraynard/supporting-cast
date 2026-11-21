@@ -24,6 +24,7 @@ public class BotKitchenTests
         sim.ApplyNow(new SetTradePreferencesCommand(Ana, [sim.Defs.Trade("Cook")], []));
         var bot = new BotPlayer(() => sim, Ana, c => sim.ApplyNow(c), 7) { Temper = temper ?? BotTemperament.Steady, Skill = skill };
         sim.ApplyNow(new StartRoundCommand());
+        Kindling.LightAll(sim); // lit already: the kitchen's games, not the morning's lighting (KindlingTests)
         return (sim, bot, Players.CharacterOf(sim, Ana), ShopSystem.BuildingOf(sim, sim.Defs.Building("Inn")));
     }
 

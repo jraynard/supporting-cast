@@ -107,6 +107,68 @@ public sealed partial class BotPlayer
         && (LightForge(sim, me, forge, now)
             || (view.Piece(me) == null && view.FuelIn(forge) is { } fuel && fuel < StokeBelow && FeedForge(sim, me, view, forge, now)));
 
+    /// <summary>
+    /// Opening the shop: any fire of its workplace gone cold (plain to see: it's dark) with fuel in is lit before
+    /// anything else, the kitchen's by its cook only. True while at it.
+    /// </summary>
+    private bool LightFires(Simulation sim, Entity me, long now)
+    {
+        if (MyShop(sim, me) is not { IsNull: false } shop || Sim.Work.Kindling.DeadOfNight(sim))
+            return false;
+        var w = sim.World;
+        var here = w.Get<Position>(me).Cell;
+        var fire = w.Query<Sim.Work.Hearth>()
+            .Where(e => Sim.Work.Kindling.CanLight(sim, e) && Buildings.Of(sim, e) == shop && Ai.WorkGivers.FeedsHere(sim, me, e, w.Get<Thing>(e)))
+            .OrderBy(e => Maps.Map.Distance(w.Get<Thing>(e).Cell, here)).ThenBy(e => e.Index).FirstOrDefault(Entity.Null);
+        if (fire.IsNull)
+            return false;
+        Doing = $"lighting the {w.Get<Thing>(fire).Def.Label}";
+        return AtFire(sim, me, fire, now, f => // a fireplace set in the wall is lit from the room in front of it
+        {
+            Send(new AvatarWorkCommand(me, true, w.Get<Thing>(f).Cell));
+            Send(new AvatarWorkCommand(me, false));
+        });
+    }
+
+    /// <summary>
+    /// Its workplace's fires that burn all day (the common room's, the shrine's hearth) fed from their own store before they run
+    /// low: nobody else may, in a round. The forge is the smith's own reckoning (<see cref="Stoke"/>), the kitchen's the cook's. True while at it.
+    /// </summary>
+    private bool KeepFires(Simulation sim, Entity me, long now)
+    {
+        if (MyShop(sim, me) is not { IsNull: false } shop)
+            return false;
+        var w = sim.World;
+        var view = Perception.For(sim, me);
+        foreach (var fire in w.Query<Sim.Work.Hearth>().OrderBy(e => e.Index))
+        {
+            var thing = w.Get<Thing>(fire);
+            if (Buildings.Of(sim, fire) != shop || thing.Def.Building!.Fuel is not { OnDemand: false } props
+                || Ai.AiQueries.StaffOnly(sim, Environment.Warmth.FireCell(thing)) || view.FuelIn(fire) is not { } fuel || fuel >= props.Capacity * FeedBelow)
+                continue;
+            if (Sim.Work.FuelStores.For(sim, fire) is not { IsNull: false } store || !sim.StoredIn(store).Any(e => props.Takes(w.Get<Thing>(e).Def)))
+                continue; // nothing to feed it with: it waits on the carter
+            return FeedFire(sim, me, view, fire, now);
+        }
+        return false;
+    }
+
+    /// <summary>Of an evening, before bed: its workplace's fires banked, so they keep the night (and the inn's lodgers sleep warm). True while at it.</summary>
+    private bool BankFires(Simulation sim, Entity me, long now)
+    {
+        if (!Sim.Work.Kindling.BankingTime(sim) || MyShop(sim, me) is not { IsNull: false } shop)
+            return false;
+        var w = sim.World;
+        var here = w.Get<Position>(me).Cell;
+        var fire = w.Query<Sim.Work.Hearth>()
+            .Where(e => Sim.Work.Kindling.WantsBanking(sim, e) && Buildings.Of(sim, e) == shop && Ai.WorkGivers.FeedsHere(sim, me, e, w.Get<Thing>(e)))
+            .OrderBy(e => Maps.Map.Distance(w.Get<Thing>(e).Cell, here)).ThenBy(e => e.Index).FirstOrDefault(Entity.Null);
+        if (fire.IsNull)
+            return false;
+        Doing = $"banking the {w.Get<Thing>(fire).Def.Label}";
+        return AtFire(sim, me, fire, now, f => Send(new Sim.Work.BankFireCommand(me, f)));
+    }
+
     /// <summary>A forge gone cold (plain to see: it's dark) with fuel in is lit first, F at it (<see cref="Sim.Work.KindleSession"/>). True while at it.</summary>
     private bool LightForge(Simulation sim, Entity me, Entity forge, long now) =>
         Sim.Work.Kindling.CanLight(sim, forge) && AtStation(sim, me, forge, now, f =>

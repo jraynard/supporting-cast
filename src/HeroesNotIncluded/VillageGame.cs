@@ -435,7 +435,10 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
             if (HostCoop == null)
                 center = StartSoloRound(center);
             if (Practice)
+            {
                 _sim.Round.Practice = true; // set before the first tick: every peer (there's only one) starts with it
+                Sim.Work.Kindling.LightAll(_sim); // the yard keeps its fires going: lighting one isn't a lesson yet
+            }
             if (RaidTest && _sim.World.Query<Avatar>().FirstOrDefault(Entity.Null) is { IsNull: false } me)
                 RaidDrill.Stage(_sim, me);
             if (FireTest && _sim.World.Query<Avatar>().FirstOrDefault(Entity.Null) is { IsNull: false } burning)

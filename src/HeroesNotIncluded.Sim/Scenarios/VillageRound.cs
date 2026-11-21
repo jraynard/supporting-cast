@@ -54,6 +54,7 @@ public static class VillageRound
         Hospitality.InnRooms.FitLocks(sim, Role(TownRole.Tavern));
         StockTinkerShop(sim, Role(TownRole.TinkerShop));
         Modding.Trades.StockTown(sim); // each trade's own workplace (the woodshop's logs)
+        Work.FuelStores.StockAll(sim); // each workplace's own fuel: a day and a half of what its fires burn
         if (sim.Defs.Season.BarnWood > 0)
             sim.PlaceItemNear(sim.CreateItem(sim.Defs.Thing(Systems.Stock.TimberDef), sim.Defs.Season.BarnWood, sim.Defs.Material("Pine")), StockpileMiddle(sim));
         if (sim.Defs.Season.BarnPlanks > 0)
@@ -165,6 +166,8 @@ public static class VillageRound
             {
                 case "FuelBin":
                     sim.Store(e, sim.CreateItem(sim.Defs.Thing("Charcoal"), sim.Defs.Season.SmithyCharcoal));
+                    if (sim.Defs.Season.SmithyFirewood > 0) // for the kiln
+                        sim.Store(e, sim.CreateItem(sim.Defs.Thing(Systems.Stock.FirewoodDef), sim.Defs.Season.SmithyFirewood, sim.Defs.Material("Pine")));
                     break;
                 case "Chest":
                     sim.Store(e, sim.CreateItem(sim.Defs.Thing("IronOre"), SmithyOre));
@@ -196,7 +199,6 @@ public static class VillageRound
         if (!kitchen.IsNull)
         {
             Shops.InnSupplySystem.Deliver(sim, kitchen, "Larder", LarderStock);
-            Shops.InnSupplySystem.Deliver(sim, kitchen, "LogBasket", Shops.InnSupplySystem.Logs);
         }
         if (!tavern.IsNull)
         {

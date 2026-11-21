@@ -428,6 +428,13 @@ public sealed class BuildingProps
     /// </summary>
     public int StorageStacks { get; set; }
 
+    /// <summary>
+    /// A workplace's own fuel (the kitchen's log basket, the smithy's bin, the inn's and the shrine's log racks): its
+    /// fires are fed from here and nowhere else in a round, it's stocked at the deal, and the carter refills it to order
+    /// (<see cref="Work.FuelStores"/>).
+    /// </summary>
+    public bool FuelStore { get; set; }
+
     /// <summary>The only things (by def name) its storage takes, if any are named: the key board holds keys.</summary>
     public List<string> StorageOnly { get; set; } = [];
 
@@ -688,6 +695,12 @@ public sealed class FuelProps
     /// only by hand (<see cref="Work.Kindling"/>). Rounds open with it cold.
     /// </summary>
     public bool GoesCold { get; set; }
+
+    /// <summary>
+    /// As <see cref="GoesCold"/>, but only where it stands in a trade's workplace (the kitchen's and the inn's
+    /// fireplaces, the shrine's hearth): the same fireplace in a cottage just burns.
+    /// </summary>
+    public bool GoesColdAtWork { get; set; }
 
     /// <summary>
     /// Other things it burns besides <see cref="Def"/> (coal in a forge), each with how much hotter

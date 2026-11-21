@@ -203,6 +203,7 @@ public class BlacksmithTests
         var sword = sim.World.Get<Equipment>(owner).Weapon;
         sim.World.Get<Thing>(sword).Hp = sim.World.Get<Thing>(sword).MaxHp * 0.5f;
         WeaponWear.SetDullness(sim, sword, 0.7f);
+        Work.Kindling.LightAll(sim); // lit already: these are about the mend, not the morning's lighting
         return (sim, owner, sword);
     }
 
@@ -379,7 +380,7 @@ public class BlacksmithTests
         var smithy = ShopSystem.BuildingOf(sim, sim.Defs.Building("Smithy"));
         var bin = Buildings.Parts(sim, smithy).Single(e => sim.World.Get<Thing>(e).Def.Name == "FuelBin");
         var chest = Buildings.Parts(sim, smithy).Single(e => sim.World.Get<Thing>(e).Def.Name == "Chest");
-        Assert.All(sim.StoredIn(bin), e => Assert.Equal("Charcoal", sim.World.Get<Thing>(e).Def.Name));
+        Assert.All(sim.StoredIn(bin), e => Assert.Contains(sim.World.Get<Thing>(e).Def.Name, (string[])["Charcoal", "Firewood"])); // fuel only: the forge's charcoal, the kiln's firewood
         Assert.Contains(sim.StoredIn(chest), e => sim.World.Get<Thing>(e).Def.Name == "IronBar");
     }
 }

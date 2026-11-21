@@ -14,9 +14,13 @@
     { "name": "CopperOre", "def": "CopperOre", "per": 3, "price": 2, "max": 4, "for": "Forge" },
     { "name": "TinOre", "def": "TinOre", "per": 2, "price": 2, "max": 3, "for": "Forge" },
     { "name": "SmithyPlanks", "def": "Planks", "material": "Pine", "per": 2, "price": 1, "max": 4, "for": "Forge" },
+    // The smithy's fuel bin: firewood for the kiln, where the smith bakes the forge's charcoal (nobody sells charcoal).
+    { "name": "SmithyFirewood", "def": "Firewood", "material": "Pine", "per": 8, "price": 1, "max": 3, "for": "Forge", "into": "FuelBin", "scarce": true },
 
     // The shrine's linen basket: cloth to tear into bandages; nobody in town weaves.
     { "name": "Cloth", "def": "Cloth", "per": 2, "price": 2, "max": 3, "for": "Shrine", "into": "LinenBasket" },
+    // The shrine's log rack, for the hearth that keeps the wounded warm.
+    { "name": "ShrineFirewood", "def": "Firewood", "material": "Pine", "per": 8, "price": 1, "max": 3, "for": "Shrine", "into": "LogRack", "scarce": true },
 
     // The tinker's chest: planks for contraptions and stocks.
     { "name": "TinkerPlanks", "def": "Planks", "material": "Pine", "per": 2, "price": 1, "max": 4, "for": "TinkerShop" },
@@ -27,6 +31,8 @@
     { "name": "Honey", "def": "Honey", "per": 2, "price": 1, "max": 3, "for": "Tavern" },
     { "name": "BarHerbs", "def": "Herbs", "per": 2, "price": 1, "max": 3, "for": "Tavern" },
     { "name": "BarBerries", "def": "Berries", "per": 3, "price": 1, "max": 3, "for": "Tavern", "scarce": true },
+    // The common room's log rack, for the fire the lodgers sleep warm by.
+    { "name": "InnFirewood", "def": "Firewood", "material": "Pine", "per": 8, "price": 1, "max": 3, "for": "Tavern", "into": "LogRack", "scarce": true },
 
     // The kitchen's larder, and its log basket.
     { "name": "Cabbage", "def": "Cabbage", "per": 3, "price": 1, "max": 3, "for": "Kitchen", "into": "Larder", "scarce": true },

@@ -113,6 +113,50 @@ public class KindlingTests
     }
 
     [Fact]
+    public void WorkplaceFiresOpenColdACottagesJustBurns()
+    {
+        var (sim, _, _) = ExpeditionTests.Round("Blacksmith");
+        var w = sim.World;
+        var fireplaces = w.Query<Thing>().Where(e => w.Get<Thing>(e).Def.Name == "Fireplace").ToList();
+        var atWork = fireplaces.Where(e => Kindling.AtWork(sim, e)).ToList();
+        var atHome = fireplaces.Where(e => !Kindling.AtWork(sim, e)).ToList();
+        Assert.NotEmpty(atWork);
+        Assert.NotEmpty(atHome);
+        // The round's run some hours by now: the keepers have lit theirs since, but they're the kind that go out.
+        Assert.All(atWork, e => Assert.True(Kindling.GoesCold(sim, e) && sim.World.Has<Hearth>(e)));
+        Assert.All(atHome, e => Assert.False(Kindling.GoesCold(sim, e)));
+    }
+
+    [Fact]
+    public void AnUnbankedFireGoesOutInTheDeadOfNight()
+    {
+        var yard = ForgeYard.Setup(TestWorld.LoadDefs());
+        var sim = yard.Sim;
+        Kindling.LightAll(sim);
+        // Straight to an hour before the dead of night, worked till then, then on into it.
+        sim.Clock.Tick += SimClock.HoursToTicks((Kindling.NightFrom - 1 - sim.Clock.HourOfDay + 24) % 24);
+        Kindling.Light(sim, yard.Forge);
+        Assert.False(Kindling.IsCold(sim, yard.Forge));
+        for (var t = 0; t < SimClock.HoursToTicks(1.5f); t++)
+            sim.Tick();
+        Assert.True(Kindling.IsCold(sim, yard.Forge));
+    }
+
+    [Fact]
+    public void TheInnkeeperBanksTheInnsFireForTheNight()
+    {
+        var (sim, _, _) = ExpeditionTests.Round("Blacksmith"); // the inn kept by a villager
+        var w = sim.World;
+        var fire = w.Query<Thing>().First(e => w.Get<Thing>(e).Def.Name == "Fireplace" && Kindling.AtWork(sim, e) && !Ai.AiQueries.StaffOnly(sim, Environment.Warmth.FireCell(w.Get<Thing>(e))));
+        w.Get<Fueled>(fire).Fuel = 20;
+        while (!Kindling.DeadOfNight(sim))
+            sim.Tick();
+        for (var t = 0; t < SimClock.TicksPerHour; t++)
+            sim.Tick();
+        Assert.False(Kindling.IsCold(sim, fire), "banked at closing, it keeps the night");
+    }
+
+    [Fact]
     public void ARoundOpensWithTheForgeCold()
     {
         var sim = TestWorld.Create();

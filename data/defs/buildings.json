@@ -136,6 +136,7 @@
         { "def": "Chest", "at": [11, 1], "facing": 2 },
         { "def": "BarShelf", "at": [11, 6], "facing": 1 },
         { "def": "Fireplace", "at": [0, 9], "facing": 3 },
+        { "def": "LogRack", "at": [1, 8] }, // the common room's firewood, by its fire
         { "def": "AleCask", "at": [11, 8], "facing": 1 },
         { "def": "BarTub", "at": [11, 7] },
         { "def": "BarCounter", "at": [9, 7], "facing": 1 }, { "def": "BarCounter", "at": [9, 10], "facing": 1 },
@@ -283,6 +284,7 @@
       "parts": { "foundation": "Sill", "wall": "StoneWallPart", "door": "PlankDoor", "roof": "TurfRoofPart" },
       "furnish": [
         { "def": "Hearth", "at": [1, 1] },
+        { "def": "LogRack", "at": [1, 2] }, // the hearth's firewood
         { "def": "HerbRack", "at": [3, 1], "facing": 2 },
         { "def": "RuneAltar", "at": [5, 1], "facing": 2 },
         { "def": "LinenBasket", "at": [9, 1] },
@@ -397,6 +399,7 @@
         { "def": "WarmingShelf", "at": [8, 5], "facing": 2 },
         { "def": "MerchandiseShelf", "at": [9, 5], "facing": 2 }, // the innkeeper's goods for the road
         { "def": "Fireplace", "at": [0, 9], "facing": 3 },
+        { "def": "LogRack", "at": [1, 10] }, // the common room's firewood, by its fire
         { "def": "AleCask", "at": [10, 5] },
         { "def": "BarCounter", "at": [7, 7] }, { "def": "BarCounter", "at": [10, 7] },
         { "def": "KeyBoard", "at": [11, 6], "facing": 1 },
@@ -928,7 +931,7 @@
         "partOnly": true, "work": 80, "cost": [ { "def": "Stone", "count": 6 }, { "def": "Wood", "count": 4 } ],
         // Holds its cell at 22°C: a closed room settles a little under that, people beside it feel a few degrees more.
         "heatOutput": 900, "maxHeatTemp": 22, "lightRadius": 6, "radiantWarmth": 5,
-        "fuel": { "def": "Firewood", "capacity": 20, "burnPerDay": 12, "refuelAt": 0.5 }
+        "fuel": { "def": "Firewood", "capacity": 20, "burnPerDay": 12, "refuelAt": 0.5, "goesColdAtWork": true }
       }
     },
 
@@ -959,7 +962,7 @@
         "partOnly": true, "isWall": true, "setInWall": true, "work": 120, "cost": [ { "def": "Stone", "count": 10 }, { "def": "Wood", "count": 2 } ],
         // As the hearth: holds its cell at 22°C, so a closed room settles a little under that.
         "heatOutput": 900, "maxHeatTemp": 22, "lightRadius": 6, "radiantWarmth": 5,
-        "fuel": { "def": "Firewood", "capacity": 20, "burnPerDay": 12, "refuelAt": 0.5 }
+        "fuel": { "def": "Firewood", "capacity": 20, "burnPerDay": 12, "refuelAt": 0.5, "goesColdAtWork": true }
       }
     },
 

@@ -73,7 +73,7 @@ public class CoopRoundTests
         var (t, players) = Dealt();
         var bots = players.Select((p, i) => new BotPlayer(() => p.Sim!, p.Me.Id, p.Send, (ulong)i + 1)).ToList();
         t.Speed = SimClock.TicksPerSecond;
-        t.Run(8f, () => bots.ForEach(b => b.Tick()));
+        t.Run(30f, () => bots.ForEach(b => b.Tick())); // the morning's fires lit first, then about the town
         t.AssertInStep();
         Assert.NotEmpty(t.Host.Sim!.Speech.Kept); // the bots really played: they met and spoke
 

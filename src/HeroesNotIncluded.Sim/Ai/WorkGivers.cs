@@ -41,7 +41,7 @@ public sealed class WorkGivers
                         ? TendCritical(sim, pawn, firstAid: true) ?? FirstAid(sim, pawn) ?? Rescue(sim, pawn) ?? FeedPatient(sim, pawn) ?? Capture(sim, pawn)
                         : TendCritical(sim, pawn) ?? Rescue(sim, pawn) ?? Afterlife.CallBackJob.For(sim, pawn) ?? Healing.LayOnHands.ForPlayer(sim, pawn) ?? TendWounds(sim, pawn) ?? FeedPatient(sim, pawn) ?? Healing.LayOnHands.ForOrder(sim, pawn) ?? Healing.LayOnHands.ForVillager(sim, pawn) ?? Healing.LayOnHands.ForSelf(sim, pawn) ?? Healing.LayOnHands.Meditate(sim, pawn) ?? Healing.LayOnHands.WeaveCharm(sim, pawn) ?? Capture(sim, pawn) ?? TendWounds(sim, pawn, enemies: true),
                     WorkType.Warden => FeedPrisoner(sim, pawn) ?? VisitPrisoner(sim, pawn),
-                    WorkType.Refuel => Refuel(sim, pawn) ?? Work.KindleJob.For(sim, pawn),
+                    WorkType.Refuel => Refuel(sim, pawn) ?? Work.KindleJob.For(sim, pawn) ?? Work.BankFireJob.For(sim, pawn),
                     WorkType.Construct => Shops.SellJob.For(sim, pawn) ?? Construct(sim, pawn) ?? Deconstruct(sim, pawn),
                     WorkType.Craft => Shops.SellJob.For(sim, pawn) ?? Shops.MendJob.For(sim, pawn) ?? Tinkering.OpenBoxJob.For(sim, pawn) ?? Tinkering.AppraiseJob.For(sim, pawn) ?? Tinkering.WagonJob.For(sim, pawn) ?? Tinkering.MendBreachJob.For(sim, pawn) ?? Tinkering.TripBellJob.For(sim, pawn) ?? Modding.Trades.JobFor(sim, pawn, type) ?? Craft(sim, pawn, type), // a sale is quick, a mend is not
                     // A hamper in the arms is set out before anyone's served: pouring takes the hands, and a
@@ -760,7 +760,8 @@ public sealed class WorkGivers
             {
                 if (upgrade && option.Reach <= loaded.Reach)
                     continue;
-                var fuel = AiQueries.FindNearestItem(sim, pawn, (_, d) => d == option.ThingDef);
+                // A workplace's fire burns only its own store (Work.FuelStores); a cottage's, the barn's.
+                var fuel = AiQueries.FindNearestItem(sim, pawn, (item, d) => d == option.ThingDef && Work.FuelStores.MayFeed(sim, pawn, e, item));
                 if (!fuel.IsNull)
                     return new RefuelJob(e, fuel);
             }

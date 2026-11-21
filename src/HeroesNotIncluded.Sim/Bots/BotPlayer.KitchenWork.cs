@@ -360,7 +360,8 @@ public sealed partial class BotPlayer
                 Send(new AvatarWorkCommand(me, true, w.Get<Thing>(f).Cell));
                 Send(new AvatarWorkCommand(me, false));
             });
-        var basket = Part(sim, me, "LogBasket");
+        // The fire's own store (Work.FuelStores): the kitchen's log basket, the common room's or the shrine's rack.
+        var basket = Sim.Work.FuelStores.For(sim, fire) is { IsNull: false } store ? store : Part(sim, me, "LogBasket");
         if (basket.IsNull || !sim.StoredIn(basket).Any(IsFuel))
         {
             Need(sim, me, sim.Defs.Thing(props.Def).Label, now);

@@ -29,6 +29,7 @@ public static class PairsDrill
         {
             Lay(sim, forge, "IronBar", 5);
             Lay(sim, forge, "Leather", 1);
+            Work.Kindling.LightAll(sim); // the work for two, not the morning's lighting
             staged.Add("a greatsword's iron by the forge (the smith makes it; someone takes the sledge)");
         }
 
@@ -153,6 +154,7 @@ public static class PairsLead
                 if (great.Unlock is { Discover.Length: > 0 } unlock)
                     RecipeBooks.Discover(sim, Entity.Null, unlock.Discover);
                 PairsDrill.StandBy(sim, lead, forge);
+                Work.Kindling.LightAll(sim);
                 // The forge lit: a heat ends at once in a cold one (and the billet with it).
                 if (w.TryGet<Fueled>(forge, out _))
                     w.Get<Fueled>(forge).Fuel = Math.Max(w.Get<Fueled>(forge).Fuel, 5f);

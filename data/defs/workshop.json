@@ -494,7 +494,7 @@
         "heatOutput": 5000, "maxHeatTemp": 900, "lightRadius": 3, "stokeHeat": 4000, "stokedMaxTemp": 1100,
         // "reach": the heat it holds on each fuel, standing in the open (OreTests checks these against
         // the heat sim). Haulers bring the cheapest fuel that reaches the next craft's heat.
-        "fuel": { "def": "Firewood", "capacity": 30, "burnPerDay": 60, "refuelAt": 0.4, "onDemand": true, "reach": 745,
+        "fuel": { "def": "Firewood", "capacity": 30, "burnPerDay": 60, "refuelAt": 0.4, "onDemand": true, "goesCold": true, "reach": 745,
           "also": [ { "def": "Charcoal", "heatFactor": 1.2, "maxTempBonus": 80, "burnFactor": 0.8, "reach": 890 },
                     { "def": "Coal", "heatFactor": 1.3, "maxTempBonus": 120, "burnFactor": 0.6, "reach": 960 } ] }
       }

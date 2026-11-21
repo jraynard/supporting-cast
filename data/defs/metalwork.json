@@ -170,7 +170,7 @@
       "name": "FuelBin", "label": "fuel bin", "category": "Building", "solid": true, "sprite": "buildings/fuel_bin",
       "description": "An open bin heaped with coal and charcoal for the forge. Holds 4 stacks.",
       "maxHp": 120, "flammability": 0.9,
-      "building": { "work": 120, "storageStacks": 4, "surfaceHeight": 0.4, "cost": [ { "def": "Planks", "count": 8 } ] },
+      "building": { "work": 120, "storageStacks": 4, "fuelStore": true, "surfaceHeight": 0.4, "cost": [ { "def": "Planks", "count": 8 } ] },
       "model": [
         { "min": [0.10, 0.18, 0.00], "max": [0.90, 0.82, 0.40], "top": "props/coal", "side": "props/crate_side" }
       ]

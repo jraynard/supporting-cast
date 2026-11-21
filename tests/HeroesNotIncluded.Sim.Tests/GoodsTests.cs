@@ -266,7 +266,7 @@ public class GoodsTests
         var order = Asked(sim)!;
         Assert.NotNull(order);
         var piece = InTheSmithy(sim, smithy, order.Wants!.Name);
-        sim.ApplyNow(new SetItemPriceCommand(me, piece, Math.Min(order.Price, 1), true));
+        sim.ApplyNow(new SetItemPriceCommand(me, piece, order.Price, true)); // at what they offered: a bargain draws whoever passes first (nothing holds a piece for its asker)
         TickUntil(sim, () => !order.IsOpen, 6);
         Assert.Equal(OrderStatus.Done, order.Status);
         Assert.True(Inventory.OnPerson(sim, order.Poster, piece) || sim.World.Get<Equipment>(order.Poster).Weapon == piece

@@ -364,7 +364,9 @@ public class RoundTests
         var beside = sim.SpiralFrom(w.Get<Thing>(forge).Cell, 4).First(c => sim.Map.Passable(c) && AvatarSystem.InReach(sim, c, forge) && AvatarSystem.InReach(sim, c, chest));
         w.Get<Position>(me).Cell = beside;
         w.Get<Position>(me).Pos = Position.CenterOf(beside);
-        sim.ApplyNow(new CraftCommand(me, forge, spear)); // brings the kit's bars: the billet's in the tongs, and the forge lights
+        Assert.True(Work.Kindling.IsCold(sim, forge), "the round opens with the forge to light");
+        Work.Kindling.Light(sim, forge); // the morning's first job (KindlingTests)
+        sim.ApplyNow(new CraftCommand(me, forge, spear)); // brings the kit's bars: the billet's in the tongs, and the forge fires
         Assert.True(Work.Smithing.PieceOf(sim, me) != null, string.Join(" | ", sim.Messages.Messages.TakeLast(4).Select(m => m.Text)));
         Assert.Contains("billet", sim.Messages.Messages[^1].Text);
         sim.ApplyNow(new Work.SmithCommand(me, forge));

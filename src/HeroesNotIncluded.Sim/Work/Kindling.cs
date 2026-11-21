@@ -39,8 +39,32 @@ public static class Kindling
     /// <summary>Hours a banked fire keeps: the night, and into the morning.</summary>
     public const float BankedHours = 16f;
 
+    /// <summary>The dead of night, when a fire nobody banked dies down to nothing: hours from and to.</summary>
+    public const int NightFrom = 2, NightTo = 5;
+
     public static bool GoesCold(Simulation sim, Entity e) =>
-        sim.World.IsAlive(e) && sim.World.TryGet<Thing>(e, out var t) && t.Def.Building?.Fuel is { GoesCold: true };
+        sim.World.IsAlive(e) && sim.World.TryGet<Thing>(e, out var t) && t.Def.Building?.Fuel is { } fuel
+        && (fuel.GoesCold || (fuel.GoesColdAtWork && AtWork(sim, e)));
+
+    /// <summary>In a building some trade works from (the inn, the shrine), not a cottage.</summary>
+    public static bool AtWork(Simulation sim, Entity e)
+    {
+        var building = Buildings.Of(sim, e);
+        return !building.IsNull && sim.World.TryGet<PresetBuilding>(building, out var shop) && sim.Defs.AllTrades.Exists(t => t.WorksAt(shop.Def));
+    }
+
+    /// <summary>The hour from which a keeper banks the fire for the night (an inn's, so its lodgers sleep warm).</summary>
+    public const int BankFrom = 20;
+
+    /// <summary>Evening into the night, before the dead of it: when fires are banked.</summary>
+    public static bool BankingTime(Simulation sim) => sim.Clock.HourOfDay >= BankFrom || sim.Clock.HourOfDay < NightFrom;
+
+    /// <summary>Alight and not yet banked, in the evening: one to bank before the night.</summary>
+    public static bool WantsBanking(Simulation sim, Entity e) =>
+        BankingTime(sim) && sim.World.TryGet<Hearth>(e, out var h) && !h.Cold && h.BankedUntil <= sim.Clock.Tick;
+
+    /// <summary>The dead of night (<see cref="NightFrom"/> to <see cref="NightTo"/>): unbanked fires go out, and nobody lights one.</summary>
+    public static bool DeadOfNight(Simulation sim) => sim.Clock.HourOfDay >= NightFrom && sim.Clock.HourOfDay < NightTo;
 
     public static bool IsCold(Simulation sim, Entity e) => sim.World.TryGet<Hearth>(e, out var h) && h.Cold;
 
@@ -74,6 +98,18 @@ public static class Kindling
         h.LastBurned = sim.Clock.Tick;
     }
 
+    /// <summary>Lit: every fire that goes cold (the practice yard keeps its fires going for you; a drill stages work at a lit one).</summary>
+    public static void LightAll(Simulation sim)
+    {
+        foreach (var e in sim.World.Query<Fueled>())
+            if (GoesCold(sim, e))
+            {
+                if (!sim.World.Has<Hearth>(e))
+                    sim.World.Add(e, new Hearth());
+                Light(sim, e);
+            }
+    }
+
     /// <summary>Put out: every fire that goes cold, at a round's opening (the first morning starts by lighting them).</summary>
     public static void PutOutAll(Simulation sim)
     {
@@ -105,8 +141,9 @@ public static class Kindling
 }
 
 /// <summary>
-/// Keeps each <see cref="Hearth"/>: one is added to a fire that goes cold the first time it's seen, and a fire
-/// that's gone unworked past <see cref="Kindling.ColdAfterHours"/>, not banked, goes out.
+/// Keeps each <see cref="Hearth"/>: one is added to a fire that goes cold the first time it's seen. A fire goes out,
+/// unless it's banked, when it's gone unworked past <see cref="Kindling.ColdAfterHours"/> (a forge left), and in the
+/// dead of night (a hearth that burns all day): every workplace's morning opens with lighting its fires.
 /// </summary>
 public sealed class KindlingSystem : ISimSystem
 {
@@ -130,9 +167,10 @@ public sealed class KindlingSystem : ISimSystem
             ref var h = ref w.Get<Hearth>(e);
             if (h.Cold)
                 continue;
+            var banked = now <= h.BankedUntil;
             if (sim.Burning(e))
                 h.LastBurned = now;
-            else if (now - h.LastBurned > after && now > h.BankedUntil)
+            if (!banked && (now - h.LastBurned > after || Kindling.DeadOfNight(sim)))
                 h.Cold = true;
         }
     }
@@ -305,7 +343,10 @@ public sealed class KindleSession : WorkSession
     }
 }
 
-/// <summary>An AI keeper lights its own cold fire when there's work wanting it: flint, steel and breath, done plainly.</summary>
+/// <summary>
+/// An AI keeper lights its own cold fire, flint, steel and breath, done plainly: a forge or kiln when there's work
+/// wanting it, a hearth or oven whenever it's out (but not in the dead of night, when it would only go out again).
+/// </summary>
 public sealed class KindleJob(Entity fire) : Job
 {
     /// <summary>Seconds it takes a practised hand.</summary>
@@ -314,11 +355,17 @@ public sealed class KindleJob(Entity fire) : Job
     public static Job? For(Simulation sim, Entity pawn)
     {
         var w = sim.World;
+        if (Kindling.DeadOfNight(sim))
+            return null;
         foreach (var e in w.Query<Hearth>())
         {
-            if (!Kindling.CanLight(sim, e) || sim.Reservations.IsReservedByOther(e, pawn) || !Crafting.WantsFiring(sim, e)
-                || !WorkGivers.MayWorkAt(sim, pawn, e))
+            if (!Kindling.CanLight(sim, e) || sim.Reservations.IsReservedByOther(e, pawn) || !WorkGivers.MayWorkAt(sim, pawn, e))
                 continue;
+            var thing = w.Get<Thing>(e);
+            if (thing.Def.Building?.Fuel is { OnDemand: true } && !Crafting.WantsFiring(sim, e))
+                continue; // a forge with nothing to make stays cold
+            if (!WorkGivers.FeedsHere(sim, pawn, e, thing))
+                continue; // the kitchen's fires are its cook's
             if (!sim.Regions.CanReach(w.Get<Position>(pawn).Cell, w.Get<Thing>(e).Cell, PathEnd.Touch))
                 continue;
             return new KindleJob(e);
@@ -335,6 +382,38 @@ public sealed class KindleJob(Entity fire) : Job
         foreach (var s in Wait((int)(Seconds * SimClock.TicksPerSecond))) yield return s;
         if (!Alive(fire)) yield break;
         Kindling.Light(Sim, fire);
+    }
+}
+
+/// <summary>An AI keeper banks its workplace's fires of an evening, so they keep (and an inn's lodgers sleep warm).</summary>
+public sealed class BankFireJob(Entity fire) : Job
+{
+    public static Job? For(Simulation sim, Entity pawn)
+    {
+        var w = sim.World;
+        if (!Kindling.BankingTime(sim))
+            return null;
+        foreach (var e in w.Query<Hearth>())
+        {
+            if (!Kindling.WantsBanking(sim, e) || sim.Reservations.IsReservedByOther(e, pawn) || !WorkGivers.MayWorkAt(sim, pawn, e)
+                || !WorkGivers.FeedsHere(sim, pawn, e, w.Get<Thing>(e)))
+                continue;
+            if (!sim.Regions.CanReach(w.Get<Position>(pawn).Cell, w.Get<Thing>(e).Cell, PathEnd.Touch))
+                continue;
+            return new BankFireJob(e);
+        }
+        return null;
+    }
+
+    protected override IEnumerable<JobStatus> Run()
+    {
+        Report = $"Banking the {Get<Thing>(fire).Def.Label}";
+        if (!Reserve(fire)) yield break;
+        foreach (var s in GoToBeside(fire)) yield return s;
+        if (HasFailed || !Alive(fire)) yield break;
+        foreach (var s in Wait(SimClock.TicksPerSecond * 2)) yield return s;
+        if (Alive(fire))
+            Kindling.Bank(Sim, Pawn, fire);
     }
 }
 
@@ -365,5 +444,13 @@ internal sealed class KindlingContent : ISimMod
         }, r => new Hearth { Cold = r.Bool(), LastBurned = r.Long(), BankedUntil = r.Long() });
         // --drill kindle: the smith at a cold forge with fuel in, F to light it.
         registry.Drill("kindle", Scenarios.KindleDrill.Stage);
+        // --drill kindling: the same, the flint already in hand.
+        registry.Drill("kindling", (sim, me) =>
+        {
+            var fire = Scenarios.KindleDrill.Stage(sim, me);
+            if (!fire.IsNull)
+                Kindling.Start(sim, me, fire);
+            return fire;
+        });
     }
 }

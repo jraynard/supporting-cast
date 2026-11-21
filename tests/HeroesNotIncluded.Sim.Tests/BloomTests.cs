@@ -141,6 +141,7 @@ public class BloomTests
         var (sim, me, _) = ExpeditionTests.Round("Blacksmith");
         var w = sim.World;
         var forge = w.Query<Thing>().First(e => w.Get<Thing>(e).Def.Name == "Forge");
+        Work.Kindling.Light(sim, forge); // lit already: this is about the bloom, not the morning's lighting
         var at = w.Get<Thing>(forge).Cell;
         // Where the forge, the chest and the fuel bin are all in reach (the smithy's laid out so there's such a spot).
         var chestAt = w.Query<Thing>().First(e => w.Get<Thing>(e).Def.Name == "Chest" && Buildings.At(sim, w.Get<Thing>(e).Cell) == Buildings.At(sim, at));
@@ -185,6 +186,7 @@ public class BloomTests
         var (sim, me, _) = ExpeditionTests.Round("Blacksmith");
         var w = sim.World;
         var forge = w.Query<Thing>().First(e => w.Get<Thing>(e).Def.Name == "Forge");
+        Work.Kindling.Light(sim, forge); // lit already: this is about the bloom, not the morning's lighting
         var at = w.Get<Thing>(forge).Cell;
         var stand = sim.SpiralFrom(at, 2).First(c => c != at && c.Z == at.Z && sim.Map.Passable(c) && AvatarSystem.InReach(sim, c, forge));
         w.Get<Position>(me).Cell = stand;

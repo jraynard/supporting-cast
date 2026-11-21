@@ -98,6 +98,7 @@ public class HauntingTests
         var fire = w.Query<Fueled>().First(e => w.Get<Thing>(e) is { Spawned: true, Def.Building.Fuel: not null });
         var props = w.Get<Thing>(fire).Def.Building!.Fuel!;
         w.Get<Fueled>(fire).Fuel = props.Capacity * 0.1f;
+        Work.Kindling.Light(sim, fire); // a workplace's fire may open cold: this one's alight
         Assert.True(sim.Burning(fire));
         w.Get<Position>(ghost) = Position.At(Environment.Warmth.FireCell(w.Get<Thing>(fire)));
         Assert.True(Hauntings.GutterTarget(sim, w.Get<Position>(ghost).Cell) is { Fire.IsNull: false }); // the fire, not a lamp

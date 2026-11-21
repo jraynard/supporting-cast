@@ -125,6 +125,12 @@ public sealed class SeasonDef : Def
     /// </summary>
     public int SmithyCharcoal { get; set; } = 30;
 
+    /// <summary>Firewood in the smithy's fuel bin at the deal, for the kiln's charcoal.</summary>
+    public int SmithyFirewood { get; set; }
+
+    /// <summary>Days of what its fires burn that a workplace's fuel store opens a round with (<see cref="Work.FuelStores"/>).</summary>
+    public float WorkplaceFuelDays { get; set; } = 1.5f;
+
     /// <summary>Cloth in the shrine's basket at the deal, to tear into bandages; the carter brings more to order (supplies.json).</summary>
     public int ShrineCloth { get; set; } = 4;
 

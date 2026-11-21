@@ -211,7 +211,7 @@
       "maxHp": 160, "flammability": 0,
       "building": { "staffOnly": true, "oven": true, "work": 150, "surfaceHeight": 0.7, "cost": [ { "def": "Stone", "count": 8 } ],
                     "heatOutput": 200, "maxHeatTemp": 22, "lightRadius": 2,
-                    "fuel": { "def": "Firewood", "capacity": 8, "burnPerDay": 6, "refuelAt": 0.5 } },
+                    "fuel": { "def": "Firewood", "capacity": 8, "burnPerDay": 6, "refuelAt": 0.5, "goesColdAtWork": true } },
       // Its mouth on the front (+Y), the fire showing inside it.
       "fireAt": [0.5, 0.66, 0.42], "fireSize": 0.42,
       "model": [
@@ -260,10 +260,21 @@
       "name": "LogBasket", "label": "log basket", "category": "Building", "solid": true, "sprite": "buildings/log_basket",
       "description": "A wicker basket of split logs for the kitchen's fires. Holds 2 stacks.",
       "maxHp": 60, "flammability": 1.0,
-      "building": { "staffOnly": true, "work": 60, "storageStacks": 2, "surfaceHeight": 0.5, "cost": [ { "def": "Planks", "count": 4 } ] },
+      "building": { "staffOnly": true, "work": 60, "storageStacks": 2, "fuelStore": true, "surfaceHeight": 0.5, "cost": [ { "def": "Planks", "count": 4 } ] },
       "model": [
         { "min": [0.14, 0.14, 0], "max": [0.86, 0.86, 0.42], "top": "props/woodpile_top", "side": "props/wicker" },
         { "min": [0.22, 0.22, 0.42], "max": [0.78, 0.78, 0.56], "top": "props/woodpile_top", "side": "props/woodpile_side" }
+      ]
+    },
+    {
+      // A workplace's log rack by its fire (the inn's common room, the shrine): its own firewood, a day and a half's at
+      // the deal and brought to order by the carter or the carpenter (Work.FuelStores). The kitchen's is its log basket.
+      "name": "LogRack", "label": "log rack", "category": "Building", "solid": true, "sprite": "buildings/log_basket",
+      "description": "Split logs stacked by the fire, the workplace's own. Holds 2 stacks.",
+      "maxHp": 60, "flammability": 1.0,
+      "building": { "work": 60, "storageStacks": 2, "fuelStore": true, "surfaceHeight": 0.5, "cost": [ { "def": "Planks", "count": 4 } ] },
+      "model": [
+        { "min": [0.10, 0.20, 0], "max": [0.90, 0.80, 0.50], "top": "props/woodpile_top", "side": "props/woodpile_side" }
       ]
     },
     {

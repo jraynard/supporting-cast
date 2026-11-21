@@ -91,11 +91,16 @@
       // Charcoal in the smithy's fuel bin at the deal: a day and a half's firing, so a smith new to the trade
       // finds the kiln before the forge goes cold. Cloth in the shrine's basket, for bandages.
       "smithyCharcoal": 45,
+      // Firewood in the smithy's bin for the kiln, and how many days of their fires' burning every other
+      // workplace's own fuel store opens with (Work.FuelStores); the carter or the carpenter brings more to order.
+      "smithyFirewood": 30,
+      "workplaceFuelDays": 1.5,
       "shrineCloth": 6,
       "woodDelivery": [ { "def": "Wood", "material": "Pine", "count": 30 } ],
-      // Firewood for the town's fires (about ten of them, a dozen billets a day each): barnFirewood at
-      // the deal, firewoodDelivery each morning from the second day (none in a shortage). A little
-      // short of the season's burning on purpose: the carpenter splits logs to make it up.
+      // Firewood for the homes' hearths (seven to nine cottages, a dozen billets a day each; a workplace keeps
+      // its own, workplaceFuelDays, and may not burn the barn's): barnFirewood at the deal, firewoodDelivery each
+      // morning from the second day (none in a shortage). Kept as it was when the workplaces drew on it too:
+      // cut to the homes' bare needs, the raid sweep's balance moved (CombatBalanceTests).
       "barnFirewood": 150,
       "firewoodDelivery": [ { "def": "Firewood", "material": "Pine", "count": 100 } ],
       // How the Director paces it (Director/Tension.cs, Director/RuleMind.cs): it eases off a town
