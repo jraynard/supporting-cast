@@ -10,8 +10,8 @@ namespace HeroesNotIncluded.Sim.Hospitality;
 /// <summary>
 /// An AI innkeeper sends for a hamper (<see cref="Provisions"/>): the merchandise shelf's short of
 /// rations, or the warming shelf of dishes, and none's on order. Posting it is all the job does,
-/// from wherever they are; once it's up the order holds their place in the hatch's line (unless a
-/// labourer's running it over), and the brain walks them over to wait (<c>HumanBrain</c>, "in line").
+/// from wherever they are; once it's up the order holds their place in the hatch's line, and the
+/// brain walks them over to wait (<c>HumanBrain</c>, "in line").
 /// </summary>
 public sealed class OrderProvisionsJob : Job
 {
@@ -32,12 +32,12 @@ public sealed class OrderProvisionsJob : Job
     }
 }
 
-/// <summary>An AI innkeeper (or the labourer running it) carries the hamper in their arms to the inn's shelf and unpacks it.</summary>
+/// <summary>An AI innkeeper carries the hamper in their arms to the inn's shelf and unpacks it.</summary>
 public sealed class UnpackHamperJob(Entity shelf) : Job
 {
     public static Job? For(Simulation sim, Entity pawn)
     {
-        if (!(Provisions.KeepsInn(sim, pawn) || Provisions.Running(sim, pawn) != null) || !Provisions.IsHamper(sim, sim.World.Get<Carrying>(pawn).Item)
+        if (!Provisions.KeepsInn(sim, pawn) || !Provisions.IsHamper(sim, sim.World.Get<Carrying>(pawn).Item)
             || Provisions.UnpackAt(sim) is not { IsNull: false } shelf)
             return null;
         return new UnpackHamperJob(shelf);
@@ -46,52 +46,6 @@ public sealed class UnpackHamperJob(Entity shelf) : Job
     protected override IEnumerable<JobStatus> Run()
     {
         Report = "Carrying the hamper back to the inn";
-        foreach (var s in GoToBeside(shelf)) yield return s;
-        if (HasFailed) yield break;
-        if (!Alive(shelf) || !Provisions.Unpack(Sim, Pawn, shelf))
-            Fail("couldn't unpack it");
-    }
-}
-
-/// <summary>
-/// A labourer runs the inn's hamper over from the cookhouse (<see cref="Provisions.TakeToRun"/>):
-/// off the hatch, across to the inn, unpacked there, for a small fee from the innkeeper. Only where
-/// the kitchen stands apart from the inn.
-/// </summary>
-public sealed class HamperRunJob(Entity hatch) : Job
-{
-    public static Job? For(Simulation sim, Entity pawn)
-    {
-        var w = sim.World;
-        if (!sim.Round.Live || !Provisions.Runs(sim, pawn) || Players.Steered(sim, pawn))
-            return null;
-        // Already carrying one over: on to the inn with it.
-        if (Provisions.Running(sim, pawn) != null && Provisions.IsHamper(sim, w.Get<Carrying>(pawn).Item))
-            return UnpackHamperJob.For(sim, pawn);
-        if (Provisions.ToRun(sim) is not { } order || order.Poster == pawn || !w.Get<Carrying>(pawn).Item.IsNull
-            || Hatch.Of(sim, Provisions.Cookhouse(sim)) is not { IsNull: false } hatch
-            || !Navigation.CanReach(sim, pawn, w.Get<Position>(pawn).Cell, w.Get<Thing>(hatch).Cell, PathEnd.Touch))
-            return null;
-        return new HamperRunJob(hatch);
-    }
-
-    protected override IEnumerable<JobStatus> Run()
-    {
-        Report = "Fetching the inn's hamper from the cookhouse";
-        foreach (var s in GoToBeside(hatch)) yield return s;
-        if (HasFailed) yield break;
-        if (!Provisions.TakeToRun(Sim, Pawn))
-        {
-            Fail("someone's taken it");
-            yield break;
-        }
-        var shelf = Provisions.UnpackAt(Sim);
-        if (shelf.IsNull)
-        {
-            Fail("nowhere at the inn to unpack it");
-            yield break;
-        }
-        Report = "Carrying the hamper over to the inn";
         foreach (var s in GoToBeside(shelf)) yield return s;
         if (HasFailed) yield break;
         if (!Alive(shelf) || !Provisions.Unpack(Sim, Pawn, shelf))

@@ -112,6 +112,9 @@ public class CrisisTests
         // Someone stays close by them for a few hours.
         var near = sim.Creatures().First(e => w.Get<Creature>(e) is { Faction: Faction.Village, Dead: false } && !w.Has<Avatar>(e));
         w.Get<Mind>(near).Drafted = true;
+        // The party kept in town meanwhile: one it reached riding off would carry it away (that's another test's).
+        foreach (var e in w.Query<Adventurer>())
+            w.Get<Mind>(e).Drafted = true;
         w.Get<Mind>(sick).Drafted = true;
         // Both stopped where they stand: a walk under way would carry either off.
         AiSystem.EndJob(sim, near, w.Get<Mind>(near), false);

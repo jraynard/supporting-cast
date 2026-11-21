@@ -9,8 +9,8 @@ using HeroesNotIncluded.Sim.Systems;
 namespace HeroesNotIncluded.Sim.Tests;
 
 /// <summary>
-/// The labourer's living when no player posts (<see cref="Wants"/>): AI tradespeople running short
-/// pin errands, and an errand for what isn't lying about gets the trees, bushes or rocks for it marked.
+/// The town's own errands (<see cref="Wants"/>): AI tradespeople running short pin errands to the
+/// notice board, for the players to take on.
 /// </summary>
 public class TownWantsTests
 {
@@ -60,44 +60,5 @@ public class TownWantsTests
         // A player's own trade posts nothing for them.
         var me = Players.CharacterOf(sim, Ana);
         Assert.DoesNotContain(sim.Favours.All, f => f.Poster == me);
-    }
-
-    [Fact]
-    public void AnErrandForWhatIsntLyingAboutGetsTreesMarkedForTheLabourer()
-    {
-        var sim = Round();
-        var w = sim.World;
-        foreach (var item in sim.AvailableItems().ToList())
-            if (w.Get<Thing>(item).Def.Name == "Wood")
-                sim.DestroyThing(item);
-        var cook = Holder(sim, "Cook");
-        Inventory.Stow(sim, cook, sim.CreateItem(sim.Thing(Coin.Silver), 20));
-        Assert.NotNull(sim.Favours.SendErrand(sim, cook, sim.Thing("Wood"), 10, 5, 8));
-        var labourer = w.Query<Trade>().First(e => w.Get<Trade>(e).Def.Unlimited && !Players.Steered(sim, e));
-        Assert.Empty(sim.Map.Designated(Designation.Chop));
-        Assert.Null(ErrandJob.For(sim, labourer));
-        var marked = sim.Map.Designated(Designation.Chop).ToList();
-        Assert.NotEmpty(marked);
-        Assert.True(marked.Count <= ErrandJob.MostMarked);
-        // Asked again, nothing more's marked: enough is.
-        ErrandJob.For(sim, labourer);
-        Assert.Equal(marked.Count, sim.Map.Designated(Designation.Chop).Count);
-    }
-
-    [Fact]
-    public void LeftToItselfTheTownsLabourerFetchesTheCookItsLogs()
-    {
-        var sim = Round();
-        var w = sim.World;
-        var cook = Holder(sim, "Cook");
-        var kitchen = ShopSystem.WorkplaceOf(sim, w.Get<Trade>(cook).Def);
-        Empty(sim, kitchen, "Firewood");
-        Inventory.Stow(sim, cook, sim.CreateItem(sim.Thing(Coin.Silver), 20));
-        Wants.Post(sim);
-        var errand = sim.Favours.All.Single(f => f.IsOpen && f.Poster == cook && f.Wants?.Name == "Firewood");
-        for (var i = 0; i < 48 && errand.IsOpen; i++)
-            sim.TickMany(SimClock.TicksPerHour / 8);
-        Assert.Equal(FavourStatus.Done, errand.Status);
-        Assert.True(w.TryGet<Trade>(errand.Assignee, out var t) && t.Def.Unlimited);
     }
 }

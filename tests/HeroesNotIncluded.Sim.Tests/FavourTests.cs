@@ -145,28 +145,6 @@ public class FavourTests
     }
 
     [Fact]
-    public void TheLabourerTakesOnAnErrandAndBringsIt()
-    {
-        var sim = Round(Ana);
-        var ana = Players.CharacterOf(sim, Ana);
-        var w = sim.World;
-        var labourer = sim.Creatures().Single(e => !w.Has<Avatar>(e) && w.TryGet<Trade>(e, out var t) && t.Def.Unlimited);
-        AtBoard(sim, ana);
-        w.Get<Mind>(ana).Drafted = true;
-        var wood = sim.Defs.Thing("Stone"); // not wood: on a cold day that goes on the fires
-        // Stone lying in the square for the fetching.
-        var at = w.Get<Thing>(Board(sim)).Cell;
-        var pile = sim.SpiralFrom(at, 4).First(c => Map.Distance(c, at) >= 3 && sim.Map.Passable(c) && sim.Map.Standable(sim.Map.Idx(c)) && sim.Map.Item[sim.Map.Idx(c)].IsNull);
-        sim.SpawnItem(wood, 6, pile);
-        sim.ApplyNow(new PostErrandCommand(ana, wood, 3, 5, 8));
-        var errand = sim.Favours.All.Single();
-        for (var i = 0; i < 32 && errand.IsOpen; i++)
-            sim.TickMany(SimClock.TicksPerHour / 8);
-        Assert.True(errand.Status == FavourStatus.Done, $"labourer: {w.Get<Mind>(labourer).Job?.Report ?? "idle"}, last failure {sim.Ai.LastFailure.GetValueOrDefault(labourer)}, haul priority {w.Get<Mind>(labourer).WorkPriority[(int)Defs.WorkType.Haul]}, pack {sim.PackOf(labourer)}");
-        Assert.Equal(labourer, errand.Assignee);
-    }
-
-    [Fact]
     public void AFavourNobodyFinishesExpires()
     {
         var sim = Round(Ana);

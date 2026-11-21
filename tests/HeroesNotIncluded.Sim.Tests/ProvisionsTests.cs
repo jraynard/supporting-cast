@@ -236,53 +236,7 @@ public class ProvisionsTests
     }
 
     [Fact]
-    public void ALabourerRunsTheHamperOverAndIsPaidForIt()
-    {
-        var sim = Round(ReedmereMapTests.Map, playerTrade: "Innkeeper");
-        var w = sim.World;
-        var me = sim.Creatures().First(e => w.Has<PlayerCharacter>(e));
-        var cook = Holder(sim, "Cook");
-        var runner = sim.Creatures().FirstOrDefault(e => Provisions.Runs(sim, e) && !Players.Steered(sim, e), Entity.Null);
-        Assert.False(runner.IsNull, "Reedmere has a labourer");
-        Assert.True(Provisions.RunnerAbout(sim));
-        Purse(sim, me, 50);
-        Assert.Null(Provisions.Order(sim, me));
-        var order = Provisions.Ordered(sim, me)!;
-        // A hamper of rations, up on the cookhouse hatch.
-        var hatch = Hatch.Of(sim, Provisions.Cookhouse(sim));
-        w.Get<Carrying>(cook).Item = Entity.Null;
-        for (var n = 0; n < 2; n++)
-        {
-            var bundle = sim.CreateItem(sim.Defs.Thing(Rations.Def), 1);
-            w.Add(bundle, new Ration { Quality = 0.6f, Maker = cook });
-            Inventory.Stow(sim, cook, bundle);
-        }
-        var hamper = Provisions.MakeHamper(sim, cook, loose: false);
-        w.Get<Carrying>(cook).Item = Entity.Null;
-        Assert.True(sim.Store(hatch, hamper).IsNull);
-        Assert.True(Provisions.HamperUp(sim));
-        Assert.False(ShopSystem.WaitsInLine(sim, order), "with a labourer about the keeper doesn't wait at the cookhouse");
-        Assert.NotNull(Provisions.ToRun(sim));
-
-        // The labourer takes it and carries it over.
-        Put(sim, runner, Beside(sim, hatch));
-        var runnerSilver = Coin.Count(sim, runner);
-        var cookSilver = Coin.Count(sim, cook);
-        Assert.True(Provisions.TakeToRun(sim, runner));
-        Assert.Equal(runner, order.Assignee);
-        Assert.Equal(hamper, w.Get<Carrying>(runner).Item);
-        var shelf = Provisions.UnpackAt(sim);
-        Put(sim, runner, Beside(sim, shelf));
-        Assert.True(Provisions.Unpack(sim, runner, shelf));
-        Assert.Equal(OrderStatus.Done, order.Status);
-        Assert.Equal(2, Provisions.RationsShelved(sim));
-        Assert.All(sim.StoredIn(Provisions.Merchandise(sim)), e => Assert.Equal(me, w.Get<ForSale>(e).Seller));
-        Assert.Equal(cookSilver + order.Price, Coin.Count(sim, cook));
-        Assert.Equal(runnerSilver + Provisions.RunFee, Coin.Count(sim, runner));
-    }
-
-    [Fact]
-    public void AnAiLabourerRunsAHamperUnasked()
+    public void WhereTheCookhouseStandsApartTheKeeperWaitsThereForTheHamper()
     {
         var sim = Round(ReedmereMapTests.Map, playerTrade: "Innkeeper");
         var w = sim.World;
@@ -297,12 +251,34 @@ public class ProvisionsTests
         Inventory.Stow(sim, cook, bundle);
         var hamper = Provisions.MakeHamper(sim, cook, loose: false);
         w.Get<Carrying>(cook).Item = Entity.Null;
+        Assert.True(sim.Store(Hatch.Of(sim, Provisions.Cookhouse(sim)), hamper).IsNull);
+        // Nobody runs it over: it's the keeper's to fetch.
+        Assert.True(ShopSystem.WaitsInLine(sim, order), "the keeper's place in the cookhouse hatch's line");
+        sim.TickMany(SimClock.TicksPerHour);
+        Assert.True(order.IsOpen, "still up on the hatch till the keeper comes");
+    }
+
+    [Fact]
+    public void AnAiInnkeeperFetchesTheHamperFromTheCookhouse()
+    {
+        var sim = Round(ReedmereMapTests.Map);
+        var w = sim.World;
+        var keeper = Holder(sim, "Innkeeper");
+        var cook = Holder(sim, "Cook");
+        Purse(sim, keeper, 50);
+        Assert.Null(Provisions.Order(sim, keeper));
+        var order = Provisions.Ordered(sim, keeper)!;
+        var bundle = sim.CreateItem(sim.Defs.Thing(Rations.Def), 1);
+        w.Add(bundle, new Ration { Quality = 0.6f, Maker = cook });
+        w.Get<Carrying>(cook).Item = Entity.Null;
+        Inventory.Stow(sim, cook, bundle);
+        var hamper = Provisions.MakeHamper(sim, cook, loose: false);
+        w.Get<Carrying>(cook).Item = Entity.Null;
         sim.Store(Hatch.Of(sim, Provisions.Cookhouse(sim)), hamper);
-        for (var i = 0; i < 96 && order.IsOpen; i++)
+        for (var i = 0; i < 96 && Provisions.RationsShelved(sim) == 0; i++)
             sim.TickMany(SimClock.TicksPerHour / 12);
         Assert.Equal(OrderStatus.Done, order.Status);
-        Assert.True(Provisions.Runs(sim, order.Assignee), "a labourer ran it");
-        Assert.Equal(1, Provisions.RationsShelved(sim));
+        Assert.True(Provisions.RationsShelved(sim) >= 1, "fetched over and unpacked at the inn");
     }
 
     [Fact]

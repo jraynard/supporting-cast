@@ -17,7 +17,7 @@ public static class SeasonSweep
     /// <summary>The makings watched each hour of a season (<see cref="SeasonResult.Stores"/>): what the town crafts, burns and binds with.</summary>
     public static readonly string[] Stores = ["Charcoal", "Planks", "Wood", "Firewood", "Cloth", "Bandage", "IronOre"];
 
-    /// <summary>The game's trades with a game of their own, in the order the bots sit (an AI labourer runs the errands).</summary>
+    /// <summary>The game's trades with a game of their own, in the order the bots sit.</summary>
     public static readonly string[] Trades = ["Innkeeper", "Cook", "Blacksmith", "Empath", "Tinker", "Carpenter"];
 
     /// <summary>

@@ -63,7 +63,7 @@ public static class Takings
         else
             return;
         s.Hat = sim.PlaceItemNear(item, sim.World.Get<Position>(musician).Cell, byHand: true);
-        // Theirs, set down on purpose: no labourer tidies it off to the barn (a playtest's hat went that way).
+        // Theirs, set down on purpose: no job takes it off (a playtest's hat once went to the barn that way).
         if (sim.World.IsAlive(s.Hat))
             sim.World.Add(s.Hat, new SetDownBy { Who = musician });
     }

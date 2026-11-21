@@ -9,7 +9,7 @@ namespace HeroesNotIncluded.Sim.Bots;
 
 /// <summary>
 /// The inn, supplied from the kitchen (<see cref="Provisions"/>): as innkeeper the bot sends for
-/// hampers from the bar, takes them off the hatch (unless a labourer runs them over) and unpacks
+/// hampers from the bar, takes them off the hatch and unpacks
 /// them, and serves lodgers their board off a lake town's warming shelf; as cook it ties rations and
 /// (where the inn's apart) ladles bowls, packs them and puts them up on the hatch.
 /// </summary>
@@ -27,7 +27,7 @@ public sealed partial class BotPlayer
 
     /// <summary>
     /// The inn's keeper, its shelves running low: sends to the kitchen for a hamper from the bar,
-    /// then, once it's up, over to the hatch to take it (unless a labourer's about to run it over).
+    /// then, once it's up, over to the hatch to take it.
     /// </summary>
     private bool SendForHamper(Simulation sim, Entity me, long now)
     {
@@ -36,8 +36,8 @@ public sealed partial class BotPlayer
             return false;
         if (Provisions.Ordered(sim, me) is { } order)
         {
-            if (!order.Assignee.IsNull || !Provisions.HamperUp(sim) || (Provisions.Split(sim) && Provisions.RunnerAbout(sim)))
-                return false; // being packed, or a labourer's running it: back to the bar meanwhile
+            if (!order.Assignee.IsNull || !Provisions.HamperUp(sim))
+                return false; // being packed: back to the bar meanwhile
             var hatch = Hatch.Of(sim, Provisions.Cookhouse(sim));
             if (hatch.IsNull)
                 return false;

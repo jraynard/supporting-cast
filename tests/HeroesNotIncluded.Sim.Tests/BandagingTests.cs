@@ -86,10 +86,10 @@ public class BandagingTests
     }
 
     [Fact]
-    public void ALabourerOnlyStopsTheBleedingForAWhile()
+    public void ATinkerOnlyStopsTheBleedingForAWhile()
     {
         var (sim, me) = Wounded(bandages: 5, cuts: 2);
-        sim.World.Add(me, new Trade { Def = sim.Defs.Trade("Labourer") });
+        sim.World.Add(me, new Trade { Def = sim.Defs.Trade("Tinker") });
         var h = sim.World.Get<Health>(me);
         Assert.True(Bandaging.FirstAidOnly(sim, me));
 
@@ -120,7 +120,7 @@ public class BandagingTests
     }
 
     [Fact]
-    public void AnAiLabourerStanchesADownedVillagerButDoesNotDressThem()
+    public void AnAiTinkerStanchesADownedVillagerButDoesNotDressThem()
     {
         var (sim, patient) = Wounded(bandages: 0, cuts: 2);
         sim.World.Remove<Avatar>(patient);
@@ -131,10 +131,10 @@ public class BandagingTests
         sim.TickMany(60);
         Assert.True(sim.World.Get<Creature>(patient).Downed);
 
-        var labourer = sim.SpawnCreature(sim.Defs.Creature("Human"), "Hob", C(15, 5), ageDays: 25 * 365);
-        Array.Fill(sim.World.Get<Needs>(labourer).Values, 1f);
-        sim.World.Add(labourer, new Trade { Def = sim.Defs.Trade("Labourer") });
-        var mind = sim.World.Get<Mind>(labourer);
+        var hand = sim.SpawnCreature(sim.Defs.Creature("Human"), "Hob", C(15, 5), ageDays: 25 * 365);
+        Array.Fill(sim.World.Get<Needs>(hand).Values, 1f);
+        sim.World.Add(hand, new Trade { Def = sim.Defs.Trade("Tinker") });
+        var mind = sim.World.Get<Mind>(hand);
         Array.Fill(mind.WorkPriority, 0);
         mind.WorkPriority[(int)WorkType.Doctor] = 1;
         sim.TickMany(SimClock.HoursToTicks(0.5f));
@@ -144,7 +144,7 @@ public class BandagingTests
     }
 
     [Fact]
-    public void AnAiLabourerStanchesADownedAdventurerToo()
+    public void AnAiTinkerStanchesADownedAdventurerToo()
     {
         var (sim, patient) = Wounded(bandages: 0, cuts: 2);
         sim.World.Remove<Avatar>(patient);
@@ -156,10 +156,10 @@ public class BandagingTests
         sim.TickMany(60);
         Assert.True(sim.World.Get<Creature>(patient).Downed);
 
-        var labourer = sim.SpawnCreature(sim.Defs.Creature("Human"), "Hob", C(15, 5), ageDays: 25 * 365);
-        Array.Fill(sim.World.Get<Needs>(labourer).Values, 1f);
-        sim.World.Add(labourer, new Trade { Def = sim.Defs.Trade("Labourer") });
-        var mind = sim.World.Get<Mind>(labourer);
+        var hand = sim.SpawnCreature(sim.Defs.Creature("Human"), "Hob", C(15, 5), ageDays: 25 * 365);
+        Array.Fill(sim.World.Get<Needs>(hand).Values, 1f);
+        sim.World.Add(hand, new Trade { Def = sim.Defs.Trade("Tinker") });
+        var mind = sim.World.Get<Mind>(hand);
         Array.Fill(mind.WorkPriority, 0);
         mind.WorkPriority[(int)WorkType.Doctor] = 1;
         sim.TickMany(SimClock.HoursToTicks(0.5f));

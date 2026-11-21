@@ -17,10 +17,10 @@ namespace HeroesNotIncluded.Sim.Tests;
 public class TradeWeaponTests
 {
     /// <summary>
-    /// A round with every named trade an AI's (the player labours), just dealt. The hunting bow
+    /// A round with every named trade an AI's (the player's the musician, come by road), just dealt. The hunting bow
     /// left lying in town is cleared away: whoever has only a makeshift weapon would take it up.
     /// </summary>
-    private static Simulation Round(string playerTrade = "Labourer")
+    private static Simulation Round(string playerTrade = "Musician")
     {
         var sim = VillageRound.NewSimulation(LoadDefs(), 1234);
         sim.Presets.PresetMode = true;
@@ -220,7 +220,7 @@ public class TradeWeaponTests
     }
 
     [Fact]
-    public void OnlyTheLabourerKeepsTheStoneAxeAndPick()
+    public void NoTradeThatDoesntGatherKeepsTheStoneAxeAndPick()
     {
         var sim = Round();
         var w = sim.World;
@@ -228,7 +228,7 @@ public class TradeWeaponTests
         foreach (var trade in new[] { "Innkeeper", "Cook", "Blacksmith", "Empath", "Tinker" })
             Assert.False(HasStoneTools(Holder(sim, trade)), $"the {trade.ToLowerInvariant()} still has the stone tools");
         var me = w.Query<Avatar>().Single();
-        Assert.Equal("Labourer", w.Get<Trade>(me).Def.Name);
-        Assert.True(HasStoneTools(me), "the labourer keeps them");
+        Assert.Equal("Musician", w.Get<Trade>(me).Def.Name);
+        Assert.False(HasStoneTools(me), "nor the musician");
     }
 }

@@ -72,7 +72,7 @@ public sealed partial class VillageGame
         if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
             Tip("Whoever reads the board will know. Say what you want done in your own words.");
 
-        // An errand: so many of something, brought to you. A labourer will take one on.
+        // An errand: so many of something, brought to you, by another player.
         _errandItems ??= _sim.Defs.AllThings.Where(t => t.Category == Sim.Defs.ThingCategory.Item && t.StackLimit > 1)
             .OrderBy(t => t.Label, StringComparer.OrdinalIgnoreCase).ToList();
         ImGui.SetNextItemWidth(160);
@@ -96,7 +96,7 @@ public sealed partial class VillageGame
         if (!pick)
             ImGui.EndDisabled();
         if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-            Tip("Ask for so many of a thing, brought to you, for the silver above. Bringing it is doing it: they're paid when they hand it over. The town's labourer takes these on.");
+            Tip("Ask for so many of a thing, brought to you, for the silver above. Bringing it is doing it: they're paid when they hand it over. Another player may take it on.");
     }
     /// <summary>
     /// A favour as a card, like an order's: who asks and for how much, the time left as a bar,

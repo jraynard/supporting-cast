@@ -125,7 +125,7 @@ public enum AvatarActionKind
 
     /// <summary>
     /// The inn's hamper at the kitchen's hatch (<see cref="Hospitality.Provisions"/>): its keeper orders
-    /// one, or takes the one that's up; a labourer takes it to run over to the inn.
+    /// one, or takes the one that's up.
     /// </summary>
     OrderProvisions,
 
@@ -226,14 +226,11 @@ public sealed class AvatarSystem : ISimSystem
 
     /// <summary>
     /// What F at the kitchen's hatch says about the inn's hamper: to its keeper, the price of one,
-    /// or (ordered) that it's up to take or still being packed; to a labourer, that there's one to
-    /// run over. Null for anyone else, at any other hatch, or with no hamper to be had (they order
+    /// or (ordered) that it's up to take or still being packed. Null for anyone else, at any other hatch, or with no hamper to be had (they order
     /// a meal there like anyone).
     /// </summary>
     private static string? ProvisionsOrder(Simulation sim, Entity avatar, Entity hatch)
     {
-        if (Hospitality.Provisions.RunPrompt(sim, avatar, hatch) is { } run)
-            return run;
         if (!Hospitality.Provisions.KeepsInn(sim, avatar) || Shops.Hatch.ShopOf(sim, hatch) is not { IsNull: false } shop || shop != Hospitality.Provisions.Cookhouse(sim))
             return null;
         if (Hospitality.Provisions.Ordered(sim, avatar) is { } ordered)
@@ -607,8 +604,8 @@ public sealed class AvatarSystem : ISimSystem
         // At a cottage's bread crock with empty hands and an appetite: eat from it.
         if (held.IsNull && Homes.IsCrock(sim, site) && Homes.FromCrock(sim, avatar, site) is { IsNull: false } bite)
             return new(AvatarActionKind.EatFromCrock, $"Eat some {w.Get<Thing>(bite).Def.Label} from the crock", cell, site);
-        // At a shrine pallet, hurt: ask the healer to see to you (then lie there to wait your turn).
-        if (held.IsNull && !site.IsNull && HealingOrder(sim, avatar, site) is { } heal)
+        // At a shrine pallet, hurt: ask the healer to see to you (then lie there to wait your turn), whatever's in hand.
+        if (!site.IsNull && HealingOrder(sim, avatar, site) is { } heal)
             return new(AvatarActionKind.OrderHealing, heal, cell, site);
         // A pack lying about opens like the wagon (you're already wearing one, or it'd go on).
         if (!item.IsNull && sim.IsPack(item) && !Hospitality.Provisions.IsHamper(sim, item))
@@ -636,8 +633,10 @@ public sealed class AvatarSystem : ISimSystem
                 return new(AvatarActionKind.OpenStorage, $"Open the {w.Get<Thing>(site).Label}", cell, site);
         }
 
-        // Mess on the floor: mop it up.
-        if (sim.Mess.At(sim, cell) is { } mess && !w.Has<Work.WorkSession>(avatar))
+        // Mess on the floor: mop it up. Not under a bed or pallet, though: lying down comes first (a dirty
+        // shrine pallet kept offering the mop to the wounded, a playtest's).
+        if (sim.Mess.At(sim, cell) is { } mess && !w.Has<Work.WorkSession>(avatar)
+            && (site.IsNull || w.Get<Thing>(site).Def.Building is not { IsBed: true }))
             return new(AvatarActionKind.Clean, Hospitality.MessSystem.Verb(mess.Kind), cell, Entity.Null);
 
         // Work on what's there: hands full or not (you can chop wood with a sack on your back).
@@ -1067,9 +1066,7 @@ public sealed class AvatarSystem : ISimSystem
                     sim.Shops.Accept(sim, avatar, order.Id);
                 break;
             case AvatarActionKind.OrderProvisions:
-                if (Hospitality.Provisions.RunPrompt(sim, avatar, action.Target) != null)
-                    Hospitality.Provisions.TakeToRun(sim, avatar);
-                else if (Hospitality.Provisions.Ordered(sim, avatar) != null)
+                if (Hospitality.Provisions.Ordered(sim, avatar) != null)
                     Hospitality.Provisions.Collect(sim, avatar);
                 else if (Hospitality.Provisions.Order(sim, avatar) is { } refusal)
                     sim.Messages.Tell(avatar, MessageKind.Info, $"Can't order: {refusal}.", action.Cell);

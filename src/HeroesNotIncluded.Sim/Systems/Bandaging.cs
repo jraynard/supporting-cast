@@ -65,7 +65,7 @@ public static class Bandaging
     public const float StanchHours = 2f;
 
     /// <summary>
-    /// Only first aid from this one: they hold a trade that doesn't doctor (a labourer, a smith). No
+    /// Only first aid from this one: they hold a trade that doesn't doctor (a smith, a tinker). No
     /// trade (outside a round) doctors as before.
     /// </summary>
     public static bool FirstAidOnly(Simulation sim, Entity who) =>

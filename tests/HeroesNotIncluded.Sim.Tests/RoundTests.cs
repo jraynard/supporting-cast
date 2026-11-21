@@ -69,7 +69,7 @@ public class RoundTests
             sim.ApplyNow(new JoinLobbyCommand(Ana, "Ana", default));
             sim.ApplyNow(new SetTradePreferencesCommand(Ana, [], named));
             sim.ApplyNow(new StartRoundCommand());
-            Assert.Equal("Labourer", TradeOf(sim, Ana));
+            Assert.Equal("Musician", TradeOf(sim, Ana)); // what's left: it can't be refused
         }
     }
 
@@ -277,10 +277,10 @@ public class RoundTests
     {
         var sim = Town();
         var healer = sim.Defs.Trade("Empath");
-        var labourer = sim.Defs.Trade("Labourer");
+        var musician = sim.Defs.Trade("Musician");
         sim.ApplyNow(new JoinLobbyCommand(Ana, "", default));
 
-        sim.Round.SetPreferences(Ana, [healer, null!, healer], [healer, labourer, null!]);
+        sim.Round.SetPreferences(Ana, [healer, null!, healer], [healer, musician, null!]);
 
         var seat = sim.Round.SeatOf(Ana)!;
         Assert.Empty(seat.Wanted); // refusing it wins
@@ -385,30 +385,27 @@ public class RoundTests
     }
 
     [Fact]
-    public void InARoundOnlyTheLabourerDigsChopsAndForages()
+    public void InARoundOnlyAGatheringTradeDigsChopsAndForages()
     {
         var sim = Town();
         Sit(sim, Ana, "Ana", "Empath");
-        Sit(sim, Bea, "Bea", "Labourer");
         sim.ApplyNow(new StartRoundCommand());
         var ana = Players.CharacterOf(sim, Ana);
-        var bea = Players.CharacterOf(sim, Bea);
         Assert.False(RoundSystem.MayGather(sim, ana));
-        Assert.True(RoundSystem.MayGather(sim, bea));
 
         // Nobody's offered a dig or a harvest who isn't a gatherer.
         var w = sim.World;
         var tree = w.Query<Thing>().First(e => w.Get<Thing>(e).Def.Harvest is { WorkType: WorkType.Chop });
         var at = w.Get<Thing>(tree).Cell;
         Assert.NotEqual(AvatarActionKind.Harvest, AvatarSystem.ActionAt(sim, ana, at, AvatarTool.Use, at + new int3(1, 0, 0)).Kind);
-        Assert.Equal(AvatarActionKind.Harvest, AvatarSystem.ActionAt(sim, bea, at, AvatarTool.Use, at + new int3(1, 0, 0)).Kind);
 
-        // The AI's trades leave it to the labourer too.
+        // Nor does the AI: its trades leave it alone, and so does a villager with no trade.
         foreach (var e in Humans(sim).Where(e => !w.Has<PlayerCharacter>(e)))
         {
-            var gathers = w.Get<Trade>(e).Def.Gathers;
+            var gathers = w.TryGet<Trade>(e, out var t) && t.Def.Gathers;
             foreach (var work in RoundSystem.GatheringWork)
-                Assert.Equal(gathers, w.Get<Mind>(e).WorkPriority[(int)work] > 0);
+                if (!(work == WorkType.Mine && w.TryGet<Trade>(e, out var m) && m.Def.Mines))
+                    Assert.Equal(gathers, w.Get<Mind>(e).WorkPriority[(int)work] > 0);
         }
     }
 }

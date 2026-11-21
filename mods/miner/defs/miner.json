@@ -3,7 +3,7 @@
 {
   "trades": [
     // playerOnly: only a player who asks for it is dealt it. "mines": it digs and mines in a round, though it
-    // gathers nothing else (no crops, no timber: those are the labourer's).
+    // gathers nothing else (no crops, no timber).
     { "name": "Miner", "label": "miner", "level": "Beginner", "playerOnly": true, "mines": true,
       "description": "Works the mine in the hill east of town: iron and coal hewn from the rock, for the smith.",
       "workplace": "MineShed", "workPriorities": { "Mine": 1 }, "skills": { "Mining": 6 },

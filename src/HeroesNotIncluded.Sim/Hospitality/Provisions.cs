@@ -29,9 +29,8 @@ public struct Hamper
 /// where the town keeps the kitchen apart (<see cref="Split"/>: Reedmere's cookhouse on the shore,
 /// its inn out at the landing), dishes onto the warming shelf for the lodgers' board (a
 /// <see cref="ServiceKind.Meal"/> order at the inn itself, at no charge, served by the innkeeper).
-/// An empty warming shelf makes a room worth less. Where the inn has its kitchen (Millbrook) the
-/// innkeeper takes the hamper off its own hatch; where it's apart, a labourer runs it over
-/// (<see cref="HamperRunJob"/>) for a small fee, and the innkeeper fetches it only with no labourer about.
+/// An empty warming shelf makes a room worth less. The innkeeper takes the hamper off the hatch
+/// themselves: their own kitchen's at Millbrook, a walk over to the cookhouse where it's apart.
 /// </summary>
 public static class Provisions
 {
@@ -47,9 +46,6 @@ public static class Provisions
     /// <summary>The AI innkeeper orders another hamper once the merchandise shelf has fewer rations than this.</summary>
     public const int RationsLow = 2;
 
-    /// <summary>Silver the innkeeper pays a labourer for running the hamper over from the cookhouse.</summary>
-    public const int RunFee = 2;
-
     /// <summary>What a room's worth to an adventurer when the shelf's bare: no board to be had with it.</summary>
     public const float BareShelfWorth = 0.7f;
 
@@ -63,7 +59,7 @@ public static class Provisions
     public static bool Active(Simulation sim) =>
         !ShopSystem.BuildingFor(sim, TownRole.Tavern).IsNull && !ShopSystem.BuildingFor(sim, TownRole.Kitchen).IsNull;
 
-    /// <summary>Do the tavern and the kitchen stand apart in this town? The board, the warming shelf and the labourer's run wait on it.</summary>
+    /// <summary>Do the tavern and the kitchen stand apart in this town? The board and the warming shelf wait on it.</summary>
     public static bool Split(Simulation sim)
     {
         var inn = ShopSystem.BuildingFor(sim, TownRole.Tavern);
@@ -234,11 +230,10 @@ public static class Provisions
     }
 
     /// <summary>
-    /// Does the innkeeper wait at the hatch for this hamper order? Only once a hamper's up, nobody's
-    /// running it, and (where the kitchen's apart) there's no labourer about to run it for them.
+    /// Does the innkeeper wait at the hatch for this hamper order? Once a hamper's up for it.
     /// </summary>
     public static bool Waits(Simulation sim, Order e) =>
-        HamperUp(sim) && e.Assignee.IsNull && !(Split(sim) && RunnerAbout(sim));
+        HamperUp(sim) && e.Assignee.IsNull;
 
     /// <summary>
     /// The innkeeper takes the hamper that's up off the hatch by hand, at the hatch (the order's done
@@ -265,67 +260,6 @@ public static class Provisions
                 return part;
         return Entity.Null;
     }
-
-    // ---------------- The run (a labourer) ----------------
-
-    /// <summary>The trade that runs hampers over (the labourer's: <see cref="TradeDef.Gathers"/>).</summary>
-    public static bool Runs(Simulation sim, Entity who) =>
-        sim.World.TryGet<Trade>(who, out var t) && t.Def.Gathers && sim.World.Get<Creature>(who) is { Dead: false, Downed: false };
-
-    /// <summary>A labourer of the village's AI about to run the hamper (a player's may or may not: the keeper doesn't count on them).</summary>
-    public static bool RunnerAbout(Simulation sim)
-    {
-        foreach (var e in sim.Creatures())
-            if (Runs(sim, e) && !Players.Steered(sim, e) && sim.World.Get<Creature>(e).Faction == Faction.Village)
-                return true;
-        return false;
-    }
-
-    /// <summary>The open hamper order a hamper's up for, with nobody yet running it; null if none.</summary>
-    public static Order? ToRun(Simulation sim)
-    {
-        if (!Split(sim) || !HamperUp(sim))
-            return null;
-        foreach (var o in sim.Shops.All)
-            if (o.IsOpen && o.Kind.Kind == ServiceKind.Provisions && o.Assignee.IsNull)
-                return o;
-        return null;
-    }
-
-    /// <summary>The order this person's running a hamper for, if any.</summary>
-    public static Order? Running(Simulation sim, Entity who)
-    {
-        foreach (var o in sim.Shops.All)
-            if (o.IsOpen && o.Kind.Kind == ServiceKind.Provisions && o.Assignee == who && o.Poster != who)
-                return o;
-        return null;
-    }
-
-    /// <summary>
-    /// A labourer takes the hamper off the kitchen's hatch to run it to the inn: into their arms, the
-    /// order theirs to see through. False if there's none to run or they can't reach it.
-    /// </summary>
-    public static bool TakeToRun(Simulation sim, Entity who)
-    {
-        var hatch = Hatch.Of(sim, Cookhouse(sim));
-        if (!Runs(sim, who) || ToRun(sim) is not { } order || order.Poster == who || hatch.IsNull || !Inventory.CanReachContainer(sim, who, hatch)
-            || !sim.World.Get<Carrying>(who).Item.IsNull
-            || sim.StoredIn(hatch).FirstOrDefault(e => IsHamper(sim, e), Entity.Null) is not { IsNull: false } hamper)
-            return false;
-        TakeInArms(sim, who, sim.TakeFromStack(hamper, 1));
-        order.Assignee = who;
-        order.AssigneeName = sim.World.Get<Creature>(who).Name;
-        ShopSystem.Learn(order, who);
-        sim.Messages.Tell(who, MessageKind.Info, $"You take the inn's hamper. Carry it over to the inn and unpack it at the {(Shelf(sim).IsNull ? "merchandise shelf" : "warming shelf")}: {order.PosterName} pays you {RunFee} silver.",
-            sim.World.Get<Position>(who).Cell);
-        return true;
-    }
-
-    /// <summary>The work key's prompt at the kitchen's hatch for a labourer with a hamper to run; null otherwise.</summary>
-    public static string? RunPrompt(Simulation sim, Entity who, Entity hatch) =>
-        Runs(sim, who) && !hatch.IsNull && hatch == Hatch.Of(sim, Cookhouse(sim)) && ToRun(sim) is { } o && o.Poster != who
-        && sim.World.Get<Carrying>(who).Item.IsNull
-            ? $"Run the inn's hamper over ({RunFee} silver from {o.PosterName})" : null;
 
     // ---------------- Packing ----------------
 
@@ -441,12 +375,12 @@ public static class Provisions
 
     /// <summary>
     /// The hamper someone holds, if they're at the inn's warming or merchandise shelf with one and
-    /// it's theirs to unpack (the keeper's, or the labourer running it).
+    /// it's theirs to unpack (the keeper's).
     /// </summary>
     public static Entity HamperFor(Simulation sim, Entity who, Entity shelf)
     {
         var held = sim.World.Get<Carrying>(who).Item;
-        return IsUnpackShelf(sim, shelf) && IsHamper(sim, held) && (KeepsInn(sim, who) || Running(sim, who) != null) ? held : Entity.Null;
+        return IsUnpackShelf(sim, shelf) && IsHamper(sim, held) && KeepsInn(sim, who) ? held : Entity.Null;
     }
 
     /// <summary>The work key's prompt at the inn's shelf with a hamper in your arms; null otherwise.</summary>
@@ -466,8 +400,7 @@ public static class Provisions
     /// <summary>
     /// Unpack the hamper in someone's arms at the inn: its rations onto the merchandise shelf, for
     /// sale at the keeper's price; its dishes onto the warming shelf; a slack lid's further gone than
-    /// it looks; what won't fit is set down by the shelf; the cloth and basket are folded away. A
-    /// labourer who ran it over finishes the order: the keeper pays the cook, and the runner their fee.
+    /// it looks; what won't fit is set down by the shelf; the cloth and basket are folded away.
     /// False if they had none, or weren't in reach of the shelf.
     /// </summary>
     public static bool Unpack(Simulation sim, Entity who, Entity shelf)
@@ -476,12 +409,8 @@ public static class Provisions
         var hamper = HamperFor(sim, who, shelf);
         if (hamper.IsNull || !AvatarSystem.InReach(sim, w.Get<Position>(who).Cell, shelf))
             return false;
-        var run = Running(sim, who);
-        if (run != null)
-            Charge(run, Servings(sim, hamper));
-        var keeper = KeepsInn(sim, who) ? who : run?.Poster ?? Keeper(sim);
+        var keeper = who;
         var loose = w.Get<Hamper>(hamper).Loose;
-        var maker = w.Get<Hamper>(hamper).Maker;
         var merchandise = Merchandise(sim);
         var warming = Shelf(sim);
         var count = 0;
@@ -504,12 +433,6 @@ public static class Provisions
         w.Destroy(hamper);
         sim.Messages.Tell(who, MessageKind.Info, $"You unpack {count} {(count == 1 ? "serving" : "servings")} at the inn"
             + (merchandise.IsNull ? "." : ": the rations go up on the merchandise shelf, for sale."), w.Get<Thing>(shelf).Cell);
-        if (run != null)
-        {
-            sim.Shops.Complete(sim, run, w.IsAlive(maker) && maker != run.Poster ? maker : who);
-            if (w.IsAlive(run.Poster))
-                Coin.Pay(sim, run.Poster, who, RunFee);
-        }
         return true;
     }
 
@@ -571,7 +494,7 @@ public sealed record OrderProvisionsCommand(Entity Avatar) : ISimCommand, IActor
             sim.Messages.Tell(Avatar, MessageKind.Info, $"Can't send for a hamper: {why}.", at);
         else
             sim.Messages.Tell(Avatar, MessageKind.Good, Provisions.Split(sim)
-                ? "You send word to the cookhouse for a hamper. It'll be put up on their hatch; a labourer will run it over if one's about."
+                ? "You send word to the cookhouse for a hamper. It'll be put up on their hatch for you to fetch."
                 : "You send word to the kitchen for a hamper. It'll be put up on the serving hatch for you to take.", at);
     }
 }

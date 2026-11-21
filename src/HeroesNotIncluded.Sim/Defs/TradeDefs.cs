@@ -123,7 +123,7 @@ public sealed class TradeDef : Def
     public bool HoldsKeys { get; set; }
 
     /// <summary>
-    /// The holder may dig, mine, chop and forage in a round (the labourer). A trade may have only a share
+    /// The holder may dig, mine, chop and forage in a round (none of the core's do). A trade may have only a share
     /// of it: <see cref="Fells"/> (the carpenter's trees), <see cref="Mines"/> (the miner's rock).
     /// </summary>
     public bool Gathers { get; set; }
@@ -153,13 +153,13 @@ public sealed class TradeDef : Def
     /// <summary>The holder mends what crises break in town (<c>Tinkering.Repairs</c>): the tinker, the bridge.</summary>
     public bool MendsTown { get; set; }
 
-    /// <summary>Puts up what the town builds for an occasion (the festival's stalls and lanterns), as the labourer does, without gathering.</summary>
+    /// <summary>Puts up what the town builds for an occasion (the festival's stalls and lanterns), without gathering.</summary>
     public bool Builds { get; set; }
 
     /// <summary>
-    /// What its workplace runs short of that a labourer could fetch (<c>Favours.Wants</c>): held by
+    /// What its workplace runs short of that someone could fetch (<c>Favours.Wants</c>): held by
     /// the AI, it pins an errand to the notice board when there's less than <see cref="TradeWant.Below"/>
-    /// about the place. It's the labourer's living, when no player's posting.
+    /// about the place, for a player to take on.
     /// </summary>
     public List<TradeWant> Wants { get; set; } = [];
 
@@ -179,7 +179,7 @@ public sealed class TradeDef : Def
     [JsonIgnore]
     public TownRole Role { get; private set; }
 
-    /// <summary>Does it work from a building at all (the labourer doesn't)?</summary>
+    /// <summary>Does it work from a building at all (the musician doesn't)?</summary>
     [JsonIgnore]
     public bool HasWorkplace => Role != TownRole.None;
 
@@ -341,7 +341,7 @@ public sealed class TradeKeep
     [JsonIgnore] public RecipeDef RecipeDef { get; set; } = null!;
 }
 
-/// <summary>Something a trade's workplace wants kept in, and what it'll pay a labourer to fetch it (<see cref="TradeDef.Wants"/>).</summary>
+/// <summary>Something a trade's workplace wants kept in, and what it'll pay someone to fetch it (<see cref="TradeDef.Wants"/>).</summary>
 public sealed class TradeWant
 {
     public string Thing { get; set; } = "";

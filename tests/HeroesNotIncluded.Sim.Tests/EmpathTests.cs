@@ -1,3 +1,4 @@
+using HeroesNotIncluded.Sim.Hospitality;
 using HeroesNotIncluded.Sim.Components;
 using HeroesNotIncluded.Sim.Defs;
 using HeroesNotIncluded.Sim.Healing;
@@ -906,6 +907,34 @@ public class EmpathTests
         Assert.True(asked.Status == OrderStatus.Done, $"{asked.Status}: {log}");
         Assert.Equal(healer, asked.Assignee);
         Assert.False(LayOnHands.Hurt(sim, me), log);
+    }
+
+    [Fact]
+    public void ADirtyPalletIsForAskingAndLyingOnNotMopping()
+    {
+        var (sim, me, _, pallet) = HurtPlayerAtTheShrine();
+        var at = sim.World.Get<Thing>(pallet).Cell;
+        sim.Mess.Spill(sim, MessKind.Blood, at);
+        sim.World.Get<Carrying>(me).Item = sim.CreateItem(sim.Defs.Thing("Planks"), 1); // something in hand
+        Assert.Equal(AvatarActionKind.OrderHealing, AvatarSystem.ActionAt(sim, me, at).Kind);
+        Assert.Null(sim.Shops.PlayerOrder(sim, me, ServiceKind.Healing, Buildings.Of(sim, pallet)));
+        Assert.NotEqual(AvatarActionKind.Clean, AvatarSystem.ActionAt(sim, me, at).Kind); // asked: lie down, not mop
+    }
+
+    [Fact]
+    public void AnAIEmpathStaysUpAtNightForAPlayerOnTheirPallet()
+    {
+        var (sim, me, healer, pallet) = HurtPlayerAtTheShrine();
+        // Late, and the empath tired enough for bed.
+        sim.Clock.Tick += SimClock.HoursToTicks((23 - sim.Clock.HourOfDay + 24) % 24);
+        sim.World.Get<Needs>(healer).Values[sim.Defs.Need("Rest").Index] = 0.5f;
+        Assert.Null(sim.Shops.PlayerOrder(sim, me, ServiceKind.Healing, Buildings.Of(sim, pallet)));
+        var order = sim.Shops.OpenOrderOf(me, ServiceKind.Healing)!;
+        Assert.True(LayOnHands.PlayerWaiting(sim, healer));
+        for (var i = 0; i < 16 && order.IsOpen; i++)
+            sim.TickMany(SimClock.TicksPerHour / 4);
+        Assert.True(order.Status == OrderStatus.Done, $"{order.Status}: {sim.World.Get<Mind>(healer).Status}");
+        Assert.Equal(healer, order.Assignee);
     }
 
     [Fact]

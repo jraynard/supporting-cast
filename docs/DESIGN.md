@@ -42,7 +42,7 @@ play to it directly.
   ordinary work easier: it opens up work one pair of hands can't do, the helper plays a game of
   their own with its own way to fail, and bad help is worse than none. The lead calls and the
   helper answers, so they have to keep time and talk. Anyone can lend a hand: another trade, the
-  labourer, or an AI villager who heard the call and thinks well enough of you. The helper is named
+  town's spare villager, or an AI villager who heard the call and thinks well enough of you. The helper is named
   on the work and learns a little of the trade.
   - *Built: the striker.* A great blade (`twoHanded` recipes: the greatsword) is drawn out by a smith
     and a striker. The smith's hammer only taps where the sledge must fall; the striker heaves it
@@ -95,7 +95,7 @@ for a mend. If it doesn't, they say so aloud and go without. Each want is an `Or
 is a lever: too high and nobody comes and Satisfaction falls; too low and the purse fills slowly.
 Players ask each other for things as **favours**, for silver they name, pinned to the notice board
 in the square: only those who read it know what's wanted. An errand (bring me so many of a thing)
-is done by bringing it, and the town's labourer takes those on.
+is done by bringing it, by another player (no villager runs errands).
 
 **Well rested, well fed** (`Systems/WellBeing`). Eating and sleeping are bonuses, never chores:
 there's no meter to keep filled and going without costs nothing. Two hours' sleep leaves you
@@ -555,7 +555,7 @@ Millbrook, south of the square, with a bench, a stock chest and the collector's 
   a contraption that jams, a curio talked down to nothing and sold on.
 
 **Carpenter.** Millbrook's sixth trade, so a six-player round has a game for everyone (the
-labourer is what a seventh gets). Works from the woodshop by the tinker's: a sawhorse, a
+musician is what a seventh gets). Works from the woodshop by the tinker's: a sawhorse, a
 carpenter's bench, a chopping block and a chest the carter leaves feathers in (`Carpentry/`).
 - *Making planks* (`SawSession`), as before the sawmill (riving, splitting along the grain with
   wedges, is the other old way: a later alternative, not a step of this):
@@ -567,8 +567,8 @@ carpenter's bench, a chopping block and a chest the carter leaves feathers in (`
     blade wanders, more rushed, and A/D (or the mouse across) steer it back. Beside it, the beam
     from above with the cut creeping along it. Six logs make up to ten planks: a log hewn past its
     lines or a wandering cut wastes some.
-- *In the woods* (`Felling`): the carpenter fells trees by hand in a round (`TradeDef.Fells`; the
-  labourer still chops them the plain way, for timber):
+- *In the woods* (`Felling`): the carpenter fells trees by hand in a round (`TradeDef.Fells`; nobody
+  else fells or chops in a round):
   - **Fell** (`FellSession`): the trunk from above, turned as the camera looks. A/D aim the fall (a
     line on the ground shows where it'll land); every tree leans a little somewhere, plain to see.
     The notch on the aimed side, to a chalk mark a third in (hold F to raise the axe, let go to
@@ -641,7 +641,7 @@ carpenter's bench, a chopping block and a chest the carter leaves feathers in (`
   their arms, and sets it there (F); the town pays by the plank. The AI carpenter (and the bot) waits
   till the fire's out and no crisis is on.
 - *The town's work:* braces the bridge when a raid breaks it (with the tinker), and puts up the
-  festival with the labourers.
+  festival (the town's builder: it does that before its own work that afternoon).
 - AI carpenter: saws when the chest's short of planks and keeps two quivers on show
   (`SawJob`, `FletchJob`), answers an archer's ask (`ArrowsJob`) and mends what's brought
   (`MendJob`, as the smith's), without the games.
@@ -739,7 +739,7 @@ villager mid-round is for late joiners only.
   that brings the causeway down cuts the whole town off from the shore, the carter with it, till
   the tinker mends it.
   The cook **supplies the inn** (in every town; here the cookhouse stands apart): the innkeeper
-  sends from the bar for a hamper, from their own purse, a labourer runs it over from the cookhouse
+  sends from the bar for a hamper, from their own purse, walks over to fetch it off the cookhouse
   hatch, and it's unpacked behind the bar. Lodgers have their board off the warming shelf at
   breakfast and supper, at no charge, and a bare one makes a room worth less; the rations go on the
   merchandise shelf, for the innkeeper to sell to parties setting out. So the two trades lean on each other, and there's something for a traitor to

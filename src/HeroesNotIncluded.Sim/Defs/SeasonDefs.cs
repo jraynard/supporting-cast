@@ -18,7 +18,7 @@ public sealed class SeasonDef : Def
 
     /// <summary>
     /// The hour of the last day the festival's things start going up in the square: each a site
-    /// the labourers build that afternoon (<c>Round.FestivalSystem</c>). Whatever isn't up by the
+    /// the builders (the carpenter) put up that afternoon (<c>Round.FestivalSystem</c>). Whatever isn't up by the
     /// bell is put up then. At or after <see cref="FestivalHour"/>, everything appears at the bell.
     /// </summary>
     public float FestivalSetupHour { get; set; } = 11;

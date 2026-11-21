@@ -1178,9 +1178,16 @@ public class MusicianModTests
         return (sim, me, session, listener);
     }
 
-    /// <summary>Ten silver in the listener's hands (they've no pack), once they're in the audience: a job ended drops what's carried.</summary>
-    private static void Purse(Simulation sim, Entity listener) =>
+    /// <summary>
+    /// Ten silver in the listener's pack, once they're in the audience. A pack, not their hands: a job ended drops
+    /// what's carried, and with nobody hauling in a round it would lie by the hat, counted as tossed in.
+    /// </summary>
+    private static void Purse(Simulation sim, Entity listener)
+    {
+        if (sim.PackOf(listener).IsNull)
+            sim.GiveStartingPack(listener);
         Inventory.Stow(sim, listener, sim.CreateItem(sim.Defs.AllThings.First(t => t.Name == Sim.Shops.Coin.Silver), 10));
+    }
 
     [Fact]
     public void ListenersTipIntoTheHatOnceADayAndItComesBackUpFull() => WithMusician(() =>

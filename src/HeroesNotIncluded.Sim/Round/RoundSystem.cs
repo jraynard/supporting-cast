@@ -384,7 +384,8 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
     /// <summary>
     /// Who gets what. Seats are shuffled, then everyone gets a shot at their first choice before
     /// anyone gets a shot at their second. Whoever is left takes an open trade they didn't refuse,
-    /// or the unlimited trade.
+    /// or the unlimited trade (the musician, who comes to town by road), or with none loaded a
+    /// trade doubled up (<see cref="Leftover"/>).
     /// </summary>
     internal List<(LobbySeat Seat, TradeDef? Trade)> Deal(DefDatabase defs, Func<TradeDef, bool>? inTown = null)
     {
@@ -417,9 +418,26 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
             if (!dealt.ContainsKey(seat) && open.Find(t => !seat.Never.Contains(t) && !t.PlayerOnly) is { } any)
                 Give(seat, any);
 
-        var fallback = defs.AllTrades.Find(t => t.Unlimited);
-        return order.Select(s => (s, dealt.TryGetValue(s, out var t) ? t : fallback)).ToList();
+        var held = dealt.Values.ToList();
+        var result = new List<(LobbySeat Seat, TradeDef? Trade)>();
+        foreach (var seat in order)
+        {
+            var trade = dealt.TryGetValue(seat, out var t) ? t : Leftover(defs, inTown ?? (_ => true), held);
+            if (trade != null && !dealt.ContainsKey(seat))
+                held.Add(trade);
+            result.Add((seat, trade));
+        }
+        return result;
     }
+
+    /// <summary>
+    /// What a player gets when every trade's taken: the trade any number may hold
+    /// (<see cref="TradeDef.Unlimited"/>, the musician), else, with none loaded, the trade the AI
+    /// could work that fewest already hold, doubled up (two smiths sharing the smithy).
+    /// </summary>
+    internal static TradeDef? Leftover(DefDatabase defs, Func<TradeDef, bool> inTown, IReadOnlyCollection<TradeDef> held) =>
+        defs.AllTrades.Find(t => t.Unlimited && inTown(t))
+        ?? defs.AllTrades.Where(t => !t.PlayerOnly && inTown(t)).OrderBy(t => held.Count(h => h == t)).FirstOrDefault();
 
     /// <summary>
     /// Deal the trades and start. Each seat takes over an AI villager (more arrive if players
@@ -435,11 +453,16 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
             sim.Clock.Tick += SimClock.HoursToTicks(hour - sim.Clock.HourOfDay);
         var dealt = Deal(sim.Defs, t => InTown(sim, t));
         var free = OpenVillagers(sim);
+        // The villagers the trades nobody drew will need: any beyond them are spare.
+        var needed = sim.Defs.AllTrades.Count(t => !t.Unlimited && !t.PlayerOnly && InTown(sim, t) && !dealt.Exists(d => d.Trade == t));
         foreach (var (seat, trade) in dealt)
         {
             Entity body;
-            if (trade is { PlayerOnly: true })
-                body = Players.SpawnNewcomer(sim, seat.Name); // the musician comes to town; the villagers stay who they are
+            // The musician comes to town (the villagers stay who they are), unless they're only the leftover and a
+            // villager's spare: then that villager takes it up, already at home here.
+            var newcomer = trade is { PlayerOnly: true } && (seat.Wanted.Contains(trade) || free.Count <= needed);
+            if (newcomer)
+                body = Players.SpawnNewcomer(sim, seat.Name);
             else if (free.Count > 0)
             {
                 body = free[0];
@@ -448,22 +471,26 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
             else
             {
                 body = Players.SpawnNewcomer(sim, seat.Name);
+                newcomer = true;
             }
             Players.Inhabit(sim, seat.Player, body);
             Players.TakeOnLook(sim, body, seat.Name, seat.Look, seat.Clothes);
             Assign(sim, body, trade);
             PlaceAtWork(sim, body, trade);
-            if (trade?.ArrivesByRoad is { } line)
+            if (newcomer && trade?.ArrivesByRoad is { } line)
                 Players.ArriveByRoad(sim, body, line);
         }
 
+        // The AI's villagers take the trades nobody drew; any left over hold none (they keep the town's
+        // common work: fires, first aid, building, the bucket line).
         var open = sim.Defs.AllTrades.Where(t => !t.Unlimited && !t.PlayerOnly && InTown(sim, t) && !dealt.Exists(d => d.Trade == t)).ToList();
-        var fallback = sim.Defs.AllTrades.Find(t => t.Unlimited);
         foreach (var villager in free)
         {
-            var trade = open.Count > 0 ? open[0] : fallback;
+            var trade = open.Count > 0 ? open[0] : null;
             if (open.Count > 0)
                 open.RemoveAt(0);
+            else
+                Townsperson(sim, villager);
             Assign(sim, villager, trade);
             PlaceAtWork(sim, villager, trade);
         }
@@ -487,8 +514,9 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
 
     /// <summary>
     /// A late joiner takes over an AI villager, keeping that villager's name and look so the town
-    /// sees nothing change. Their wanted trades come first, then named trades over the unlimited
-    /// one. Characters whose players left aren't open: those players can still come back.
+    /// sees nothing change. Their wanted trades come first, then named trades; with none open they
+    /// come to town by road in the unlimited trade (the musician, <see cref="Leftover"/>).
+    /// Characters whose players left aren't open: those players can still come back.
     /// </summary>
     public Entity TakeTrade(Simulation sim, Guid player, IReadOnlyList<TradeDef>? wanted, IReadOnlyList<TradeDef>? never,
         string? name = null, Appearance? look = null, IReadOnlyList<string>? clothes = null)
@@ -509,15 +537,9 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
             // unless someone's already come for it (one to a trade, as the deal gives).
             if (want.PlayerOnly)
             {
-                if (!InTown(sim, want) || sim.Creatures().Any(e => Held(e) == want))
+                if (!InTown(sim, want) || (!want.Unlimited && sim.Creatures().Any(e => Held(e) == want)))
                     continue;
-                body = Players.SpawnNewcomer(sim, "Wanderer");
-                if (!string.IsNullOrWhiteSpace(name))
-                    Players.TakeOnLook(sim, body, name, look, clothes);
-                Assign(sim, body, want);
-                PlaceAtWork(sim, body, want);
-                if (want.ArrivesByRoad is { } line)
-                    Players.ArriveByRoad(sim, body, line);
+                body = Newcomer(sim, want, name, look, clothes);
                 break;
             }
             body = free.FirstOrDefault(e => Held(e) == want, Entity.Null);
@@ -526,12 +548,20 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
         }
         if (body.IsNull)
             body = free.FirstOrDefault(e => Held(e) is { Unlimited: false } t && !no.Contains(t), Entity.Null);
-        if (body.IsNull)
-            body = free.FirstOrDefault(e => Held(e) is null or { Unlimited: true }, Entity.Null);
+        var tradeless = free.FirstOrDefault(e => Held(e) is null, Entity.Null);
+        if (body.IsNull && !tradeless.IsNull)
+        {
+            // A villager with no trade of their own (one spare at the deal) takes up the leftover.
+            body = tradeless;
+            var trade = Leftover(sim.Defs, t => InTown(sim, t) && !no.Contains(t), sim.Creatures().Select(Held).OfType<TradeDef>().ToList());
+            Assign(sim, body, trade);
+            PlaceAtWork(sim, body, trade);
+        }
         if (body.IsNull)
         {
-            body = Players.SpawnNewcomer(sim, "Wanderer");
-            Assign(sim, body, sim.Defs.AllTrades.Find(t => t.Unlimited));
+            var held = sim.Creatures().Select(Held).OfType<TradeDef>().ToList();
+            var leftover = Leftover(sim.Defs, t => InTown(sim, t) && !no.Contains(t), held) ?? Leftover(sim.Defs, t => InTown(sim, t), held);
+            body = Newcomer(sim, leftover, name, look, clothes);
         }
         Players.Inhabit(sim, player, body);
         Homes.Give(sim, body);
@@ -539,11 +569,38 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
     }
 
     /// <summary>
+    /// A villager with no trade: the town's common work only (a fire, first aid, building, a hand when called).
+    /// No gathering, as for any trade that doesn't (<see cref="MayGather"/>), and so no stone axe and pick.
+    /// </summary>
+    private static void Townsperson(Simulation sim, Entity e)
+    {
+        var mind = sim.World.Get<Mind>(e);
+        foreach (var work in GatheringWork)
+            mind.WorkPriority[(int)work] = 0;
+        Toolbelt.TakeStartingTools(sim, e);
+    }
+
+    /// <summary>Someone new to town for a late joiner, in <paramref name="trade"/>: at work, or walking in by road if the trade does.</summary>
+    private static Entity Newcomer(Simulation sim, TradeDef? trade, string? name, Appearance? look, IReadOnlyList<string>? clothes)
+    {
+        var body = Players.SpawnNewcomer(sim, "Wanderer");
+        if (!string.IsNullOrWhiteSpace(name))
+            Players.TakeOnLook(sim, body, name, look, clothes);
+        Assign(sim, body, trade);
+        PlaceAtWork(sim, body, trade);
+        if (trade?.ArrivesByRoad is { } line)
+            Players.ArriveByRoad(sim, body, line);
+        return body;
+    }
+
+    /// <summary>
     /// The trade can be worked in this town: it needs no workplace, or the town has one (Reedmere has no mine, so
-    /// nobody's dealt the miner there). A trade the town can't hold is neither dealt nor offered.
+    /// nobody's dealt the miner there), and one that lodges at the inn (the musician) has an inn to lodge and play at.
+    /// A trade the town can't hold is neither dealt nor offered.
     /// </summary>
     public static bool InTown(Simulation sim, TradeDef trade) =>
-        !trade.HasWorkplace || !Shops.ShopSystem.WorkplaceOf(sim, trade).IsNull;
+        (!trade.HasWorkplace || !Shops.ShopSystem.WorkplaceOf(sim, trade).IsNull)
+        && (!trade.LodgesAtInn || !Shops.ShopSystem.BuildingFor(sim, TownRole.Tavern).IsNull);
 
     /// <summary>Villagers no player has a claim on, in a stable order.</summary>
     private static List<Entity> OpenVillagers(Simulation sim)
@@ -617,7 +674,7 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
             foreach (var work in GatheringWork)
                 if (work != WorkType.Mine || !trade.Mines) // a miner keeps the priority it was dealt for its rock
                     mind.WorkPriority[(int)work] = 0;
-            Toolbelt.TakeStartingTools(sim, e); // the stone axe and pick are the labourer's
+            Toolbelt.TakeStartingTools(sim, e); // the stone axe and pick are a gathering trade's
         }
 
         if (w.TryGet<Skills>(e, out var skills))

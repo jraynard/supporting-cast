@@ -226,7 +226,7 @@
     {
       "name": "Smithy", "roles": [ "Forge" ], "label": "smithy", "icon": "buildings/forge",
       // The chest by the forge is the smith's: the ore the carter leaves, bars, fuel and wood. No
-      // labourer's errand or haul takes from it, only someone opening it by hand.
+      // villager's job takes from it, only someone opening it by hand (and no AI takes from another's chest anyway: Simulation.AiMayTake).
       "keepsStock": true,
       "description": "A forge under a roof, open at the front for the heat: bellows either side to drive it hot enough for iron and steel, an anvil, a quench tub and a grindstone, tools on the wall and a bin of fuel. Room for a goldsmith's bench and chests.",
       "layout": [

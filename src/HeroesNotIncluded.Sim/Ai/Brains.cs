@@ -290,8 +290,8 @@ public sealed class HumanBrain : IBrain
             return eat;
         if (needs.Get(rest) < rest.UrgentBelow)
             return Sleep(sim, pawn);
-        if (AiQueries.IsNight(sim) && needs.Get(rest) < 0.7f)
-            return Sleep(sim, pawn);
+        if (AiQueries.IsNight(sim) && needs.Get(rest) < 0.7f && !Healing.LayOnHands.PlayerWaiting(sim, pawn))
+            return Sleep(sim, pawn); // an empath stays up for a player waiting on their pallet
 
         // 2b. What the player's avatar asked of them (follow, guard), until told otherwise.
         if (Requests.JobFor(sim, pawn) is { } asked)

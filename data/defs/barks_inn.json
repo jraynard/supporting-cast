@@ -1,22 +1,11 @@
 {
-  // The innkeeper's and the labourer's chores, as bots say them (Bots/BotPlayer.InnChores, Labour).
+  // The innkeeper's chores, as bots say them (Bots/BotPlayer.InnChores).
   "barks": [
     { "name": "inn.keg", "lines": [
       { "text": "Cask's near dry. New keg." },
       { "text": "Hold your thirst, the keg wants changing." },
       { "text": "That's the barrel done. Another!", "when": [ "chatty" ] },
       { "text": "Keg.", "when": [ "quiet" ] }
-    ] },
-    { "name": "errand.take", "lines": [
-      { "text": "{thing}? I'll fetch it." },
-      { "text": "{thing}, is it. Leave it with me." },
-      { "text": "Silver for {thing}? Done.", "when": [ "greedy" ] },
-      { "text": "Right. {thing}.", "when": [ "quiet" ] }
-    ] },
-    { "name": "errand.short", "lines": [
-      { "text": "One short? I could've sworn. Back in a tick." },
-      { "text": "Counted it twice, too. Hang on." },
-      { "text": "Ah. Short. Don't spend that silver yet.", "when": [ "chatty" ] }
     ] }
   ]
 }

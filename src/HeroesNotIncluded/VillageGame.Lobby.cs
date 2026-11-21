@@ -135,12 +135,14 @@ public sealed partial class VillageGame
         }
         if (session.Players.Count <= 1)
             TextC(Theme.Parchment, "Nobody's here yet. Suspicious.");
-        // The labourer isn't offered (it has no game of its own yet), but it's what's left over. A trade only players
+        // The unlimited trade (the musician) is what's left over, and any number may hold it. A trade only players
         // take seats only someone who wants it, so it counts only once someone does.
         var seats = session.Players.Select(p => round.SeatOf(p.Id)).OfType<LobbySeat>().ToList();
         var dealable = _sim.Defs.AllTrades.Count(t => !t.Unlimited && RoundSystem.InTown(_sim, t) && (!t.PlayerOnly || seats.Exists(s => s.Wanted.Contains(t))));
         if (session.Players.Count > dealable)
-            TextC(Theme.Dim, "More players than trades: whoever's left over is the town's labourer (rough for now).");
+            TextC(Theme.Dim, _sim.Defs.AllTrades.Find(t => t.Unlimited && RoundSystem.InTown(_sim, t)) is { } leftover
+                ? $"More players than trades: whoever's left over comes to town as a {leftover.Label}."
+                : "More players than trades: whoever's left over doubles up on a trade.");
 
         ImGui.Separator();
         DrawRoundOptions(session, round.Options);
@@ -208,7 +210,7 @@ public sealed partial class VillageGame
         var start = ImGui.GetCursorPosX();
         var column = Gui.S(220);
         foreach (var trade in _sim.Defs.AllTrades)
-            if (!trade.Unlimited && RoundSystem.InTown(_sim, trade))
+            if (RoundSystem.InTown(_sim, trade))
             {
                 var width = ImGui.CalcTextSize(Capitalized(trade.Label)).X
                     + (trade.PlayerOnly ? Gui.S(6) + ImGui.CalcTextSize("only if played"u8).X : 0f)
@@ -217,7 +219,7 @@ public sealed partial class VillageGame
             }
         foreach (var trade in _sim.Defs.AllTrades)
         {
-            if (trade.Unlimited || !RoundSystem.InTown(_sim, trade))
+            if (!RoundSystem.InTown(_sim, trade))
                 continue;
             ImGui.PushID(trade.Index);
             var rank = seat.Wanted.IndexOf(trade);
@@ -243,8 +245,9 @@ public sealed partial class VillageGame
                     wanted.Add(trade);
                 session.Send(new SetTradePreferencesCommand(session.Me.Id, wanted, seat.Never.Where(t => t != trade).ToList()));
             }
+            // The leftover trade can't be refused: it's what's dealt when every other's taken.
             ImGui.SameLine(0, 8);
-            if (ImGui.SmallButton(never ? "Refused" : "Never"))
+            if (!trade.Unlimited && ImGui.SmallButton(never ? "Refused" : "Never"))
             {
                 var refused = seat.Never.ToList();
                 if (!refused.Remove(trade))
@@ -274,7 +277,7 @@ public sealed partial class VillageGame
         Wrapped("The round is under way. Whose work would you like to take up? You'll get the closest thing going.");
         foreach (var trade in _sim.Defs.AllTrades)
         {
-            if (trade.Unlimited || !RoundSystem.InTown(_sim, trade))
+            if (!RoundSystem.InTown(_sim, trade))
                 continue;
             if (ImGui.Button(Capitalized(trade.Label) + (trade.Level is { } level ? $" ({TradeLevels.Label(level).ToLowerInvariant()})" : ""), in _autoSize))
                 Take(session, [trade]);

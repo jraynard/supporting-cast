@@ -208,7 +208,7 @@ public sealed partial class VillageGame
     private static readonly (string Context, (string Keys, string Does)[] Lines)[] ControlsCard =
     [
         ("Getting about", [("@walk", "walk"), ("@" + Act.Use, "use, talk to, work at what's in front of you"), ("@" + Act.Inventory, "inventory"),
-            ("@hotbar", "take a stack into your hands"), ("@" + Act.Drop, "put down what you hold"), ("@" + Act.Dig, "dig (the labourer)"),
+            ("@hotbar", "take a stack into your hands"), ("@" + Act.Drop, "put down what you hold"), ("@" + Act.Dig, "dig"),
             ("@" + Act.Sleep, "sleep where you stand"), ("@" + Act.Wheel, "held: the wheel (panels, stacks, put down, sleep)")]),
         ("Fighting", [("@" + Act.Draw, "draw or sheathe your weapon"), ("@aim", "weapon drawn: aim"), ("@" + Act.Strike, "weapon drawn: strike"),
             ("@" + Act.Heavy, "swing heavy; a bow: hold to draw, strike looses; a crossbow: hold to crank, it stays loaded"),

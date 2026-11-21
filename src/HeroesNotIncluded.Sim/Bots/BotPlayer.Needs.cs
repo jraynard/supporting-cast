@@ -76,7 +76,9 @@ public sealed partial class BotPlayer
             foreach (var e in sim.AvailableItems())
             {
                 var d = w.Get<Thing>(e).Def;
+                // Not out of another's chest, a kitchen or a bar shelf: a careful player's supper, not a looter's.
                 if (!d.IsFood || !d.EdibleBy(eater) || (d.IsMeat && !d.Cooked) || _noFood.Contains(e) || sim.Reservations.IsReservedByOther(e, me)
+                    || (w.Has<Stored>(e) && !sim.Ours(e, me)) || Ai.WorkGivers.KitchenStock(sim, me, e) || sim.InKept(e)
                     || !WellBeing.WouldFeed(sim, me, WellBeing.FedStrength(d, Meal.Of(sim, e), knowRot: false)))
                     continue;
                 var at = sim.LocationOf(e);

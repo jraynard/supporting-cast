@@ -267,7 +267,9 @@ public struct Relock
 
 /// <summary>
 /// Doors an AI villager let themselves through: locked again behind them once they're two steps
-/// clear and nobody's in the doorway (or they're gone). A door a player unlocks stays as they left it.
+/// clear, nobody's in the doorway (or they're gone), and nobody without a key is in the room it shuts
+/// off (an adventurer who wandered into the storeroom behind the keeper isn't locked in).
+/// A door a player unlocks stays as they left it.
 /// </summary>
 public sealed class RelockSystem : ISimSystem
 {
@@ -289,11 +291,32 @@ public sealed class RelockSystem : ISimSystem
             }
             var cell = w.Get<Thing>(door).Cell;
             var clear = !w.IsAlive(by) || !w.TryGet<Position>(by, out var p) || w.Get<Creature>(by).Dead || Map.Distance(p.Cell, cell) >= 2;
-            if (!clear || sim.Creatures().Any(c => w.Get<Position>(c).Cell == cell))
+            if (!clear || sim.Creatures().Any(c => w.Get<Position>(c).Cell == cell) || ShutsIn(sim, door, cell))
                 continue;
             sim.SetLocked(door, true);
             w.Remove<Relock>(door);
         }
+    }
+
+    /// <summary>
+    /// Would locking it shut someone in: anyone without its key in the smaller of the rooms on either side of
+    /// it (the storeroom, not the common room it opens off)?
+    /// </summary>
+    private static bool ShutsIn(Simulation sim, Entity door, int3 cell)
+    {
+        var w = sim.World;
+        Environment.Room? inside = null;
+        foreach (var d in (int3[])[new(1, 0, 0), new(-1, 0, 0), new(0, 1, 0), new(0, -1, 0)])
+            if (sim.Map.InBounds(cell + d) && sim.Rooms.RoomAt(cell + d) is { TouchesMapEdge: false } room
+                && (inside == null || room.TileCount < inside.TileCount))
+                inside = room;
+        if (inside == null || !w.TryGet<LockCut>(door, out var cut))
+            return false;
+        foreach (var c in sim.Creatures())
+            if (w.Get<Creature>(c) is { Dead: false } && sim.Rooms.RoomAt(w.Get<Position>(c).Cell)?.Id == inside.Id
+                && Locksmithing.KeyFor(sim, c, cut.Seed).IsNull)
+                return true;
+        return false;
     }
 }
 

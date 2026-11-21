@@ -187,7 +187,7 @@ public class ExpeditionTests
     [Fact]
     public void WellKeptGearAndTendedWoundsMakeAStrongerAdventurer()
     {
-        var (sim, _, party) = Round("Empath");
+        var (sim, _, party) = Round("Empath", tillTheyAsk: false); // just in, their weapons still in hand (none handed in for mending yet)
         var fresh = ExpeditionSystem.Record(sim, party[0]);
         var neglected = ExpeditionSystem.Record(sim, party[0]);
         neglected.Weapon = neglected.Weapon! with { Hp = 0.3f, Dullness = 0.9f, Quality = Quality.Crude };

@@ -435,10 +435,13 @@ public abstract class Job
         {
             var next = Entity.Null;
             var best = int.MaxValue;
-            foreach (var e in Sim.AvailableItems())
+            // What this pawn may take (Simulation.AiMayTake), less a kitchen's stock and a bar's that aren't its own.
+            foreach (var e in Sim.AvailableItems(Pawn))
             {
                 var t = Get<Thing>(e);
                 if (t.Def != def || Sim.Reservations.IsReservedByOther(e, Pawn) || Sim.Map.Fire[Sim.Map.Idx(t.Cell)] > 0)
+                    continue;
+                if (WorkGivers.KitchenStock(Sim, Pawn, e) || Sim.InKept(e))
                     continue;
                 if (accept != null && !accept(e, t))
                     continue;
@@ -450,7 +453,7 @@ public abstract class Job
                 yield break;
             foreach (var s in GoTo(Get<Thing>(next).Cell, PathEnd.OnTile)) yield return s;
             if (HasFailed) yield break;
-            if (!Sim.IsAvailable(next))
+            if (!Sim.IsAvailable(next, Pawn))
                 continue;
             var t2 = Get<Thing>(next);
             var take = Math.Min(Math.Min(want - have.Count, Sim.ContainerRoom(pack, def, t2.Material)), Get<Stack>(next).Count);

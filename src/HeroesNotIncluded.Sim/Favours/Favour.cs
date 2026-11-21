@@ -43,8 +43,8 @@ public sealed class Favour
 
     /// <summary>
     /// An errand: what's to be brought to the asker, and how many (null for a favour in words).
-    /// Bringing it is doing it: the asker pays on delivery (<see cref="FavourBoard.Deliver"/>), and
-    /// a labourer the AI runs takes these on.
+    /// Bringing it is doing it: the asker pays on delivery (<see cref="FavourBoard.Deliver"/>). Only
+    /// players take these on: no villager runs errands.
     /// </summary>
     public Defs.ThingDef? Wants { get; init; }
     public int Count { get; init; }

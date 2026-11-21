@@ -51,9 +51,14 @@ so far. Nobody new has tried them yet.
   has a finished round (`CharacterProgress`), or a nudge on the trade picker toward the tutorial
   for a trade never played. The first goes against "no in-round tips" (CLAUDE.md).
 - [ ] Maybe mark a trade or two on the picker as a good first one (the smith's loop is the plainest).
-- **Done:** the labourer is no longer offered to players (it has no game of its own; Backlog, "The
-  trades, deeper"). The carpenter is Millbrook's sixth trade (HISTORY.md, "The carpenter"), so the
-  labourer is now what a seventh player gets, and the lobby says so.
+- **Done:** the labourer is gone. The musician is what a player gets when every trade's taken (any
+  number may play, `TradeDef.Unlimited`), and the lobby says so; the town keeps one villager with no trade,
+  a hand when called. No villager hauls, runs errands or the hamper over, and the AI takes only from its
+  own workplace and the stockpile (`Simulation.AiMayTake`), so a new trade's chest is safe by default.
+- [ ] **Supplies ordered from the carter** (next): the tradesman orders what their shop needs at the shop
+  window, paid in silver, in their chest next morning; standing orders keep an AI-held shop going. Replaces
+  the carter's fixed daily drop at the smithy, woodshop and shrine and the inn's carter. Ordering well (not
+  short, not overstocked, not overpaying in a shortage) is the reward.
 - [ ] **The carpenter, played by someone:** `--practice Carpenter`. Do the saw and the fletching
   read? A first playtest found it quiet (no orders at all), so it now has them: worn bows, cudgels
   and staves mended, archers asking for arrows, a wagon's woodwork (the tinker keeps the wheel), and
@@ -440,10 +445,9 @@ items into "Now" when a playtest says they matter.
   (`Pies`), flares (`Cooking.FlarePerStep`), rats (`RatSystem`), feasts (`FeastSystem`), broths
   (`Broths`), word of the food (`ShopSystem.Fare`).
 - **Empath:** adventurers never tear a charm in town.
-- **Labourer:** hidden from players (the solo picker and the lobby) till it has a game of its own;
-  still the overflow for a seventh player and `--trade Labourer`. Its work is the AI's: errands off
-  the notice board, hauling, chopping. Being split up rather than given a pass: the Carpenter has come
-  out of it, and the Miner (`mods/miner`, a first pass); the Forager is left, for the new woods east of Millbrook.
+- **Labourer:** removed (a crutch: the AI doing what players should). Split up rather than given a pass:
+  the Carpenter came out of it, and the Miner (`mods/miner`, a first pass); the Forager is left, for the new
+  woods east of Millbrook. Errands are the players'; nobody chops or forages in a round till the Forager.
 - **Miner** (a beginner's trade, three games: hewing, sounding, the barrow; its bot works the whole round; off by
   default till played): an AI miner that hews (it only carries ore to the smithy now; it digs only what's marked,
   and could prefer chalked seams); the ore price on the shed's sign rather than the mod's list (`ores`); the smith sending

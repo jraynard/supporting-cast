@@ -107,15 +107,56 @@ public static class LayOnHands
     /// hands on whoever asked. An order to be mended (a player's) waits on the wounds, not the
     /// bleeding. Replaces the plain bandaging an AI healer used to answer with.
     /// </summary>
-    public static Job? ForOrder(Simulation sim, Entity pawn)
+    public static Job? ForOrder(Simulation sim, Entity pawn) => ForOrder(sim, pawn, playersOnly: false);
+
+    /// <summary>
+    /// A player's healing order at this empath's shrine, before anyone else's: a player's evening is
+    /// short, and an adventurer can wait on a pallet. Known whether or not they heard it said (whoever
+    /// lies down on the shrine's pallet is plain to see).
+    /// </summary>
+    public static Job? ForPlayer(Simulation sim, Entity pawn) =>
+        ShrineEmpath(sim, pawn, out _) ? ForOrder(sim, pawn, playersOnly: true) : null;
+
+    /// <summary>
+    /// A player waits at this empath's shrine to be healed: reason enough to stay up past bedtime, or get
+    /// up, short of being worn out (<see cref="Defs.NeedDef.UrgentBelow"/>).
+    /// </summary>
+    public static bool PlayerWaiting(Simulation sim, Entity pawn)
+    {
+        if (!ShrineEmpath(sim, pawn, out var shrine) || Players.Steered(sim, pawn))
+            return false;
+        var rest = sim.Defs.Need("Rest");
+        if (sim.World.TryGet<Needs>(pawn, out var needs) && needs.Get(rest) < rest.UrgentBelow)
+            return false;
+        foreach (var e in sim.Shops.All)
+            if (Waiting(sim, pawn, e, shrine))
+                return true;
+        return false;
+    }
+
+    private static bool Waiting(Simulation sim, Entity pawn, Shops.Order e, TownRole shrine)
+    {
+        var w = sim.World;
+        return e.IsOpen && e.Kind.Kind == ServiceKind.Healing && e.Kind.AtRole == shrine && (e.Assignee.IsNull || e.Assignee == pawn)
+            && w.IsAlive(e.Poster) && e.Poster != pawn && w.Has<PlayerCharacter>(e.Poster) && w.TryGet<Health>(e.Poster, out var h)
+            && (e.Mend ? CanHelp(sim, pawn, e.Poster) : h.Injuries.Exists(i => i.NeedsTending(sim.Clock.Tick)));
+    }
+
+    private static Job? ForOrder(Simulation sim, Entity pawn, bool playersOnly)
     {
         if (!ShrineEmpath(sim, pawn, out var shrine))
-            return Shops.HealOrders.For(sim, pawn);
+            return playersOnly ? null : Shops.HealOrders.For(sim, pawn);
         var w = sim.World;
         var now = sim.Clock.Tick;
         var from = w.Get<Position>(pawn).Cell;
         foreach (var e in sim.Shops.FrontFirst(sim))
         {
+            if (playersOnly)
+            {
+                if (!Waiting(sim, pawn, e, shrine))
+                    continue;
+                Shops.ShopSystem.Learn(e, pawn);
+            }
             if (!e.IsOpen || e.Kind.Kind != ServiceKind.Healing || e.Kind.AtRole != shrine || !e.KnownBy.Contains(pawn)
                 || (!e.Assignee.IsNull && e.Assignee != pawn) || !w.IsAlive(e.Poster) || e.Poster == pawn
                 || !w.TryGet<Health>(e.Poster, out var h)

@@ -14,7 +14,7 @@
       // From 15:00 to 22:30 on the last day at most (festival.json): about five real minutes, less
       // if the ceremony's said its piece sooner. The tale and the ceremony take what reading them
       // takes. Not much later: the town starts going to bed, crier and all.
-      // From festivalSetupHour that day the labourers put the festival up in the square.
+      // From festivalSetupHour that day the carpenter puts the festival up in the square (whatever's left goes up at the bell).
       "festivalSetupHour": 11,
       "festivalHour": 15,
       "festivalHours": 6.5,

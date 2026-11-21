@@ -197,7 +197,9 @@ public class MilitiaTests
     {
         var sim = Round(director: false);
         var w = sim.World;
-        var villager = sim.Creatures().First(e => !w.Has<Avatar>(e) && w.Get<Creature>(e).Faction == Faction.Village && !Armed(sim, e));
+        var villager = sim.Creatures().First(e => !w.Has<Avatar>(e) && w.Get<Creature>(e).Faction == Faction.Village);
+        if (Armed(sim, villager))
+            Inventory.Unequip(sim, villager, GearSlot.Weapon); // their trade's own, put by
         var before = Raids.Points(sim);
         var town = Spear(sim, Entity.Null);
         w.Add(town, new TownArms());
@@ -208,18 +210,17 @@ public class MilitiaTests
     }
 
     [Fact]
-    public void AVillagerFetchesAWeaponKeptInAChest()
+    public void AVillagerLeavesAWeaponInSomeonesChestAlone()
     {
         var sim = Round(director: false);
         var w = sim.World;
-        // A cottage's chest: a solid cell, reached from beside it (the smithy's is the smith's stock).
+        // A cottage's chest is its household's (Simulation.AiMayTake): no villager helps themselves.
         var chest = w.Query<Thing>().First(e => w.Get<Thing>(e).Def.Name == "Chest" && Buildings.Of(sim, e) is { IsNull: false } b
             && w.Get<PresetBuilding>(b).Def.Home);
-        var spear = Spear(sim, Entity.Null);
-        Assert.True(sim.Store(chest, spear).IsNull);
-        for (var h = 0; h < 8 && w.Has<Stored>(spear); h++)
-            sim.TickMany(SimClock.TicksPerHour);
-        Assert.Contains(sim.Creatures(), e => w.TryGet<Equipment>(e, out var eq) && eq.Weapon == spear);
+        var kept = Spear(sim, Entity.Null);
+        Assert.True(sim.Store(chest, kept).IsNull);
+        sim.TickMany(SimClock.TicksPerHour * 6);
+        Assert.True(w.Has<Stored>(kept) && w.Get<Stored>(kept).In == chest, "left in the chest");
     }
 
     /// <summary>A shop that keeps its stock (<see cref="Defs.BuildingDef.KeepsStock"/>): the smithy's chest is the smith's.</summary>

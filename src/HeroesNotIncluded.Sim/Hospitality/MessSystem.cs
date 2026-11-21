@@ -22,15 +22,25 @@ public readonly record struct MessSpot(MessKind Kind, float Amount, long Since);
 
 /// <summary>
 /// Mess on the floor, a cell at a time: ale spilled at the bar or sprayed from a fumbled tap, mud
-/// off the road, crumbs where someone ate, and blood wherever the wounded walk. Anyone can see it,
-/// and customers think the less of a room with mess in it. It stays indoors until it's cleaned up
-/// (<see cref="ScrubSession"/>); outdoors, rain and feet see it off in a few hours. Scrubbed blood is
+/// off the road, crumbs where someone ate, and blood wherever someone bleeding walks (as much as they're bleeding: a wound that's clotted
+/// leaves none). Anyone can see it, and customers think the less of a room with mess in it. It stays
+/// indoors until it's cleaned up (<see cref="ScrubSession"/>); outdoors, rain and feet see it off in a
+/// couple of hours. Scrubbed blood is
 /// gone for good, which will matter once there are bodies.
 /// </summary>
 public sealed class MessSystem : ISimSystem, ISaveState
 {
     /// <summary>Hours mess lasts outdoors.</summary>
-    public const float OutdoorHours = 6;
+    public const float OutdoorHours = 2;
+
+    /// <summary>
+    /// Chance a look (every five game minutes) that someone bleeding leaves a stain, per unit of blood lost an
+    /// hour, up to <see cref="MostBloodChance"/>: a bad cut marks the floor, a graze that's clotting doesn't.
+    /// </summary>
+    public const float BloodChancePerBleed = 2f, MostBloodChance = 0.3f;
+
+    /// <summary>Below this much blood lost an hour, nothing shows on the floor.</summary>
+    public const float LeastBleed = 0.03f;
 
     /// <summary>Satisfaction a customer loses each hour per spot of mess in the room with them (up to <see cref="WorstSpots"/>).</summary>
     public const float MoodPerSpot = 0.04f;
@@ -120,7 +130,8 @@ public sealed class MessSystem : ISimSystem, ISaveState
         {
             var at = w.Get<Position>(e).Cell;
             // The wounded bleed on the floor as they go.
-            if (w.TryGet<Health>(e, out var h) && h.BleedPerHour > 0.02f && _rand.NextFloat() < 0.3f && !w.Get<Creature>(e).Dead)
+            if (w.TryGet<Health>(e, out var h) && !w.Get<Creature>(e).Dead && HealthSystem.Bleeding(sim, h) is var bleed && bleed > LeastBleed
+                && _rand.NextFloat() < Math.Min(MostBloodChance, bleed * BloodChancePerBleed))
                 Spill(sim, MessKind.Blood, at, 0.5f);
             // Adventurers in off the road track mud indoors.
             if (w.TryGet<Adventurer>(e, out var a) && now - a.Arrived < SimClock.HoursToTicks(MuddyHours) && _rand.NextFloat() < 0.12f

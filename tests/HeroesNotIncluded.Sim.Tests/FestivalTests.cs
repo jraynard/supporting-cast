@@ -748,7 +748,7 @@ public class FestivalTests
         Assert.Equal(sim.Festival.Tale(sim)[0], sim.Festival.Told.First());
     }
 
-    /// <summary>A round with the town's usual villagers: the named trades and a labourer.</summary>
+    /// <summary>A round with the town's usual villagers: the named trades and a townsperson.</summary>
     private static Simulation FullRound(ulong seed = 7)
     {
         var (sim, _) = TestWorld.Millbrook(seed);
@@ -787,7 +787,7 @@ public class FestivalTests
     }
 
     [Fact]
-    public void TheLabourersPutItUpBeforeTheBellAndLeaveItUnlit()
+    public void TheCarpenterPutsItUpBeforeTheBellAndLeavesItUnlit()
     {
         var sim = FullRound();
         ToSetup(sim);
@@ -803,7 +803,7 @@ public class FestivalTests
     }
 
     [Fact]
-    public void OnlyTheLabourersAndTheCarpenterPutItUp()
+    public void OnlyTheBuildersPutItUp()
     {
         var sim = FullRound();
         ToSetup(sim);
@@ -820,11 +820,11 @@ public class FestivalTests
                     builders.Add(e);
         }
         Assert.NotEmpty(builders);
-        Assert.All(builders, e => Assert.True(FestivalSystem.PutsUp(sim, e), $"{e} isn't a labourer or the carpenter"));
+        Assert.All(builders, e => Assert.True(FestivalSystem.PutsUp(sim, e), $"{e} isn't a builder"));
     }
 
     [Fact]
-    public void TheBellPutsUpWhatTheLabourersDidnt()
+    public void TheBellPutsUpWhatTheBuildersDidnt()
     {
         var sim = Round();
         ToSetup(sim);

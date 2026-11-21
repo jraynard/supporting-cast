@@ -101,12 +101,10 @@ public class FellingTests
     // ---------------- Felling ----------------
 
     [Fact]
-    public void ACarpenterFellsByHandAndTheLabourerChopsAsEver()
+    public void ACarpenterFellsByHandAndACookDoesnt()
     {
         var (sim, me, tree) = ByATree();
         Assert.Equal(AvatarActionKind.Fell, AvatarSystem.ActionAt(sim, me, C(10, 11)).Kind);
-        sim.World.Get<Trade>(me).Def = sim.Defs.Trade("Labourer");
-        Assert.Equal(AvatarActionKind.Harvest, AvatarSystem.ActionAt(sim, me, C(10, 11)).Kind);
         sim.World.Get<Trade>(me).Def = sim.Defs.Trade("Cook");
         Assert.NotEqual(AvatarActionKind.Fell, AvatarSystem.ActionAt(sim, me, C(10, 11)).Kind);
         Assert.NotEqual(AvatarActionKind.Harvest, AvatarSystem.ActionAt(sim, me, C(10, 11)).Kind);

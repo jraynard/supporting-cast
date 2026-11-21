@@ -5,9 +5,9 @@ namespace HeroesNotIncluded.Sim.Favours;
 
 /// <summary>
 /// The town's own errands (<see cref="Defs.TradeDef.Wants"/>): each hour of a round, a trade held
-/// by the AI that's running short of something a labourer could fetch (logs for the hearth,
-/// berries for the pot) pins an errand for it, paid from its own purse. Without these the board
-/// stays empty unless a player posts, and the labourer has nothing to do but haul. Players keep
+/// by the AI that's running short of something someone could fetch (logs for the hearth,
+/// berries for the pot) pins an errand for it, paid from its own purse: work for the players,
+/// since no villager runs errands. Players keep
 /// their own shelves: a player's trade posts nothing on their behalf.
 /// </summary>
 public static class Wants

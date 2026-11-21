@@ -2,8 +2,9 @@
 // the trade (1 highest, 4 lowest); only what the trade puts first is listed, so the town's other
 // work still gets done. knows: stations whose recipes the holder knows; skills: the least they
 // have; kit: what they start with (a weapon goes in hand); stash: what's kept for them at the workplace
-// (under the bar), fetched when trouble comes; holdsKeys: a key to every lock at the workplace (the inn's storeroom). Labourer is unlimited: it's what's left when the named trades run out.
-// stations: the trade's furniture at its workplace. mendsTown: braces what a raid breaks (the bridge); builds: puts up the festival, as the labourer does.
+// (under the bar), fetched when trouble comes; holdsKeys: a key to every lock at the workplace (the inn's storeroom). unlimited: any number
+// may hold it, and it's what a player's dealt when the named trades run out (the musician's, mods/musician).
+// stations: the trade's furniture at its workplace. mendsTown: braces what a raid breaks (the bridge); builds: puts up the festival.
 // The tutorial (the title menu's Tutorial, Scenarios/Lessons): tutorialIntro is what the trade's about,
 // said first; lessons are its chapters, "core" ones run in order after the basics (below), the rest offered
 // after. A step's "ui" is the action whose button glows while it's at hand (shop, inventory, gift, quests);
@@ -49,7 +50,7 @@
     // The innkeeper keeps the tavern (the bar, the rooms and the quest board), the cook the kitchen:
     // under one roof at Millbrook's inn, apart where a town has a cookhouse. "serves": the services at the workplace a trade sees to (and prices on the sign).
     // "wants": what an AI holder pins an errand for when its workplace has fewer than "below" of it
-    // (Favours/Wants), "count" of them for "price" silver: the labourer's living.
+    // (Favours/Wants), "count" of them for "price" silver: work on the notice board for the players.
     { "name": "Innkeeper", "label": "innkeeper", "level": "Experienced", "description": "Keeps the bar and the rooms, hears everything said over the counter, and points adventuring parties at work, on whatever that's worth.",
       "workplace": "Tavern", "workPriorities": { "Cook": 1 }, "brokers": true, "serves": [ "Drink", "MixedDrink", "Lodging", "Quest" ], "holdsKeys": true,
       "stations": [ "AleCask", "BarShelf", "BarCounter", "BarTub", "KeyBoard" ],
@@ -66,7 +67,7 @@
           "notes": [ "Your prices hang on the sign (~J~). Too dear and they go thirsty. Too cheap and so do you.",
                      "A room: ~F~ at the key board behind the bar, write the guest into the book, take that room's key down and hand it over. The wrong key sends them in on someone.",
                      "When a guest's gone, their room wants turning round: clean linen from the storeroom on the bed (hold ~F~ to strip it, ~F~ as the sheet billows, ~A~ ~D~ to tuck), the pot into an empty bucket and out to the midden behind the inn, a bucket of water from the well into the jug.",
-                     "Rations for the road come from the cook: at the bar counter, send for a hamper (the bar card's button). Take it off the kitchen's hatch when it's up, ~F~ at the merchandise shelf behind the bar unpacks it, and the rations go up for sale there. Where the cookhouse stands apart, a labourer runs it over for a couple of silver, and its dishes go on the warming shelf: your lodgers' board.",
+                     "Rations for the road come from the cook: at the bar counter, send for a hamper (the bar card's button). Take it off the kitchen's hatch when it's up, ~F~ at the merchandise shelf behind the bar unpacks it, and the rations go up for sale there. Where the cookhouse stands apart, you walk over and fetch it, and its dishes go on the warming shelf: your lodgers' board.",
                      "Lucky Lou's under the bar. You'll know when. ~F~ at the counter." ] },
         { "id": "mixed", "title": "Mix a named drink", "supply": [ { "def": "Spirits" }, { "def": "Honey" } ],
           "blurb": "Mix a hearthwarmer (ale, spirits and honey) at the bar. The spirits and honey are in your pack.",
@@ -277,7 +278,6 @@
             { "id": "choose", "text": "Hold ~F~ at the bench and choose the crossbow." },
             { "id": "fit", "text": "Fit each part when it lines up, then wind the string back to the catch." } ],
           "notes": [ "A dagger won't hold off a raid. A crossbow from your bench might: two iron bars and some wood." ] } ],
-      "kit": [ { "def": "Dagger" }, { "def": "Lockpicks" }, { "def": "IronBar", "count": 4 }, { "def": "Planks", "count": 2 } ] },
-    { "name": "Labourer", "label": "labourer", "description": "Hauls, chops and digs for anyone who'll pay.", "unlimited": true, "gathers": true }
+      "kit": [ { "def": "Dagger" }, { "def": "Lockpicks" }, { "def": "IronBar", "count": 4 }, { "def": "Planks", "count": 2 } ] }
   ]
 }

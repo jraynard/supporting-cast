@@ -185,14 +185,14 @@ public sealed class FestivalSystem(ulong seed) : ISimSystem, ISaveState
     public bool IsSite(Entity e) => !e.IsNull && _sites.Contains(e);
 
     /// <summary>
-    /// Only the trades that labour or build (<see cref="Defs.TradeDef.Gathers"/>, <see cref="Defs.TradeDef.Builds"/>)
+    /// Only the trades that gather or build (<see cref="Defs.TradeDef.Gathers"/>, <see cref="Defs.TradeDef.Builds"/>)
     /// put the festival up: the smith and the innkeeper keep their shops open till the bell. Whatever's left is put up then.
     /// </summary>
     public static bool PutsUp(Simulation sim, Entity who) =>
         sim.World.TryGet<Trade>(who, out var trade) && (trade.Def.Gathers || trade.Def.Builds);
 
     /// <summary>
-    /// The afternoon before the bell: a site for everything the map lists, for the labourers to
+    /// The afternoon before the bell: a site for everything the map lists, for the builders to
     /// put up. The festival's things come out of store, not the town's woodpile: each site has
     /// what it's made of already, and wants only the work. Nothing's lit yet.
     /// </summary>
@@ -212,7 +212,7 @@ public sealed class FestivalSystem(ulong seed) : ISimSystem, ISaveState
             _sites.Add(site);
         }
         if (_sites.Exists(e => !e.IsNull))
-            sim.Messages.Add(MessageKind.Info, RoundSystem.GatheringPlace(sim) is { } place ? $"The carpenter and the labourers are putting up the festival out on {place}." : "The carpenter and the labourers are putting up the festival in the square.", sim.Round.Square);
+            sim.Messages.Add(MessageKind.Info, RoundSystem.GatheringPlace(sim) is { } place ? $"The carpenter's putting up the festival out on {place}." : "The carpenter's putting up the festival in the square.", sim.Round.Square);
     }
 
     /// <summary>
@@ -351,7 +351,7 @@ public sealed class FestivalSystem(ulong seed) : ISimSystem, ISaveState
     }
 
     /// <summary>
-    /// Everything the map lists: what the labourers put up this afternoon, any site of theirs
+    /// Everything the map lists: what the builders put up this afternoon, any site of theirs
     /// still unfinished built now, and the rest put where it goes (or the nearest free cell).
     /// Lit, if it burns.
     /// </summary>

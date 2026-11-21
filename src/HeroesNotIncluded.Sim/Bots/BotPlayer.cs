@@ -192,7 +192,7 @@ public sealed partial class BotPlayer(Func<Simulation> world, Guid player, Actio
         // Each trade's work between orders, in its own file.
         if (_task == 0 && SendForHamper(sim, me, now))
             return;
-        if (_task == 0 && (Kitchen(sim, me, view, now) || Bench(sim, me, view, now) || TradesBetween(sim, me, view, now) || Shrine(sim, me, view, now) || Labour(sim, me, view, now)))
+        if (_task == 0 && (Kitchen(sim, me, view, now) || Bench(sim, me, view, now) || TradesBetween(sim, me, view, now) || Shrine(sim, me, view, now)))
             return;
         // The hasty let the chores go half the time (an hour on, an hour off).
         if (_task == 0 && (Temper.Haste < 0.65f || now / SimClock.TicksPerHour % 2 == 0) && Upkeep(sim, me, view, now))

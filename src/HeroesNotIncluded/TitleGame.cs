@@ -272,14 +272,12 @@ public sealed class TitleGame : Game
 
     /// <summary>
     /// A solo round's last step: the trade to be dealt. The bots fill the others, so any choice
-    /// leaves a full cast; "Any" lets the deal decide as before. The labourer (the unlimited trade)
-    /// isn't offered: it has no game of its own yet and is the AI's to play (`--trade` still reaches it).
+    /// leaves a full cast; "Any" lets the deal decide as before.
     /// </summary>
     private MenuItem[] TradeItems(SavedCharacter c, string map)
     {
         Game Start(string? trade) => new VillageGame(DefaultSeed) { Adventure = true, Character = c, HeroTrade = trade, MapName = map, Mode = _mode };
         return _defs.AllTrades
-            .Where(t => !t.Unlimited)
             .Select(t => new MenuItem(TradeTitle(t), t.Description, () => Start(t.Name)))
             .Append(new MenuItem("Any", "Let the deal pick a trade for you.", () => Start(null)))
             .Append(new MenuItem("Back", "Back to who you'll be.", null, MenuAction.BackToCreator))

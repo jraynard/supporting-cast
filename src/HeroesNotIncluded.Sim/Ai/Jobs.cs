@@ -188,6 +188,9 @@ public sealed class SleepJob(Entity bed, int3? spot = null) : Job
             var rested = needs.Get(rest);
             if (tillDawn && Sim.Clock.Tick < dawn)
                 return true;
+            // An empath is got up for a player waiting on their pallet (checked now and then: it's a search).
+            if (!player && slept % 120 == 0 && Healing.LayOnHands.PlayerWaiting(Sim, Pawn))
+                return false;
             if (player && slept < restedAfter)
                 return true;
             return slept < maxTicks && rested < 0.99f && !(Sim.Clock.Tick >= dawn && rested >= DawnRest);

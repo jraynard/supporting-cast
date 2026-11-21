@@ -44,7 +44,7 @@ public class ShopLineTests
     [Fact]
     public void EveryShopInTheVillageHasRoomForALine()
     {
-        var (sim, _, _) = Town("Labourer");
+        var (sim, _, _) = Town("Musician");
         foreach (var role in sim.Defs.AllServices.Select(d => d.AtRole).Where(r => r != TownRole.None).Distinct())
         {
             var name = role.ToString();

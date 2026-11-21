@@ -86,10 +86,12 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. ` (R3
     `lessons` in `trades.json` (and its top-level `basics`); a finished one is kept game-side in
     `CharacterProgress.Lessons`. There are no in-round tips: teaching text lives in the tutorial.
   - `Round/RoundSystem`: the lobby, the deal and the season (`season.json`): `Festival` on the last
-    evening (put up that afternoon by the labourers, `FestivalSystem.Sites`), then `Over` with a `RoundSummary` for the reveal. `Phase.None` means no round (tests,
+    evening (put up that afternoon by the carpenter, a trade that `builds`, before its own work, `FestivalSystem.Sites`), then `Over` with a `RoundSummary` for the reveal. `Phase.None` means no round (tests,
     demos, bench); behaviour that belongs to rounds checks `Round.Live` (playing or festival).
     `Endless` keeps a test's round going. The host's choices are `RoundOptions` (friendly fire; traitors, off till M4). Players inhabit AI villagers. The deal also gives
     everyone a home (`Systems/Homes`: a cottage bed of their own, held for them).
+    There's no labourer: a player dealt nothing else is the musician (`TradeDef.Unlimited`, `RoundSystem.Leftover`), and the town
+    has one villager with no trade (`VillageRound.StartingVillagers`), a hand when called, never a trade's work.
     `Round/PauseVote`: co-op pauses by agreement (all connected agree, all ready to resume; who's connected
     comes from `PeerEvents`); the host seals turns with no steps while it holds. Alone, pausing is game-side
     (`VillageGame.Pause`: the menu or the pause key).
@@ -159,13 +161,13 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. ` (R3
     (`ServiceKind.Provisions`) from the bar (`OrderProvisionsCommand`) or the kitchen's hatch, it's packed at the prep table
     (`PackSession.ForHamper`; an AI cook ties rations itself), put up on the hatch, and paid by what's in it (`Provisions.Charge`).
     Unpacked at the inn, its rations go on sale on the merchandise shelf. Where the inn and the kitchen stand apart (Reedmere,
-    `Provisions.Split`) a labourer runs it over for a fee (`HamperRunJob`) and its dishes go on the warming shelf: lodgers' board
+    `Provisions.Split`) the innkeeper walks over to fetch it and its dishes go on the warming shelf: lodgers' board
     (a meal ordered at the inn, `Provisions.IsBoard`). Gear is sold only from a shop's wares shelf (`display` furniture; `Goods`):
     stored there by its seller (`Goods.CanSellAt`, a shelf's `displayFor` role) it's priced at once (`Goods.Shelved`), and only
     the seller takes it down; no job takes an item for sale (`IsAvailable`). Villagers buy supper there of an
     evening. Players trade face to face (`Shops/Barter`, read through `PerceptionView.Barter`): F at another player hands over
     what you hold, or with empty hands asks to trade; both fill a table, and it changes hands at once when both agree. `Favours/`: pinned to the notice board in the square and known by reading it, for
-    silver; errands (bring so many of a thing) are done by bringing, and the labourer takes them.
+    silver; errands (bring so many of a thing) are done by bringing, by players only (an AI trade short of something pins one, `Favours/Wants`).
   - `Carpentry/` (now the carpenter mod, `mods/carpenter/src/Carpenter.Sim`, on by default; it reaches the core only through
     `Modding/TradeModule`, `SimRegistry` and `Bots/IBotTrade`, and `ModBoundaryTests` keeps the core from naming it): the Carpenter, at the woodshop. Planks sawn (`SawSession`), bows tillered
     (`BowSession`), a quiver's pattern arrow sighted, shaved, headed and fletched (`FletchSession`) with a hidden warp (`Fletched.Warped`, never shown), sold as goods to archers
@@ -208,6 +210,11 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. ` (R3
     command and co-op event (`PeerEvents`) by tick, from a point with no job running, and played back in a
     sim of its own (`ReplayPlayer`), state hashes checked. Anything that changes the sim outside a command
     must `Spoil` it. Kept at the reveal (`Replay/ReplayLibrary`), watched in `Replay/ReplayGame`.
+  - Where the AI takes from, in a round (`Simulation.AiMayTake`, at `FindNearestItem` and `AvailableItems(taker)`): out of a
+    container only at its own workplace (or the muster rack at a call to arms), and off the ground only what the world left or
+    what lies in a stockpile or at its workplace, never what a person set down. A new trade's chest is safe without flags.
+    Nobody hauls in a round. A trade's working fires and stations are its own (`WorkGivers.MayWorkAt`). Bots mind the same
+    containers (`Simulation.Ours`).
   - Jobs (`Ai/Jobs.cs`) are iterator coroutines: use `GoTo`/`Reserve`, `Fail(reason)` then
     `yield break`, and check `Alive(target)` after every wait. `ReleasePawn` is everything ending a
     job does to the world. "Job" here is an AI task; a player's role is a **`Trade`**.

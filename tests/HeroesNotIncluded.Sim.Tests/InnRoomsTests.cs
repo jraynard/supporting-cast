@@ -211,6 +211,27 @@ public class InnRoomsTests
     }
 
     [Fact]
+    public void AClottedWoundLeavesNoTrailAndAFreshOneDoes()
+    {
+        var (sim, _) = Tavern("Innkeeper");
+        var me = Players.CharacterOf(sim, Ana);
+        var h = sim.World.Get<Health>(me);
+        var leg = h.Body.Parts.FindIndex(p => p.Label.Contains("leg") && !p.Vital);
+        HealthSystem.Damage(sim, me, 14f, DamageType.Cut, leg);
+        foreach (var inj in h.Injuries)
+            inj.Tick -= SimClock.HoursToTicks(HealthSystem.ClotHours + 1); // an old cut, long since stopped by itself
+        h.Changed();
+        // Where they stand (still: a player's character goes nowhere unasked), so others' blood doesn't count.
+        int Blood() => sim.Mess.At(sim, sim.World.Get<Position>(me).Cell) is { Kind: MessKind.Blood } ? 1 : 0;
+        sim.TickMany(SimClock.TicksPerHour * 2);
+        Assert.Equal(0, Blood());
+        HealthSystem.Damage(sim, me, 14f, DamageType.Cut, leg); // a fresh one
+        for (var t = 0; t < 8 && Blood() == 0; t++)
+            sim.TickMany(SimClock.TicksPerHour / 4);
+        Assert.True(Blood() > 0, "a fresh cut marks the floor");
+    }
+
+    [Fact]
     public void BloodIsADarkStainAndScrubsAwayWithoutATrace()
     {
         var (sim, _) = Tavern("Innkeeper");

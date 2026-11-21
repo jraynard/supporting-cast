@@ -15,7 +15,12 @@ public sealed record Hero(string? Name, Appearance? Look, IReadOnlyList<string>?
 /// </summary>
 public static class VillageRound
 {
-    /// <summary>AI villagers at the start, before any player arrives: one to each of the six trades, and a labourer.</summary>
+    /// <summary>
+    /// AI villagers at the start, before any player arrives: one to each of the six trades the AI works, and a
+    /// townsperson with no trade: a second pair of hands when someone at work for two calls for one, the bucket
+    /// line, the public fires. Never a trade's work, nor errands or hauling: those were the labourer's, and are
+    /// the players' now.
+    /// </summary>
     public const int StartingVillagers = 7;
 
     /// <summary>The map a round is played on unless another is chosen (data/defs/maps/).</summary>

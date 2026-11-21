@@ -514,7 +514,45 @@ public sealed partial class Simulation
     /// work at (<see cref="Defs.BuildingDef.KeepsStock"/>), as a smith takes iron from the smithy's chest.
     /// </summary>
     public bool IsAvailable(Entity item, Entity taker) =>
-        IsAvailable(item) || (World.IsAlive(item) && !World.Has<Shops.ForSale>(item) && World.TryGet<Stored>(item, out var s) && KeptFor(s.In, taker));
+        (IsAvailable(item) || (World.IsAlive(item) && !World.Has<Shops.ForSale>(item) && World.TryGet<Stored>(item, out var s) && KeptFor(s.In, taker)))
+        && AiMayTake(item, taker);
+
+    /// <summary>
+    /// Where the AI may take things from, one rule for every trade so a new one's chest needn't be
+    /// flagged to be safe: out of a container only at its own workplace (a building its trade
+    /// <see cref="Defs.TradeDef.WorksAt"/>), or the muster rack at a call to arms; off the ground
+    /// anything the world left (a felled tree's logs, a raider's dropped sword, the cart's overflow),
+    /// but what a person set down by hand only in a stockpile or at its own workplace. Everything
+    /// else is someone's, and only a player takes it, by hand. A player's character takes anything.
+    /// </summary>
+    /// <remarks>
+    /// Only in a round (<see cref="HeroesNotIncluded.Sim.Round.RoundPhase.None"/> keeps the old open stores: tests, demos and
+    /// the bench, where a wagon's load is everyone's).
+    /// </remarks>
+    public bool AiMayTake(Entity item, Entity taker) =>
+        taker.IsNull || Round.Phase == HeroesNotIncluded.Sim.Round.RoundPhase.None || Players.Steered(this, taker) || Ours(item, taker);
+
+    /// <summary>
+    /// <see cref="AiMayTake"/>'s rule whoever's asking: for a bot that should keep its hands to itself
+    /// as a careful player would (never into another shop's chest for its supper).
+    /// </summary>
+    public bool Ours(Entity item, Entity taker)
+    {
+        if (World.TryGet<Stored>(item, out var s))
+            return OwnWorkplace(HeroesNotIncluded.Sim.Systems.Buildings.Of(this, s.In), taker)
+                || (Militia.Mustering && Sim.Militia.MilitiaSystem.IsRack(this, s.In));
+        if (!World.TryGet<Stack>(item, out var stack) || !LaidByHand(stack))
+            return true;
+        var cell = World.Get<Thing>(item).Cell;
+        return Map.Zone[Map.Idx(cell)] > 0 || OwnWorkplace(HeroesNotIncluded.Sim.Systems.Buildings.At(this, cell), taker);
+    }
+
+    /// <summary>Set down by someone (<see cref="PlaceItemNear"/> with byHand), not left by the world.</summary>
+    public static bool LaidByHand(Stack stack) => stack.Laid > long.MinValue / 4;
+
+    /// <summary>Is this building one the taker's trade works at?</summary>
+    private bool OwnWorkplace(Entity building, Entity taker) =>
+        !building.IsNull && World.TryGet<PresetBuilding>(building, out var b) && World.TryGet<Trade>(taker, out var trade) && trade.Def.WorksAt(b.Def);
 
     /// <summary>Items lying on the map plus items kept in containers (anything a job could take), less what's up for sale.</summary>
     public IEnumerable<Entity> AvailableItems()
@@ -524,12 +562,16 @@ public sealed partial class Simulation
                 yield return e;
     }
 
-    /// <summary><see cref="AvailableItems()"/> for one taker, with the kept stock of the shop they work at.</summary>
+    /// <summary>
+    /// <see cref="AvailableItems()"/> for one taker, with the kept stock of the shop they work at, and
+    /// for the AI only what it may take (<see cref="AiMayTake"/>).
+    /// </summary>
     public IEnumerable<Entity> AvailableItems(Entity taker)
     {
         foreach (var e in World.Query<Stack>())
             if (!World.Has<Shops.ForSale>(e) && !World.Has<SetDownBy>(e) && (World.Get<Thing>(e).Spawned
-                || (World.TryGet<Stored>(e, out var s) && (!OnSomeone(s.In) || KeptFor(s.In, taker)))))
+                || (World.TryGet<Stored>(e, out var s) && (!OnSomeone(s.In) || KeptFor(s.In, taker))))
+                && AiMayTake(e, taker))
                 yield return e;
     }
 

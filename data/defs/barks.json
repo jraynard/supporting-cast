@@ -37,7 +37,6 @@
       { "text": "You'd be amazed what people walk around with.", "when": [ "empath" ] },
       { "text": "Locks opened, wagons mended, no questions.", "when": [ "tinker" ] },
       { "text": "That box they brought back is ticking. Probably fine.", "when": [ "tinker" ] },
-      { "text": "Anyone need anything hauled?", "when": [ "labourer" ] },
       { "text": "Do you ever think the heroes notice us? No? Me neither.", "when": [ "chatty" ] },
       { "text": "Something's coming. I can feel it in my knees.", "when": [ "nervy" ] },
       { "text": "Same as yesterday.", "when": [ "dour" ] }

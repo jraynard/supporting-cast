@@ -14,8 +14,7 @@ namespace HeroesNotIncluded.Sim.Tests;
 
 /// <summary>
 /// The innkeeper's bot at its chores (a keg changed when the cask runs low, the slops and the jug,
-/// the book struck through) and the labourer's (errands off the notice board, fetched or gathered,
-/// and the festival put up).
+/// the book struck through).
 /// </summary>
 public class BotInnLabourTests
 {
@@ -66,14 +65,6 @@ public class BotInnLabourTests
     {
         var at = sim.World.Get<Thing>(Board(sim)).Cell;
         Put(sim, who, sim.SpiralFrom(at, 1).First(c => c != at && sim.Map.Passable(c) && sim.Map.Standable(sim.Map.Idx(c))));
-    }
-
-    /// <summary>The town's own labourers kept off the board, so it's the bot's errand to fill.</summary>
-    private static void NoAiLabourers(Simulation sim)
-    {
-        foreach (var e in sim.Creatures())
-            if (!sim.World.Has<Avatar>(e) && sim.World.TryGet<Trade>(e, out var t) && t.Def.Unlimited)
-                sim.World.Get<Mind>(e).WorkPriority[(int)WorkType.Haul] = 0;
     }
 
     private static int Count(Simulation sim, Entity who, ThingDef def) => Inventory.CarriedOf(sim, who, def).Sum(e => sim.World.Get<Stack>(e).Count);
@@ -134,95 +125,5 @@ public class BotInnLabourTests
         Assert.False(hook.IsNull, "its key hangs on the board");
         Assert.True(Ledger.SignedIn(sim, board, guest));
         Assert.True(Run(sim, bot, () => !Ledger.SignedIn(sim, board, guest), SimClock.TicksPerHour * 4), $"bot {bot.Doing}");
-    }
-
-    // ---------------- The labourer ----------------
-
-    [Fact]
-    public void ABotLabourerReadsTheBoardAndFetchesAnErrand()
-    {
-        var (sim, bot) = Round("Labourer", "Empath");
-        NoAiLabourers(sim);
-        var w = sim.World;
-        var bea = Players.CharacterOf(sim, Bea);
-        AtBoard(sim, bea);
-        w.Get<Mind>(bea).Drafted = true;
-        var stone = sim.Defs.Thing("Stone");
-        var at = w.Get<Thing>(Board(sim)).Cell;
-        var pile = sim.SpiralFrom(at, 4).First(c => Maps.Map.Distance(c, at) >= 3 && sim.Map.Passable(c) && sim.Map.Standable(sim.Map.Idx(c)) && sim.Map.Item[sim.Map.Idx(c)].IsNull);
-        sim.SpawnItem(stone, 6, pile);
-        sim.ApplyNow(new PostErrandCommand(bea, stone, 3, 5, 8));
-        var errand = sim.Favours.All.Single();
-        var had = Count(sim, bea, stone);
-        Assert.True(Run(sim, bot, () => !errand.IsOpen, SimClock.TicksPerHour * 4), $"bot {bot.Doing}");
-        Assert.Equal(FavourStatus.Done, errand.Status);
-        Assert.Equal(Players.CharacterOf(sim, Ana), errand.Assignee);
-        Assert.Equal(had + 3, Count(sim, bea, stone));
-    }
-
-    [Fact]
-    public void ABotLabourerGathersWhatAnErrandWantsWhenNoneIsLyingAbout()
-    {
-        var (sim, bot) = Round("Labourer", "Empath");
-        NoAiLabourers(sim);
-        var w = sim.World;
-        var bea = Players.CharacterOf(sim, Bea);
-        AtBoard(sim, bea);
-        w.Get<Mind>(bea).Drafted = true;
-        var wood = sim.Defs.Thing("Wood");
-        foreach (var e in sim.AvailableItems().Where(e => w.Get<Thing>(e).Def == wood).ToList())
-            sim.DestroyThing(e); // none to be had but off a tree
-        sim.ApplyNow(new PostErrandCommand(bea, wood, 4, 6, 12));
-        var errand = sim.Favours.All.Single();
-        Assert.True(Run(sim, bot, () => !errand.IsOpen, SimClock.TicksPerHour * 8), $"bot {bot.Doing}");
-        Assert.Equal(FavourStatus.Done, errand.Status);
-        Assert.True(Count(sim, bea, wood) >= 4);
-    }
-
-    [Fact]
-    public void ACarelessBotLabourerCanBringOneShortAndGoBackForIt()
-    {
-        var careless = BotTemperament.Steady with { Name = "Careless", Care = 0f };
-        var slipped = false;
-        for (var seed = 0; seed < 6 && !slipped; seed++)
-        {
-            var (sim, _) = Round("Labourer", "Empath");
-            var bot = new BotPlayer(() => sim, Ana, c => sim.ApplyNow(c), (ulong)seed) { Temper = careless, Skill = 0.1f };
-            NoAiLabourers(sim);
-            var w = sim.World;
-            var bea = Players.CharacterOf(sim, Bea);
-            AtBoard(sim, bea);
-            w.Get<Mind>(bea).Drafted = true;
-            var stone = sim.Defs.Thing("Stone");
-            var at = w.Get<Thing>(Board(sim)).Cell;
-            var pile = sim.SpiralFrom(at, 4).First(c => Maps.Map.Distance(c, at) >= 3 && sim.Map.Passable(c) && sim.Map.Standable(sim.Map.Idx(c)) && sim.Map.Item[sim.Map.Idx(c)].IsNull);
-            sim.SpawnItem(stone, 3, pile);
-            var store = sim.SpiralFrom(at, 6).First(c => Maps.Map.Distance(c, at) >= 5 && sim.Map.Passable(c) && sim.Map.Standable(sim.Map.Idx(c)) && sim.Map.Item[sim.Map.Idx(c)].IsNull);
-            sim.SpawnItem(stone, 3, store);
-            sim.ApplyNow(new PostErrandCommand(bea, stone, 4, 5, 8));
-            var errand = sim.Favours.All.Single();
-            Assert.True(Run(sim, bot, () => !errand.IsOpen, SimClock.TicksPerHour * 4), $"bot {bot.Doing}");
-            Assert.Equal(FavourStatus.Done, errand.Status);
-            slipped = bot.Stats.Mistakes > 0;
-        }
-        Assert.True(slipped, "a careless hand counts one short now and then");
-    }
-
-    [Fact]
-    public void ABotLabourerPutsUpTheFestival()
-    {
-        var (sim, bot) = Round("Labourer");
-        NoAiLabourers(sim);
-        foreach (var e in sim.Creatures())
-            if (!sim.World.Has<Avatar>(e) && sim.World.TryGet<Trade>(e, out var t) && t.Def.Gathers)
-                sim.World.Get<Mind>(e).WorkPriority[(int)WorkType.Construct] = 0; // it's the bot's to put up
-        // To the last afternoon, when the sites go up (the bot has nothing to do till then).
-        sim.Clock.Tick = sim.Round.SetupTick(sim) - 1;
-        sim.TickMany(2);
-        Assert.True(sim.Festival.SettingUp, "the setting up began");
-        var sites = sim.Festival.Sites.Where(e => !e.IsNull && sim.World.Has<Construction>(e)).ToList();
-        Assert.NotEmpty(sites);
-        Assert.True(Run(sim, bot, () => sites.Any(e => !sim.World.IsAlive(e) || !sim.World.Has<Construction>(e)), SimClock.TicksPerHour * 2),
-            $"bot {bot.Doing}");
     }
 }

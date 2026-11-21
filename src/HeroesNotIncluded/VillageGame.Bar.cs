@@ -523,9 +523,8 @@ public sealed partial class VillageGame
             return;
         if (Provisions.Ordered(_sim, _avatar) is { } order)
         {
-            TextC(Dim, !order.Assignee.IsNull && order.Assignee != _avatar ? $"The hamper's on its way: {order.AssigneeName} is running it over."
-                : Provisions.HamperUp(_sim) ? (Provisions.Split(_sim) && Provisions.RunnerAbout(_sim)
-                    ? "The hamper's up on the cookhouse hatch: a labourer will run it over (or fetch it yourself)."
+            TextC(Dim, Provisions.HamperUp(_sim) ? (Provisions.Split(_sim)
+                    ? "The hamper's up on the cookhouse hatch: go over and fetch it."
                     : "The hamper's up on the kitchen's hatch: take it from there.")
                 : "A hamper's on order: the cook's packing it.");
             return;

@@ -78,8 +78,8 @@ public static class Toolbelt
     public static readonly string[] StartingTools = ["StoneAxe", "StonePick"];
 
     /// <summary>
-    /// Take the <see cref="StartingTools"/> off the belt: a trade that doesn't gather (all but the
-    /// labourer) has no use for them, and they'd only clutter the belt.
+    /// Take the <see cref="StartingTools"/> off the belt: a trade that doesn't gather (all of the
+    /// core's) has no use for them, and they'd only clutter the belt.
     /// </summary>
     public static void TakeStartingTools(Simulation sim, Entity creature)
     {

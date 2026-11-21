@@ -24,6 +24,10 @@ public sealed class WorkGivers
         // A broker's trade is its own work, before any other.
         if (Expeditions.BrokerJob.For(sim, pawn) is { } brokering)
             return brokering;
+        // The festival's afternoon: a trade that builds (the carpenter) puts it up before its own work.
+        if (sim.Festival.SettingUp && sim.World.TryGet<Trade>(pawn, out var builds) && builds.Def.Builds
+            && mind.WorkPriority[(int)WorkType.Construct] > 0 && Construct(sim, pawn) is { } festival)
+            return festival;
         for (var priority = 1; priority <= 4; priority++)
         {
             foreach (var type in Order)
@@ -35,7 +39,7 @@ public sealed class WorkGivers
                     WorkType.Firefight => Firefight(sim, pawn),
                     WorkType.Doctor => Systems.Bandaging.FirstAidOnly(sim, pawn)
                         ? TendCritical(sim, pawn, firstAid: true) ?? FirstAid(sim, pawn) ?? Rescue(sim, pawn) ?? FeedPatient(sim, pawn) ?? Capture(sim, pawn)
-                        : TendCritical(sim, pawn) ?? Rescue(sim, pawn) ?? Afterlife.CallBackJob.For(sim, pawn) ?? TendWounds(sim, pawn) ?? FeedPatient(sim, pawn) ?? Healing.LayOnHands.ForOrder(sim, pawn) ?? Healing.LayOnHands.ForVillager(sim, pawn) ?? Healing.LayOnHands.ForSelf(sim, pawn) ?? Healing.LayOnHands.Meditate(sim, pawn) ?? Healing.LayOnHands.WeaveCharm(sim, pawn) ?? Capture(sim, pawn) ?? TendWounds(sim, pawn, enemies: true),
+                        : TendCritical(sim, pawn) ?? Rescue(sim, pawn) ?? Afterlife.CallBackJob.For(sim, pawn) ?? Healing.LayOnHands.ForPlayer(sim, pawn) ?? TendWounds(sim, pawn) ?? FeedPatient(sim, pawn) ?? Healing.LayOnHands.ForOrder(sim, pawn) ?? Healing.LayOnHands.ForVillager(sim, pawn) ?? Healing.LayOnHands.ForSelf(sim, pawn) ?? Healing.LayOnHands.Meditate(sim, pawn) ?? Healing.LayOnHands.WeaveCharm(sim, pawn) ?? Capture(sim, pawn) ?? TendWounds(sim, pawn, enemies: true),
                     WorkType.Warden => FeedPrisoner(sim, pawn) ?? VisitPrisoner(sim, pawn),
                     WorkType.Refuel => Refuel(sim, pawn),
                     WorkType.Construct => Shops.SellJob.For(sim, pawn) ?? Construct(sim, pawn) ?? Deconstruct(sim, pawn),
@@ -49,7 +53,7 @@ public sealed class WorkGivers
                     WorkType.Fish => Fish(sim, pawn),
                     WorkType.Mine => Harvest(sim, pawn, type) ?? Dig(sim, pawn),
                     WorkType.Chop or WorkType.Harvest => Harvest(sim, pawn, type),
-                    WorkType.Haul => Hospitality.HamperRunJob.For(sim, pawn) ?? Favours.ErrandJob.For(sim, pawn) ?? Haul(sim, pawn),
+                    WorkType.Haul => Haul(sim, pawn),
                     _ => null,
                 };
                 // A trade's own work of the type (a mod's, Modding.ITradeModule.JobFor), once the core has none (crafting asks before its bills).
@@ -478,7 +482,7 @@ public sealed class WorkGivers
             if (!sim.CanBuildNow(site))
                 continue; // waiting for the floor or wall that will hold it up
             if (sim.Festival.IsSite(site) && !Round.FestivalSystem.PutsUp(sim, pawn))
-                continue; // the festival's for the labourers to put up; the shops stay open
+                continue; // the festival's for the builders to put up; the shops stay open
             if (!sim.Regions.CanReach(from, tile, PathEnd.Touch))
                 continue;
             // Don't wall in someone standing on the site.
@@ -536,7 +540,8 @@ public sealed class WorkGivers
         foreach (var station in w.Query<Workbench>())
         {
             var bench = w.Get<Workbench>(station);
-            if ((bench.Bills.Count == 0 && bench.Active == null && !keeps) || !Crafting.IsStation(sim, station) || sim.Reservations.IsReservedByOther(station, pawn))
+            if ((bench.Bills.Count == 0 && bench.Active == null && !keeps) || !Crafting.IsStation(sim, station) || sim.Reservations.IsReservedByOther(station, pawn)
+                || !MayWorkAt(sim, pawn, station))
                 continue;
             var cell = w.Get<Thing>(station).Cell;
             var d = Dist(from, cell);
@@ -697,6 +702,22 @@ public sealed class WorkGivers
         return CooksAt(sim, pawn, Buildings.Of(sim, fire));
     }
 
+    /// <summary>
+    /// In a round, a station or a fire in a trade's workplace (the smithy's forge, the woodshop's bench)
+    /// is that trade's to work and keep, whoever holds it: a villager passing doesn't fire a player's
+    /// forge or work a bill at their anvil. What stands anywhere else (a cottage hearth, a bench a
+    /// player built in the open) is anyone's. Outside a round, everything is.
+    /// </summary>
+    public static bool MayWorkAt(Simulation sim, Entity pawn, Entity thing)
+    {
+        if (sim.Round.Phase == Round.RoundPhase.None)
+            return true;
+        var building = Buildings.Of(sim, thing);
+        if (building.IsNull || !sim.World.TryGet<PresetBuilding>(building, out var shop) || !sim.Defs.AllTrades.Exists(t => t.WorksAt(shop.Def)))
+            return true;
+        return sim.World.TryGet<Trade>(pawn, out var trade) && trade.Def.WorksAt(shop.Def);
+    }
+
     /// <summary>Whether <paramref name="pawn"/> is the cook of <paramref name="building"/>: its kitchen's fires and stores are theirs.</summary>
     public static bool CooksAt(Simulation sim, Entity pawn, Entity building) =>
         !building.IsNull && sim.World.TryGet<Trade>(pawn, out var trade) && trade.Def.Serving(ServiceKind.Meal)
@@ -724,8 +745,8 @@ public sealed class WorkGivers
                 continue;
             if (props.OnDemand && !Crafting.WantsFiring(sim, e))
                 continue; // a cold kiln with nothing to make stays cold
-            if (!FeedsHere(sim, pawn, e, thing))
-                continue; // the kitchen's fires are its cook's to keep
+            if (!FeedsHere(sim, pawn, e, thing) || (props.OnDemand && !MayWorkAt(sim, pawn, e)))
+                continue; // the kitchen's fires are its cook's to keep, a forge or kiln its smith's; a hearth is anyone's
             // A kiln whose fuel can't reach what's wanted (bronze needs more than a wood fire) gets a
             // hotter one put in, however full it is; otherwise only when it runs low.
             var wanted = props.OnDemand ? Crafting.HeatToMake(sim, e, pawn) : 0f;
@@ -762,9 +783,9 @@ public sealed class WorkGivers
     }
 
     /// <summary>
-    /// How long something put down lies before anyone hauls it off to store: a player who sets logs
-    /// by a hearth or lays out their materials gets to use them, rather than watch a villager walk
-    /// off with them the moment they're down.
+    /// How long something put down lies before anyone hauls it off to store, outside a round (in one,
+    /// nothing is hauled at all): a player who sets logs by a hearth or lays out their materials gets
+    /// to use them, rather than watch a villager walk off with them the moment they're down.
     /// </summary>
     public const int HaulDelayTicks = SimClock.TicksPerHour * 2;
 
@@ -774,6 +795,10 @@ public sealed class WorkGivers
     private static Job? Haul(Simulation sim, Entity pawn)
     {
         var w = sim.World;
+        // In a round (or the practice yard) nobody tidies the town: what's on the ground is someone's, or
+        // the world's, and stays where it lies till a person picks it up. Only the well's buckets go home.
+        if (sim.Round.Phase != Round.RoundPhase.None || sim.Round.Practice)
+            return Environment.Buckets.ReturnStray(sim, pawn);
 
         // Move loose items into stockpiles. The inn's crockery is the
         // innkeeper's to clear. Only items some stockpile cell can take: a full stockpile for the

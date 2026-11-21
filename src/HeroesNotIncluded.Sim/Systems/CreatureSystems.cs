@@ -412,7 +412,7 @@ public sealed class AiSystem : ISimSystem
         // over), a hamper just taken off the hatch in line, to be unpacked (Hospitality.UnpackHamperJob).
         ref var carrying = ref w.Get<Carrying>(e);
         if (carrying.HasItem && !w.Has<Avatar>(e) && !(w.TryGet<Hospitality.Savouring>(e, out var savouring) && savouring.Item == carrying.Item)
-            && !(Hospitality.Provisions.IsHamper(sim, carrying.Item) && (Hospitality.Provisions.KeepsInn(sim, e) || Hospitality.Provisions.Running(sim, e) != null)))
+            && !(Hospitality.Provisions.IsHamper(sim, carrying.Item) && Hospitality.Provisions.KeepsInn(sim, e)))
         {
             var item = carrying.Item;
             carrying.Item = Entity.Null;

@@ -10,7 +10,7 @@ namespace HeroesNotIncluded.Sim.Favours;
 /// Every <see cref="Favour"/> in the round, pinned to the town's notice board in the square: only
 /// those who've read the board (F at it) know of one. Someone says they'll do it, and the asker
 /// pays them in silver when they say it's done. An errand (bring so many of something) is done by
-/// bringing it, and a labourer the AI runs will take one on (<see cref="ErrandJob"/>). Shops are for
+/// bringing it, by a player (no villager runs errands). Shops are for
 /// what adventurers buy (<see cref="ShopSystem"/>); this is the town asking itself.
 /// </summary>
 public sealed class FavourBoard : ISimSystem, Saving.ISaveState

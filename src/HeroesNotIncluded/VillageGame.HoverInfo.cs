@@ -87,18 +87,33 @@ public sealed partial class VillageGame
         {
             if (i / map.LayerSize > cut)
                 return false;
+            // The storey above you in the building you're in isn't drawn: nothing up there is under the
+            // pointer (a playtest's inspector named the chamber pot upstairs from the common room).
+            if (!HideRoofs && !_renderer.OpenBuilding.Building.IsNull && i / map.LayerSize > _renderer.OpenBuilding.Level
+                && Rendering.BuildingPlanIndex.For(_sim).At(map.CellOf(i)) == _renderer.OpenBuilding.Building)
+                return false;
             if (map.IsSolid(i))
                 return true;
-            var s = map.Structure[i];
-            if (s.IsNull || _sim.World.Has<Construction>(s) || _sim.World.Get<Thing>(s).Def is not { Building: { } b } def
-                || b.IsWall || b.IsDoor || def.IsRoof || def.Shape == Sim.Defs.RenderShape.Block)
-                return false;
-            // Only the height it stands: a ray crossing the cell above a low stool misses it.
             var c = map.CellOf(i);
-            if (!RayEntersBelow(c, c.Z + Math.Max(0.3f, WorldScale.HeightOf(def))))
+            var s = map.Structure[i];
+            // Only the height it stands: a ray crossing the cell above a low stool misses it.
+            if (!s.IsNull && !_sim.World.Has<Construction>(s) && _sim.World.Get<Thing>(s).Def is { Building: { } b } def
+                && !b.IsWall && !b.IsDoor && !def.IsRoof && def.Shape != Sim.Defs.RenderShape.Block
+                && RayEntersBelow(c, c.Z + Math.Max(0.3f, WorldScale.HeightOf(def))))
+            {
+                found = s;
+                return true;
+            }
+            // Else a drawn floor stops the ray: what's under it is hidden by it.
+            return map.Floor[i] is { IsNull: false } floor && !_sim.World.Get<Thing>(floor).Def.IsRoof && FloorCrossed(c);
+        }
+        bool FloorCrossed(int3 c)
+        {
+            if (dir.Z >= -1e-6f)
                 return false;
-            found = s;
-            return true;
+            var t = (c.Z + 0.01f - origin.Z) / dir.Z;
+            var p = origin + dir * t;
+            return (int)MathF.Floor(p.X) == c.X && (int)MathF.Floor(p.Y) == c.Y;
         }
         bool RayEntersBelow(int3 c, float top)
         {

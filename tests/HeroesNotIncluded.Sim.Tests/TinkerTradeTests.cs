@@ -1,3 +1,4 @@
+using HeroesNotIncluded.Sim.Ai;
 using HeroesNotIncluded.Sim.Components;
 using HeroesNotIncluded.Sim.Core;
 using HeroesNotIncluded.Sim.Defs;
@@ -251,6 +252,35 @@ public class TinkerTradeTests
     }
 
     // ---------------- The inn's storeroom ----------------
+
+    [Fact]
+    public void TheStoreroomIsntLockedOnSomeoneWhoSlippedInBehindTheKeeper()
+    {
+        var (sim, _, _) = ExpeditionTests.Round("Empath");
+        NoQuests(sim);
+        var w = sim.World;
+        var door = SettledStoreroomDoor(sim);
+        var cell = w.Get<Thing>(door).Cell;
+        // The smaller room off the door: the storeroom itself.
+        var inside = new[] { new int3(1, 0, 0), new int3(-1, 0, 0), new int3(0, 1, 0), new int3(0, -1, 0) }
+            .Select(d => cell + d).Where(c => sim.Rooms.RoomAt(c) is { TouchesMapEdge: false })
+            .OrderBy(c => sim.Rooms.RoomAt(c)!.TileCount).First();
+        var guest = sim.Creatures().First(e => w.Has<Adventurer>(e));
+        var keeper = sim.Creatures().Single(e => w.TryGet<Trade>(e, out var t) && t.Def.Name == "Innkeeper");
+        w.Get<Mind>(guest).Drafted = true;
+        AiSystem.EndJob(sim, guest, w.Get<Mind>(guest), false);
+        w.Get<Position>(guest).Cell = inside;
+        w.Get<Position>(guest).Pos = Position.CenterOf(inside);
+        sim.SetLocked(door, false);
+        w.Add(door, new Relock { By = keeper });
+        sim.TickMany(SimClock.TicksPerHour / 4);
+        Assert.False(sim.IsLocked(door), "not locked with a guest still inside");
+        var outside = sim.SpiralFrom(cell, 6).First(c => sim.Map.Passable(c) && c.Z == cell.Z && sim.Rooms.RoomAt(c) is { } r && r.Id != sim.Rooms.RoomAt(inside)!.Id);
+        w.Get<Position>(guest).Cell = outside;
+        w.Get<Position>(guest).Pos = Position.CenterOf(outside);
+        sim.TickMany(SimClock.TicksPerHour / 4);
+        Assert.True(sim.IsLocked(door), "locked once they're out");
+    }
 
     private static Entity StoreroomDoor(Simulation sim) =>
         sim.World.Query<LockCut>().Single(e => Locksmithing.IsDoor(sim, e) && Hospitality.InnRooms.RoomNumber(sim, sim.World.Get<LockCut>(e).Seed) == 0);
