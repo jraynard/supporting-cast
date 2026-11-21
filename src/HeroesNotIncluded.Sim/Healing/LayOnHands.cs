@@ -312,6 +312,12 @@ public sealed class LayOnHandsJob(Entity patient) : Job
         // run lower than it looked.
         for (var tries = 0; tries < 12; tries++)
         {
+            // Weaving takes a while: they may have gone meanwhile (off on a quest, out of town).
+            if (!Alive(patient))
+            {
+                Fail("patient gone");
+                yield break;
+            }
             var health = Get<Health>(patient);
             var mana = Sim.World.Get<Mana>(Pawn).Current;
             Injury? next = null;
@@ -353,6 +359,11 @@ public sealed class LayOnHandsJob(Entity patient) : Job
         }
 
         // What's left still bleeding is bound.
+        if (!Alive(patient))
+        {
+            Fail("patient gone");
+            yield break;
+        }
         var left = Get<Health>(patient);
         var bind = left.Injuries.Count(i => i.NeedsTending(Sim.Clock.Tick));
         if (bind > 0)

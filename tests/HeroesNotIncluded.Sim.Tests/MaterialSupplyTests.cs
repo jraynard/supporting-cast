@@ -89,7 +89,9 @@ public class MaterialSupplyTests
         var kiln = w.Query<Thing>().Single(e => w.Get<Thing>(e).Def.Name == "Kiln");
         Assert.Equal(smithy, Crafting.KeptAt(sim, kiln));
         Assert.True(Crafting.IsStation(sim, kiln));
-        Assert.Equal(VillageRound.SmithyPlanks, Stock.CountIn(sim, Stock.ChestOf(sim, smithy), Stock.PlanksDef));
+        // The smithy's own, and the AI smith's kit, put away in the chest (not the fuel bin) at the deal.
+        var kit = sim.Defs.Trade("Blacksmith").Kit.Where(k => k.Def == Stock.PlanksDef).Sum(k => k.Count);
+        Assert.Equal(VillageRound.SmithyPlanks + kit, Stock.CountIn(sim, Stock.ChestOf(sim, smithy), Stock.PlanksDef));
         var store = VillageRound.ShrineStore(sim, ShopSystem.BuildingFor(sim, Defs.TownRole.Shrine));
         Assert.Equal(sim.Defs.Season.ShrineCloth, Stock.CountIn(sim, store, Bandaging.ClothDef));
         Assert.Contains(sim.AvailableItems(), e => w.Get<Thing>(e).Def.Name == Stock.PlanksDef); // the barn's

@@ -718,18 +718,23 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
         }
     }
 
-    /// <summary>A container in the trade's workplace (not a stash) with room for the item, or Entity.Null.</summary>
+    /// <summary>
+    /// A container in the trade's workplace (not a stash) with room for the item, or Entity.Null: one already
+    /// holding some, else the chest (where the carter leaves things too), else any other. Not simply the first
+    /// with room: the smithy's fuel bin comes before its chest, and took the smith's bars and leather.
+    /// </summary>
     private static Entity WorkplaceStore(Simulation sim, TradeDef trade, Entity item)
     {
         if (Shops.ShopSystem.WorkplaceOf(sim, trade) is not { IsNull: false } building)
             return Entity.Null;
         var w = sim.World;
         var t = w.Get<Thing>(item);
-        foreach (var e in w.Query<PartOf>())
-            if (w.Get<PartOf>(e).Building == building && sim.IsContainer(e) && !Militia.Stashes.IsStash(sim, e)
+        return w.Query<PartOf>()
+            .Where(e => w.Get<PartOf>(e).Building == building && sim.IsContainer(e) && !Militia.Stashes.IsStash(sim, e)
                 && sim.HasRoomFor(e, t.Def, t.Material))
-                return e;
-        return Entity.Null;
+            .OrderBy(e => sim.StoredIn(e).Any(i => w.Get<Thing>(i).Def == t.Def) ? 0 : w.Get<Thing>(e).Def.Name == "Chest" ? 1 : 2)
+            .ThenBy(e => e.Index)
+            .FirstOrDefault(Entity.Null);
     }
 
     public void Save(SaveWriter w, Simulation sim)

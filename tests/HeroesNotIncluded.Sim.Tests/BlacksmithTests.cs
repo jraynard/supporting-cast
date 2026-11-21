@@ -364,4 +364,22 @@ public class BlacksmithTests
         Assert.Equal(sword, sim.World.Get<Equipment>(owner).Weapon);
         Assert.DoesNotContain(sim.Speech.Kept, u => u.Speaker == owner && u.Text.Contains("Keep my"));
     }
+
+    [Fact]
+    public void AnAiSmithsKitGoesInTheChestNotTheFuelBin()
+    {
+        var sim = VillageRound.NewSimulation(TestWorld.LoadDefs(), 1234);
+        sim.Presets.PresetMode = true;
+        VillageRound.Setup(sim);
+        sim.Round.OpenLobby();
+        var player = new Guid("00000000-0000-0000-0000-0000000000f1");
+        sim.ApplyNow(new JoinLobbyCommand(player, "Ana", default));
+        sim.ApplyNow(new SetTradePreferencesCommand(player, [sim.Defs.Trade("Tinker")], [])); // the smith's the AI's
+        sim.ApplyNow(new StartRoundCommand());
+        var smithy = ShopSystem.BuildingOf(sim, sim.Defs.Building("Smithy"));
+        var bin = Buildings.Parts(sim, smithy).Single(e => sim.World.Get<Thing>(e).Def.Name == "FuelBin");
+        var chest = Buildings.Parts(sim, smithy).Single(e => sim.World.Get<Thing>(e).Def.Name == "Chest");
+        Assert.All(sim.StoredIn(bin), e => Assert.Equal("Charcoal", sim.World.Get<Thing>(e).Def.Name));
+        Assert.Contains(sim.StoredIn(chest), e => sim.World.Get<Thing>(e).Def.Name == "IronBar");
+    }
 }

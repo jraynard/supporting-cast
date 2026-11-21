@@ -3011,3 +3011,13 @@ to nobody's trade. A **commission** does: so many of a thing a shop makes, for a
 - UI: the Commissions header in the Shop panel pins one at the board; your own and those you know of are order
   cards, with the count brought and "Call it off". `Favours/` and its commands are gone. Saves: format 66.
 - `CommissionTests`, `TownWantsTests` (a bot carpenter makes and brings the tinker's planks), `DirectorPacingTests`.
+
+### An AI smith's kit in the chest, not the fuel bin (2026-11-20)
+
+- An AI tradesperson's kit goes into its workplace's stores at the deal (`RoundSystem.WorkplaceStore`): the first container
+  with room, which at the smithy was the fuel bin (set before the chest), so its bars, leather and planks lay among the
+  charcoal. Now a container already holding the thing, else the chest, else any other.
+- An AI empath laying on hands no longer reads a patient gone meanwhile (off on a quest mid-weave): `LayOnHandsJob`
+  checks they're there before each wound and before binding.
+- `BlacksmithTests.AnAiSmithsKitGoesInTheChestNotTheFuelBin`; `MaterialSupplyTests` counts the kit's planks in the chest;
+  `BotBenchTests`' empath shelving waits out a party met later at the inn (`FreshInTown`), 16 hours, not 10.

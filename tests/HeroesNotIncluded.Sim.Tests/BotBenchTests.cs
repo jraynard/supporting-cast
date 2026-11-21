@@ -115,7 +115,9 @@ public class BotBenchTests
         var shrine = ShopSystem.BuildingOf(sim, sim.Defs.Building("Shrine"));
         Assert.True(Run(sim, bot, () => Healing.Charms.Carried(sim, me).Any(c => sim.World.Get<Charm>(c).Maker == me), SimClock.TicksPerHour * 4), Why(sim, bot));
         PartyInTown(sim, "IronLantern");
-        Assert.True(Run(sim, bot, () => OnShowBy(sim, me).Count > 0, SimClock.TicksPerHour * 10), Why(sim, bot));
+        // Not while they're fresh in town (FreshInTown): a few hours from when it first sees each of them, so the
+        // party met at the inn later (taking one an ask) keeps the shelf shut a while longer.
+        Assert.True(Run(sim, bot, () => OnShowBy(sim, me).Count > 0, SimClock.TicksPerHour * 16), Why(sim, bot));
         var charm = OnShowBy(sim, me)[0];
         Assert.Equal(shrine, Goods.ShownIn(sim, charm));
         Assert.Equal(me, sim.World.Get<Charm>(charm).Maker);
