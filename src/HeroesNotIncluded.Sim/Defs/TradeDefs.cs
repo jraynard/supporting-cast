@@ -157,9 +157,9 @@ public sealed class TradeDef : Def
     public bool Builds { get; set; }
 
     /// <summary>
-    /// What its workplace runs short of that someone could fetch (<c>Favours.Wants</c>): held by
-    /// the AI, it pins an errand to the notice board when there's less than <see cref="TradeWant.Below"/>
-    /// about the place, for a player to take on.
+    /// What its workplace runs short of that another shop makes (<c>Shops.Commissions.Wants</c>): held
+    /// by the AI, it sends a commission up to the notice board when there's less than
+    /// <see cref="TradeWant.Below"/> about the place, for the player who keeps that shop to make.
     /// </summary>
     public List<TradeWant> Wants { get; set; } = [];
 

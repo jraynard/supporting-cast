@@ -9,7 +9,6 @@
     { "name": "Carpenter", "label": "carpenter", "level": "Intermediate", "description": "Wood and arrows: saws planks, fletches quivers for the parties' archers, mends their bows and cudgels, braces the bridge when it's down and puts up the festival.",
       "standingOrders": [ { "supply": "Feathers", "keep": 8 } ],
       "workplace": "Woodshop", "workPriorities": { "Craft": 1, "Construct": 2 }, "skills": { "Crafting": 5, "Construction": 6, "Shooting": 4 }, "mendsTown": true, "builds": true,
-      "wants": [ { "thing": "Wood", "below": 6, "count": 12, "price": 6 } ],
       "fells": true,
       "knows": [ "Sawhorse", "CarpenterBench", "ChoppingBlock" ],
       "stations": [ "Sawhorse", "CarpenterBench", "ChoppingBlock" ],

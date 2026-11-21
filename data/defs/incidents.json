@@ -3,7 +3,8 @@
 // weight among those that could happen now, half again as likely when a player holds the trade
 // it's "for". No Renown or Dread of their own: something to deal with, not a test.
 // "kind": Fever (an adventurer in town catches it), Rats ("count" of them in the kitchen's larder),
-// Errand (an adventurer pins one of "wants" to the notice board, paid from their purse).
+// Commission (an adventurer sends one of "wants" up to the notice board, paid from their purse: only
+// a want made at a shop a player keeps, Shops/Commissions).
 // "says": what the one it starts with says aloud; "message": the headline, to whoever holds the
 // trade it's for (everyone, if it's nobody's), {name} for who it's about.
 {
@@ -13,11 +14,11 @@
       "message": "{name} looks flushed and won't stop coughing: a fever, maybe." },
     { "name": "RatsInTheLarder", "kind": "Rats", "for": "Kitchen", "count": 2, "weight": 1, "minDay": 1, "maxPerRound": 1,
       "message": "Something's been at the larder: droppings, and a gnawed sack." },
-    { "name": "TravellersErrand", "kind": "Errand", "weight": 1.2, "minDay": 1, "maxPerRound": 2,
-      "wants": [ { "thing": "Berries", "count": 6, "price": 5, "hours": 8 },
-                 { "thing": "Wood", "count": 6, "price": 4, "hours": 8 },
-                 { "thing": "Cabbage", "count": 4, "price": 4, "hours": 8 } ],
-      "says": [ "I've pinned a note on the board, if anyone's got a moment.", "Anyone fetch a few things for me? It's on the board." ],
-      "message": "{name} has pinned an errand to the notice board." }
+    { "name": "TravellersCommission", "kind": "Commission", "weight": 1.2, "minDay": 1, "maxPerRound": 2,
+      "wants": [ { "thing": "Planks", "count": 6, "price": 6, "hours": 8 },
+                 { "thing": "Firewood", "count": 8, "price": 5, "hours": 8 },
+                 { "thing": "Bandage", "count": 4, "price": 6, "hours": 8 } ],
+      "says": [ "I've pinned a commission on the board, if anyone can make it.", "There's work on the board, for whoever makes such things." ],
+      "message": "{name} has pinned a commission to the notice board." }
   ]
 }

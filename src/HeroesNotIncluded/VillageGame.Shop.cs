@@ -70,7 +70,7 @@ public sealed partial class VillageGame
         ClosedToggle(closed, "orders");
 
         DrawWaysAsked();
-        DrawFavours();
+        DrawCommissions();
         Panel.End();
     }
 
@@ -85,7 +85,13 @@ public sealed partial class VillageGame
         var title = e.Kind == Sim.Defs.ServiceKind.Goods && e.Status == OrderStatus.Done && e.KindLabel.StartsWith("the ")
             ? $"{who} bought {e.KindLabel}" : $"{who} want{(e.Mine ? "" : "s")} {e.KindLabel}";
         var tip = $"\u201C{e.Text}\u201D";
-        if (open && e.Kind == Sim.Defs.ServiceKind.Goods && !e.Mine)
+        if (e.Commission)
+        {
+            title += e.Count > 1 && e.Delivered > 0 ? $" ({e.Delivered} brought)" : "";
+            if (open && !e.Mine)
+                tip += Controls.Keys("\nA commission off the notice board. Make them, then hand them over (~F~ beside them, holding them): they pay when the lot's come.");
+        }
+        else if (open && e.Kind == Sim.Defs.ServiceKind.Goods && !e.Mine)
             tip += Controls.Keys("\nMake one, then hand it to them (~F~ beside them, holding it), or put it on your wares shelf: they'll come and buy it.");
         if (open && e.Kind == Sim.Defs.ServiceKind.MixedDrink && View.WantedDrink(e.Id) is { } named)
         {
@@ -110,7 +116,8 @@ public sealed partial class VillageGame
             var errand = e.MineToDo ? View.Awaiting().Cast<KnownErrand?>().FirstOrDefault(a => a!.Value.Order == e.Id) : null;
             var carry = e.MineToDo && e.Kind is Sim.Defs.ServiceKind.Drink or Sim.Defs.ServiceKind.MixedDrink;
             var refuse = View.MayTurnAway(e.Id);
-            var icons = (errand != null || carry ? 1 : 0) + (refuse ? 1 : 0);
+            var callOff = e.Mine && e.Commission;
+            var icons = (errand != null || carry ? 1 : 0) + (refuse || callOff ? 1 : 0);
             CardBar(e.AssigneeName.Length > 0 ? (e.MineToDo ? "You're on it" : $"{e.AssigneeName} is on it") : "Nobody's taken it",
                 share, color, words, (take ? TakeButtonWidth : 0f) + icons * (CardIconSize + Gui.S(8)));
             if (take)
@@ -130,6 +137,9 @@ public sealed partial class VillageGame
             }
             else if (errand is { } x)
                 DrawErrandButton(x);
+            if (callOff)
+                CardIcon($"##calloff{e.Id}", "ui/icon_cancel", true, "Call it off: take the commission down. Whoever's brought some is paid their share.",
+                    () => Issue(new CancelCommissionCommand(_avatar, e.Id)));
             if (refuse)
                 CardIcon($"##out{e.Id}", "ui/icon_cancel", true, $"Sorry, we're out.\nTell {e.PosterName} you can't do it. They take it better than being left to wait, and won't ask again for a while.",
                     () => Issue(new TurnAwayCommand(_avatar, e.Id)));

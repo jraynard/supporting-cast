@@ -15,7 +15,7 @@ namespace HeroesNotIncluded.Sim.Shops;
 /// it and that their purse covers; if none is, they say so and go without for a while. Ordered,
 /// they ask aloud and keep asking while nobody takes it on. Done, they pay in silver and think better of the town;
 /// left waiting, they give up and think worse (<see cref="Adventurer.Satisfaction"/>). Only those
-/// who heard an order asked know of it. Players asking each other go through <c>Favours.FavourBoard</c>.
+/// who heard an order asked know of it. Commissions pinned to the notice board are orders too (<see cref="Commissions"/>).
 /// </summary>
 public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
 {
@@ -127,7 +127,7 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             }
             else if (e.Kind.Kind == ServiceKind.Goods && e.Wants == null && (!sim.World.IsAlive(e.Subject) || !sim.World.Has<ForSale>(e.Subject)))
                 Close(sim, e, OrderStatus.Cancelled); // sold to someone else, or taken off sale
-            else if (e.Wants != null && !Goods.WouldUpgrade(sim, e.Poster, e.Wants, e.WantsMending))
+            else if (e.Wants != null && !e.Commission && !Goods.WouldUpgrade(sim, e.Poster, e.Wants, e.WantsMending))
                 Close(sim, e, OrderStatus.Cancelled); // bought something as good or better meanwhile
             else if (e.Kind.Kind == ServiceKind.Healing && (e.Mend ? !Healing.LayOnHands.Hurt(sim, e.Poster) : !Untended(sim, e.Poster)))
                 Healed(sim, e);
@@ -143,7 +143,7 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
                 GiveUp(sim, e);
             else if (Hatch.TryCollect(sim, e))
                 continue; // took a dish off the hatch
-            else if (e.Assignee.IsNull && TimeToAsk(sim, e))
+            else if (e.Assignee.IsNull && !e.Commission && TimeToAsk(sim, e))
                 Announce(sim, e, e.Wants != null ? e.Text : Asking(e.Kind, e.Price, SubjectLabel(sim, e.Subject, e.Kind.Kind)));
             else
             {
@@ -640,7 +640,7 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
         var def = sim.Defs.Service(ServiceKind.Goods);
         var spend = w.Get<Adventurer>(who).Kind?.Spend ?? 1f;
         // What they've offered for a piece they asked to be made isn't spent yet: something else on show may do instead.
-        var asked = _orders.Find(e => e.IsOpen && e.Poster == who && e.Kind.Kind == ServiceKind.Goods && e.Wants != null);
+        var asked = _orders.Find(e => e.IsOpen && e.Poster == who && e.Kind.Kind == ServiceKind.Goods && e.Wants != null && !e.Commission);
         var spare = Math.Max(0, Coin.Count(sim, who) - Promised(who) - KeptFromGear(sim, who));
         // Asked a shop to make one: the first that's put up on show they come and buy, at its price if they can.
         // Waiting on it, they'll still buy something else that's on show.
@@ -712,7 +712,7 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
         var a = w.Get<Adventurer>(who);
         // Looked round first, then now and then (AskToMakeChance an hour, checked each pass): one ask at a time in a party.
         if (now - a.Arrived < SimClock.HoursToTicks(AskToMakeAfterHours)
-            || _orders.Exists(e => e.IsOpen && e.Kind.Kind == ServiceKind.Goods && e.Wants != null
+            || _orders.Exists(e => e.IsOpen && e.Kind.Kind == ServiceKind.Goods && e.Wants != null && !e.Commission
                 && w.TryGet<Adventurer>(e.Poster, out var other) && other.Party == a.Party)
             || _rand.NextFloat() >= AskToMakeChance * Interval / SimClock.TicksPerHour)
             return;
@@ -747,7 +747,7 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
         var label = sim.LabelOf(item);
         var down = sim.TakeFromStack(item, 1);
         Goods.TakeUp(sim, buyer, down);
-        var asked = _orders.Find(e => e.IsOpen && e.Poster == buyer && e.Kind.Kind == ServiceKind.Goods && Goods.Fills(sim, e, down));
+        var asked = _orders.Find(e => e.IsOpen && e.Poster == buyer && e.Kind.Kind == ServiceKind.Goods && !e.Commission && Goods.Fills(sim, e, down));
         if (asked == null)
         {
             asked = new Order
@@ -891,13 +891,18 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
         return true;
     }
 
-    /// <summary>Put an order on the books and say it aloud. Those who hear it clearly know of it.</summary>
+    /// <summary>
+    /// Put an order on the books and say it aloud. Those who hear it clearly know of it. A
+    /// <paramref name="commission"/> is pinned to the notice board instead (<see cref="Commissions"/>):
+    /// nothing's said, and only the trade that makes it (and whoever reads the board) knows.
+    /// </summary>
     public Order Post(Simulation sim, Entity poster, ServiceDef kind, string text, int price, long deadline, Entity? subject = null,
-        Entity? where = null, int worth = 0, Work.FlavourKind? craving = null, ThingDef? wants = null, MendingDef? wantsMending = null)
+        Entity? where = null, int worth = 0, Work.FlavourKind? craving = null, ThingDef? wants = null, MendingDef? wantsMending = null,
+        bool commission = false, int count = 1)
     {
         var order = new Order
         {
-            Craving = craving, Wants = wants, WantsMending = wantsMending,
+            Craving = craving, Wants = wants, WantsMending = wantsMending, Commission = commission, Count = Math.Max(1, count),
             Id = _nextId++, Kind = kind, Poster = poster, PosterName = sim.World.Get<Creature>(poster).Name, Text = text,
             Where = where ?? BuildingFor(sim, kind.AtRole), Subject = subject ?? Entity.Null, Price = price,
             Worth = worth, PostedTick = sim.Clock.Tick, Deadline = deadline,
@@ -911,7 +916,7 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
                 Learn(order, e);
         // At a shop with a line they say it at the counter (or the hatch), when their turn comes (TimeToAsk).
         // A piece asked for by name isn't waited for in line (it has to be made): said at once.
-        if (!WaitsInLine(sim, order) || LineCells(sim, order.Where, Hatch.Takes(sim, order)).Count == 0)
+        if (!commission && (!WaitsInLine(sim, order) || LineCells(sim, order.Where, Hatch.Takes(sim, order)).Count == 0))
             Announce(sim, order, text);
         if (kind.Kind == ServiceKind.MixedDrink && sim.World.Has<Adventurer>(poster))
             sim.Drinking.Ordered(sim, order);
@@ -1422,6 +1427,7 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
     {
         Close(sim, e, OrderStatus.Expired);
         LostTheirGear(sim, e);
+        PayForWhatCame(sim, e);
         // Only peckish (it was a mealtime): they shrug it off, more or less.
         if (e.Kind.Kind == ServiceKind.Meal && sim.World.TryGet<Adventurer>(e.Poster, out _) && sim.World.TryGet<Needs>(e.Poster, out var needs)
             && needs.Get(sim.Defs.Need("Food")) >= MealBelow)
@@ -1442,6 +1448,28 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             sim.World.Get<Adventurer>(e.Poster).Satisfaction -= 1f;
             Speech.Barks.Say(sim, e.Poster, "adv_give_up", Volume.Say, "Forget it. So much for {thing} in this town.", thing: e.Kind.Label);
         }
+    }
+
+    /// <summary>The asker calls an order off (a commission taken down): it's over, and what's been brought is paid for.</summary>
+    public void CallOff(Simulation sim, Order e)
+    {
+        if (!e.IsOpen)
+            return;
+        Close(sim, e, OrderStatus.Cancelled);
+        PayForWhatCame(sim, e);
+    }
+
+    /// <summary>
+    /// A commission over before the whole lot came: whoever brought some is paid their share of the
+    /// price for what they brought (what the asker has, at least).
+    /// </summary>
+    private static void PayForWhatCame(Simulation sim, Order e)
+    {
+        if (!e.Commission || e.Delivered <= 0 || e.Assignee.IsNull || !sim.World.IsAlive(e.Assignee) || !sim.World.IsAlive(e.Poster))
+            return;
+        var share = e.Price * e.Delivered / e.Count;
+        if (share > 0 && Coin.Pay(sim, e.Poster, e.Assignee, share) is var paid and > 0)
+            sim.Speech.Say(sim, e.Poster, $"That's all I'll want. {paid} silver for the {e.Delivered} you brought.", Volume.Say);
     }
 
     private static void Close(Simulation sim, Order e, OrderStatus status)
@@ -1486,7 +1514,15 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             Complete(sim, arrows, giver);
             return;
         }
-        var bought = _orders.Find(e => e.IsOpen && e.Poster == to && e.Kind.Kind == ServiceKind.Goods && (e.Subject == item || Goods.Fills(sim, e, item)));
+        // A commission's lot, or part of it: kept, and paid for once it's all come.
+        var commission = _orders.Find(e => e.IsOpen && e.Commission && e.Poster == to && Goods.Fills(sim, e, item)
+            && (e.Assignee.IsNull || e.Assignee == giver));
+        if (commission != null)
+        {
+            Commissioned(sim, commission, giver, item);
+            return;
+        }
+        var bought = _orders.Find(e => e.IsOpen && !e.Commission && e.Poster == to && e.Kind.Kind == ServiceKind.Goods && (e.Subject == item || Goods.Fills(sim, e, item)));
         if (bought != null)
         {
             Goods.TakeUp(sim, to, item);
@@ -1546,6 +1582,36 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             return;
         }
         Inventory.Stow(sim, to, item);
+    }
+
+    /// <summary>
+    /// Some of a commission's lot handed to its asker: as many as are still wanted are kept (the rest
+    /// go back to the giver), and when the whole lot's come they pay whoever brought the last of it
+    /// (<see cref="Complete"/>). Whoever brings some first is on it, if nobody had said they were.
+    /// </summary>
+    private void Commissioned(Simulation sim, Order e, Entity giver, Entity item)
+    {
+        var w = sim.World;
+        var take = Math.Min(e.Count - e.Delivered, w.Get<Stack>(item).Count);
+        var kept = sim.TakeFromStack(item, take);
+        if (kept != item)
+            Inventory.Stow(sim, giver, item); // more than was wanted: the rest back
+        Inventory.Stow(sim, e.Poster, kept);
+        e.Delivered += take;
+        Learn(e, giver);
+        if (e.Assignee.IsNull)
+        {
+            e.Assignee = giver;
+            e.AssigneeName = w.Get<Creature>(giver).Name;
+        }
+        if (e.Delivered >= e.Count)
+        {
+            if (e.Subject.IsNull && e.Count == 1)
+                e.Subject = kept;
+            Complete(sim, e, giver);
+        }
+        else
+            sim.Speech.Say(sim, e.Poster, $"That's {e.Delivered} of the {e.Count}. I'll pay when the rest come.", Volume.Say);
     }
 
     /// <summary>
@@ -1764,6 +1830,9 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             w.Bool(e.Mend);
             w.String(e.Wants?.Name ?? "");
             w.String(e.WantsMending?.Name ?? "");
+            w.Bool(e.Commission);
+            w.Int(e.Count);
+            w.Int(e.Delivered);
             w.Int(e.KnownBy.Count);
             foreach (var k in e.KnownBy)
                 w.Entity(k);
@@ -1835,10 +1904,18 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
                 e.Mend = r.Bool();
             if (r.Version >= 61) // goods asked for by name (format 61)
             {
-                if (r.String() is { Length: > 0 } wants && sim.Defs.TryThing(wants, out var wantsDef) && Goods.IsGear(wantsDef))
-                    e.Wants = wantsDef;
+                var wants = r.String();
                 if (r.String() is { Length: > 0 } mending && sim.Defs.AllMendings.Find(m => m.Name == mending) is { } m)
                     e.WantsMending = m;
+                if (r.Version >= 66) // commissions (format 66)
+                {
+                    e.Commission = r.Bool();
+                    e.Count = Math.Clamp(r.Int(), 1, Commissions.MaxCount);
+                    e.Delivered = Math.Clamp(r.Int(), 0, e.Count);
+                }
+                if (wants.Length > 0 && sim.Defs.TryThing(wants, out var wantsDef)
+                    && (e.Commission ? wantsDef.Category == ThingCategory.Item : Goods.IsGear(wantsDef)))
+                    e.Wants = wantsDef;
             }
             for (var k = r.Count(1 << 16); k > 0; k--)
                 e.KnownBy.Add(r.Entity());

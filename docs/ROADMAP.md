@@ -45,7 +45,8 @@ so far. Nobody new has tried them yet.
   (PLAYTEST.md, "The lessons"). Check it alone first, then watch a non-gamer (and a child, if
   one's handy) play their first ten minutes without help.
 - [ ] **(demo) The tutorial's gaps:** handing over a drink, a dish or a box from the order (as "Take it
-  back" does for a mend), and the customer pointer for notice-board errands (`VillageGame.Errands`).
+  back" does for a mend), and a lesson for commissions off the notice board (the maker's pointer to the asker comes
+  with taking it, `VillageGame.Errands`).
 - [ ] **(demo) For you to decide, now: a first-round hint.** The tutorial is optional, so anyone who skips it
   starts a round confused. Either a one-line "your work: ..." on the trade's card until that trade
   has a finished round (`CharacterProgress`), or a nudge on the trade picker toward the tutorial

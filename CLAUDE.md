@@ -167,8 +167,10 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. ` (R3
     stored there by its seller (`Goods.CanSellAt`, a shelf's `displayFor` role) it's priced at once (`Goods.Shelved`), and only
     the seller takes it down; no job takes an item for sale (`IsAvailable`). Villagers buy supper there of an
     evening. Players trade face to face (`Shops/Barter`, read through `PerceptionView.Barter`): F at another player hands over
-    what you hold, or with empty hands asks to trade; both fill a table, and it changes hands at once when both agree. `Favours/`: pinned to the notice board in the square and known by reading it, for
-    silver; errands (bring so many of a thing) are done by bringing, by players only (an AI trade short of something pins one, `Favours/Wants`).
+    what you hold, or with empty hands asks to trade; both fill a table, and it changes hands at once when both agree. Commissions (`Shops/Commissions`): so many of a thing a shop makes, for a price, pinned to the notice board in the square: a
+    goods `Order` (`Order.Commission`, `Count`, `Delivered`) at the shop that makes it, known at once to that trade and to whoever reads the
+    board, taken like any order, handed over (F holding them, `ShopSystem.Received`) and paid when the lot's come. An AI trade short of something
+    a player's shop makes sends one up (`TradeDef.Wants`, `Commissions.Wants`); bot keepers make and bring them (`BotPlayer.Asked`).
   - `Carpentry/` (now the carpenter mod, `mods/carpenter/src/Carpenter.Sim`, on by default; it reaches the core only through
     `Modding/TradeModule`, `SimRegistry` and `Bots/IBotTrade`, and `ModBoundaryTests` keeps the core from naming it): the Carpenter, at the woodshop. Planks sawn (`SawSession`), bows tillered
     (`BowSession`), a quiver's pattern arrow sighted, shaved, headed and fletched (`FletchSession`) with a hidden warp (`Fletched.Warped`, never shown), sold as goods to archers

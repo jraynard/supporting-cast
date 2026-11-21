@@ -349,7 +349,7 @@ public static class Crafting
         var w = sim.World;
         var building = KeptAt(sim, station);
         var product = keep.RecipeDef.Products[0].ThingDef;
-        var have = building.IsNull ? 0 : Favours.Wants.Stock(sim, building, product);
+        var have = building.IsNull ? 0 : Shops.Commissions.Stock(sim, building, product);
         if (have >= keep.Below)
             return false;
         foreach (var item in sim.AvailableItems())

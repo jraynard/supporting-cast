@@ -93,9 +93,11 @@ room, a quest lead) weighs the price against what it's worth to them and what's 
 it fits, they go to the shop and line up at its counter: the bar for a drink, the smithy's counter
 for a mend. If it doesn't, they say so aloud and go without. Each want is an `Order` in code. Price
 is a lever: too high and nobody comes and Satisfaction falls; too low and the purse fills slowly.
-Players ask each other for things as **favours**, for silver they name, pinned to the notice board
-in the square: only those who read it know what's wanted. An errand (bring me so many of a thing)
-is done by bringing it, by another player (no villager runs errands).
+Anyone can **commission** something a shop makes: so many of it, for silver they name, pinned to
+the notice board in the square. Whoever keeps the shop that makes it hears of it at once; anyone
+else only by reading the board. The maker takes it like any order, brings it (in parts, if they
+like), and is paid when the whole lot's come. An AI trade running short of something a player's
+shop makes sends one up; so does a visitor now and then.
 
 **Well rested, well fed** (`Systems/WellBeing`). Eating and sleeping are bonuses, never chores:
 there's no meter to keep filled and going without costs nothing. Two hours' sleep leaves you
@@ -779,7 +781,7 @@ villager mid-round is for late joiners only.
 ## Sim folders
 
 Built, all in `src/HeroesNotIncluded.Sim`, driven only by commands and headless-testable:
-`Round/`, `Perception/`, `Speech/`, `Work/`, `Adventurers/`, `Shops/`, `Favours/`, `Healing/`, `Expeditions/`, `Hospitality/`,
+`Round/`, `Perception/`, `Speech/`, `Work/`, `Adventurers/`, `Shops/`, `Healing/`, `Expeditions/`, `Hospitality/`,
 `Tinkering/`, `Director/` (Renown and Dread so far), `Afterlife/` (death, ghosts, the Calling back).
 Still to come: `Secrets/`, `Reagents/`.
 

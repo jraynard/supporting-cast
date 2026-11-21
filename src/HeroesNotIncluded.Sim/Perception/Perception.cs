@@ -653,7 +653,7 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
                 var (label, icon) = WhatFor(e);
                 yield return new Shops.KnownOrder(e.Id, e.Kind.Kind, label, e.PosterName, e.Text, e.Price,
                     e.PostedTick, e.Deadline, e.AssigneeName, e.Status, e.Poster == viewer, e.Assignee == viewer, e.Poster, icon,
-                    e.Wants, e.WantsMending, e.Where);
+                    e.Wants, e.WantsMending, e.Where, e.Commission, e.Count, e.Delivered);
             }
     }
 
@@ -666,7 +666,7 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
     {
         var w = sim.World;
         if (e.Kind.Kind == ServiceKind.Goods && e.Wants != null)
-            return (Shops.Goods.WithArticle(Shops.Goods.WishLabel(e.Wants, e.WantsMending)), e.Wants.Sprite);
+            return (e.Count > 1 ? $"{e.Count} {e.Wants.Label}" : Shops.Goods.WithArticle(Shops.Goods.WishLabel(e.Wants, e.WantsMending)), e.Wants.Sprite);
         if (w.IsAlive(e.Subject) && w.TryGet<Thing>(e.Subject, out var t) && !w.Has<Tinkering.Wagon>(e.Subject))
         {
             if (Shops.ShopSystem.IsMend(e.Kind.Kind))
@@ -783,20 +783,6 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
     /// </summary>
     public bool DreadHeavy() =>
         sim.Round.Live && sim.Reckoning.Dread / Math.Max(1f, Director.Reckoning.DreadLimit(sim)) >= Director.Reckoning.HeavyDread;
-
-    /// <summary>
-    /// The favours players asked this character knows of, oldest first: those they heard asked, took
-    /// on or asked for themselves. Open ones and those closed within the last day.
-    /// </summary>
-    public IEnumerable<Favours.KnownFavour> Favours()
-    {
-        if (blind)
-            yield break;
-        foreach (var r in sim.Favours.All)
-            if (Omniscient || r.KnownBy.Contains(viewer))
-                yield return new Favours.KnownFavour(r.Id, r.PosterName, r.Text, r.Price, r.PostedTick, r.Deadline,
-                    r.AssigneeName, r.Status, r.Poster == viewer, r.Assignee == viewer, r.Poster, r.Wants, r.Count);
-    }
 
     /// <summary>
     /// A ghost's own death: how it came, as they'd tell it ("bled to death"), and their body.

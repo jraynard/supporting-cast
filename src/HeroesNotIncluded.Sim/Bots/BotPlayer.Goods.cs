@@ -90,6 +90,7 @@ public sealed partial class BotPlayer
     /// <summary>
     /// A piece someone asked this shop to make, by name (<see cref="Order.Wants"/>), as it heard it said: open,
     /// asked of its own shop, and not yet made (nothing of its own on show or on it fills it). The oldest first.
+    /// A commission off the notice board too, nobody else on it, while it hasn't the lot to hand (<see cref="ToHand"/>).
     /// Not while a customer waits on the trade's own work (a mend, a lock): they come first, as at the shelf.
     /// </summary>
     public static KnownOrder? Asked(Simulation sim, Entity me, PerceptionView view)
@@ -100,10 +101,50 @@ public sealed partial class BotPlayer
         if (view.Orders().Any(o => o.Status == OrderStatus.Open && !o.Mine && o.Kind is not (ServiceKind.Goods or ServiceKind.Quest) && serves.Contains(o.Kind)))
             return null;
         foreach (var o in view.Orders())
-            if (o is { Kind: ServiceKind.Goods, Status: OrderStatus.Open, Wants: not null } && o.Where == shop
-                && !OnSale(sim, me).Concat(Loose(sim, me)).Any(i => FillsAsk(sim, view, o, i) && (MadeBy(sim, i, me) || sim.World.Has<ForSale>(i))))
+            if (o is { Kind: ServiceKind.Goods, Status: OrderStatus.Open, Wants: { } wants } && o.Where == shop
+                && (o.Commission ? !SomeoneElsesTo(o) && ToHand(sim, me, shop, wants) < o.Left
+                    : !OnSale(sim, me).Concat(Loose(sim, me)).Any(i => FillsAsk(sim, view, o, i) && (MadeBy(sim, i, me) || sim.World.Has<ForSale>(i)))))
                 return o;
         return null;
+    }
+
+    /// <summary>A commission somebody else said they'd see to.</summary>
+    private static bool SomeoneElsesTo(KnownOrder o) => o.AssigneeName.Length > 0 && !o.MineToDo;
+
+    /// <summary>How many of a thing it has to hand for a commission: on it, and about its shop (its chests, or lying there).</summary>
+    public static int ToHand(Simulation sim, Entity me, Entity shop, ThingDef def) =>
+        OnMe(sim, me, def.Name) + Shops.Commissions.Stock(sim, shop, def);
+
+    /// <summary>
+    /// A commission it has the lot of to hand: taken to the one who pinned it and handed over, paid for
+    /// once it's all come; fetched from its chests (or off the floor) first if it isn't on it. True while at it.
+    /// </summary>
+    private bool DeliverCommission(Simulation sim, Entity me, PerceptionView view, Entity shop, KnownOrder o, long now)
+    {
+        var w = sim.World;
+        if (SomeoneElsesTo(o) || o.Wants is not { } wants)
+            return false;
+        var onMe = OnMe(sim, me, wants.Name);
+        if (onMe >= o.Left)
+        {
+            var stack = Loose(sim, me).FirstOrDefault(i => w.Get<Thing>(i).Def == wants && !w.Has<ForSale>(i), Entity.Null);
+            if (stack.IsNull)
+                return false;
+            Doing = $"taking {o.KindLabel} to {o.PosterName}";
+            if (Reach(sim, me, o.Poster, now, returning: true))
+                Send(new GiveCommand(me, o.Poster, stack, Math.Min(o.Left, w.Get<Stack>(stack).Count)));
+            return true;
+        }
+        if (ToHand(sim, me, shop, wants) < o.Left)
+            return false;
+        var lying = Buildings.Parts(sim, shop).Where(e => w.Get<Thing>(e).Def.Building?.StorageStacks > 0).OrderBy(e => e.Index)
+            .SelectMany(sim.StoredIn)
+            .Concat(sim.AvailableItems().Where(i => w.Get<Thing>(i).Spawned && Buildings.At(sim, w.Get<Thing>(i).Cell) == shop).OrderBy(i => i.Index))
+            .FirstOrDefault(i => w.Get<Thing>(i).Def == wants, Entity.Null);
+        if (lying.IsNull)
+            return false;
+        Doing = $"fetching {wants.Label} for {o.PosterName}";
+        return Fetch(sim, me, view, lying, o.Left - onMe, now);
     }
 
     /// <summary>Is this piece the one asked for: the thing named, and for a charm the mending it was asked of (as it knows its own charm).</summary>
@@ -143,6 +184,12 @@ public sealed partial class BotPlayer
         {
             if (o is not { Kind: ServiceKind.Goods, Status: OrderStatus.Open, Wants: not null } || o.Where != shop || !w.IsAlive(o.Poster))
                 continue;
+            if (o.Commission)
+            {
+                if (DeliverCommission(sim, me, view, shop, o, now))
+                    return true;
+                continue;
+            }
             var piece = Loose(sim, me).FirstOrDefault(i => ForTheShelf(sim, me, i) && !w.Has<ForSale>(i) && Showable(sim, me, view, i) && FillsAsk(sim, view, o, i), Entity.Null);
             if (piece.IsNull && w.TryGet<Equipment>(me, out var eq) && ForTheShelf(sim, me, eq.Weapon) && FillsAsk(sim, view, o, eq.Weapon))
             {

@@ -26,7 +26,8 @@ public static class Incidents
             IncidentKind.Fever => !active.Any(c => c.Kind == CrisisKind.Plague) && !sim.Creatures().Any(e => FeverSystem.Has(sim, e))
                 && Visitors(sim).Any(),
             IncidentKind.Rats => !active.Any(c => c.Kind == CrisisKind.Shortage) && !sim.World.Query<Vermin>().Any() && Larders(sim).Count > 0,
-            IncidentKind.Errand => !Favours.FavourBoard.AnyBoard(sim).IsNull && Visitors(sim).Any(e => Coin.Count(sim, e) >= def.Wants.Min(x => x.Price)),
+            IncidentKind.Commission => !Commissions.AnyBoard(sim).IsNull && Wanted(sim, def).ToList() is { Count: > 0 } wanted
+                && Visitors(sim).Any(e => Coin.Count(sim, e) >= wanted.Min(x => x.Price)),
             _ => false,
         };
     }
@@ -59,14 +60,17 @@ public static class Incidents
                 Tell(sim, def, "", w.Get<Thing>(larder).Cell);
                 return true;
             }
-            case IncidentKind.Errand:
+            case IncidentKind.Commission:
             {
-                var want = def.Wants[rand.NextInt(def.Wants.Count)];
+                var wanted = Wanted(sim, def).ToList();
+                if (wanted.Count == 0)
+                    return false;
+                var want = wanted[rand.NextInt(wanted.Count)];
                 var who = Visitors(sim).Where(e => Coin.Count(sim, e) >= want.Price).ToList();
                 if (who.Count == 0)
                     return false;
                 var one = who[rand.NextInt(who.Count)];
-                if (sim.Favours.SendErrand(sim, one, want.ThingDef, want.Count, want.Price, (int)MathF.Ceiling(want.Hours)) == null)
+                if (Commissions.Post(sim, one, want.ThingDef, want.Count, want.Price, (int)MathF.Ceiling(want.Hours), anywhere: true) == null)
                     return false;
                 Say(sim, rand, def, one);
                 Tell(sim, def, w.Get<Creature>(one).Name, w.Get<Position>(one).Cell);
@@ -76,6 +80,10 @@ public static class Incidents
                 return false;
         }
     }
+
+    /// <summary>A commission's wants that a player could see to: made at a shop a player keeps.</summary>
+    private static IEnumerable<IncidentWant> Wanted(Simulation sim, IncidentDef def) =>
+        def.Wants.Where(x => Commissions.MadeByAPlayer(sim, x.ThingDef));
 
     /// <summary>Adventurers and travellers in town and staying a while: up, and not on their way out.</summary>
     private static IEnumerable<Entity> Visitors(Simulation sim)

@@ -21,9 +21,9 @@
     },
     {
       // The village well on the square: a stone ring under a little shingled roof. People walk round it.
-      // The town's notice board (Favours/): favours are pinned to it, and known by reading it.
+      // The town's notice board (Shops/Commissions): commissions are pinned to it, and known by reading it.
       "name": "NoticeBoard", "label": "notice board", "category": "Building", "solid": true, "sprite": "props/sign_board",
-      "description": "A board on two posts in the square. Pin a favour to it, or read what's wanted.",
+      "description": "A board on two posts in the square. Pin a commission to it, or read what's wanted.",
       "maxHp": 120, "flammability": 0.6,
       "building": { "outdoor": true, "work": 200, "cost": [ { "def": "Planks", "count": 6 } ] },
       "model": [

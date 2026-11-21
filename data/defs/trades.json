@@ -53,8 +53,9 @@
     // under one roof at Millbrook's inn, apart where a town has a cookhouse. "serves": the services at the workplace a trade sees to (and prices on the sign).
     // "standingOrders": what the carter keeps the workplace in while the AI runs it (supplies.json), topped up
     // to "keep" each evening on the town's account; a player orders for themselves (a bot by these).
-    // "wants": what an AI holder pins an errand for when its workplace has fewer than "below" of it
-    // (Favours/Wants), "count" of them for "price" silver: work on the notice board for the players.
+    // "wants": what an AI holder sends a commission up to the notice board for when its workplace has fewer
+    // than "below" of it (Shops/Commissions), "count" of them for "price" silver: work for the player who
+    // keeps the shop that makes it. Only things a shop makes (no AI makes to order, so none goes up for an AI's).
     { "name": "Innkeeper", "label": "innkeeper", "level": "Experienced", "description": "Keeps the bar and the rooms, hears everything said over the counter, and points adventuring parties at work, on whatever that's worth.",
       "standingOrders": [ { "supply": "Keg", "keep": 3 }, { "supply": "Spirits", "keep": 6 }, { "supply": "Honey", "keep": 6 }, { "supply": "BarHerbs", "keep": 6 }, { "supply": "BarBerries", "keep": 9 } ],
       "workplace": "Tavern", "workPriorities": { "Cook": 1 }, "brokers": true, "serves": [ "Drink", "MixedDrink", "Lodging", "Quest" ], "holdsKeys": true,
@@ -88,8 +89,7 @@
     { "name": "Cook", "label": "cook", "level": "Intermediate", "description": "Keeps the inn's kitchen: the stew pot by taste, the larder, the bowls, the meals out to the tables, and rations for the road.",
       "standingOrders": [ { "supply": "Cabbage", "keep": 9 }, { "supply": "Meat", "keep": 8 }, { "supply": "Berries", "keep": 12 }, { "supply": "Emberroot", "keep": 5 }, { "supply": "Herbs", "keep": 5 }, { "supply": "Flour", "keep": 9 }, { "supply": "Oats", "keep": 6 }, { "supply": "PorkSide", "keep": 2 }, { "supply": "Fowl", "keep": 2 }, { "supply": "CoarseSalt", "keep": 3 }, { "supply": "KitchenFirewood", "keep": 24 } ],
       "workplace": "Kitchen", "workPriorities": { "Cook": 1 }, "serves": [ "Meal", "Provisions" ], "namesShop": false, "skills": { "Cooking": 5 },
-      "wants": [ { "thing": "Firewood", "below": 6, "count": 10, "price": 5 }, { "thing": "Berries", "below": 4, "count": 8, "price": 4 },
-                 { "thing": "Cabbage", "below": 3, "count": 6, "price": 4 } ],
+      "wants": [ { "thing": "Firewood", "below": 6, "count": 10, "price": 5 } ],
       "stations": [ "StewPot", "Spit", "Oven", "Larder", "PrepTable", "ButcherBlock", "SmokingRack", "LogBasket", "ServingHatch", "WashTub" ],
       "tutorialIntro": "You keep the kitchen. Hungry adventurers order a meal at the serving hatch; you cook it, put it up, and they pay. The stew pot is most of the job. Nobody feeds the kitchen fires but you.",
       "lessons": [

@@ -148,3 +148,39 @@ public sealed record ShelveCommand(Entity Avatar, Entity Item) : ISimCommand, IA
             Goods.Shelved(sim, Avatar, Item);
     }
 }
+
+/// <summary>Pin a commission to the notice board: so many of a thing, for a price (<see cref="Commissions"/>). You have to be at the board.</summary>
+public sealed record PostCommissionCommand(Entity Avatar, Defs.ThingDef Wants, int Count, int Price, int Hours) : ISimCommand, IActorCommand
+{
+    public Entity Actor => Avatar;
+
+    public void Apply(Simulation sim)
+    {
+        if (InventoryCommand.Ready(sim, Avatar))
+            Commissions.Post(sim, Avatar, Wants, Count, Price, Hours);
+    }
+}
+
+/// <summary>Read the notice board you're standing at: every commission up on it is known to you.</summary>
+public sealed record ReadBoardCommand(Entity Avatar) : ISimCommand, IActorCommand
+{
+    public Entity Actor => Avatar;
+
+    public void Apply(Simulation sim)
+    {
+        if (InventoryCommand.Ready(sim, Avatar))
+            Commissions.Read(sim, Avatar);
+    }
+}
+
+/// <summary>Take a commission of yours down off the board.</summary>
+public sealed record CancelCommissionCommand(Entity Avatar, int Order) : ISimCommand, IActorCommand
+{
+    public Entity Actor => Avatar;
+
+    public void Apply(Simulation sim)
+    {
+        if (InventoryCommand.Ready(sim, Avatar))
+            Commissions.Cancel(sim, Avatar, Order);
+    }
+}

@@ -19,7 +19,7 @@ public class DirectorPacingTests
     private static readonly Guid Me = new("00000000-0000-0000-0000-00000000a11e");
 
     /// <summary>A round in Millbrook on its own copy of the defs, with these beats for its season (the real ones if null).</summary>
-    private static Simulation Round(List<CrisisBeat>? beats = null)
+    private static Simulation Round(List<CrisisBeat>? beats = null, string? trade = null)
     {
         var defs = TestWorld.LoadFreshDefs(); // a private copy: the season's beats are changed
         if (beats != null)
@@ -30,6 +30,8 @@ public class DirectorPacingTests
         sim.Director.Enable(sim.Defs.Difficulty("Normal"));
         sim.Round.OpenLobby();
         sim.ApplyNow(new JoinLobbyCommand(Me, "Arin", default));
+        if (trade != null)
+            sim.ApplyNow(new SetTradePreferencesCommand(Me, [sim.Defs.Trade(trade)], []));
         sim.ApplyNow(new StartRoundCommand());
         return sim;
     }
@@ -143,7 +145,7 @@ public class DirectorPacingTests
     [Fact]
     public void EachIncidentDoesWhatItSays()
     {
-        var sim = Round([]);
+        var sim = Round([], "Carpenter"); // a commission goes up only for what a player's shop makes
         sim.Parties.Send(sim, sim.Defs.AllParties[0]);
         sim.TickMany(SimClock.TicksPerHour); // they've walked in
         var w = sim.World;
@@ -151,8 +153,8 @@ public class DirectorPacingTests
         Assert.NotEmpty(w.Query<Vermin>());
         Assert.True(sim.Director.CallIncident(sim, "FeverFromTheRoad"));
         Assert.Contains(sim.Creatures(), e => w.Has<Adventurer>(e) && Healing.FeverSystem.Has(sim, e));
-        Assert.True(sim.Director.CallIncident(sim, "TravellersErrand"));
-        Assert.Contains(sim.Favours.All, f => f.IsOpen && w.Has<Adventurer>(f.Poster));
+        Assert.True(sim.Director.CallIncident(sim, "TravellersCommission"));
+        Assert.Contains(sim.Shops.All, e => e.IsOpen && e.Commission && w.Has<Adventurer>(e.Poster));
         // Each only so often a season.
         Assert.False(sim.Director.CallIncident(sim, "RatsInTheLarder"));
         Assert.False(sim.Director.CallIncident(sim, "NoSuchIncident"));

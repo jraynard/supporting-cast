@@ -87,6 +87,19 @@ public sealed class Order
     /// </summary>
     public bool Mend { get; set; }
 
+    /// <summary>
+    /// A commission (<see cref="Commissions"/>): pinned to the notice board, not asked aloud, for
+    /// <see cref="Count"/> of <see cref="Wants"/>, made by whoever keeps the shop that makes them
+    /// (<see cref="Where"/>) and paid when the whole lot's been brought.
+    /// </summary>
+    public bool Commission { get; set; }
+
+    /// <summary>How many of <see cref="Wants"/> are wanted: 1 for a piece asked for by name.</summary>
+    public int Count { get; set; } = 1;
+
+    /// <summary>How many of them have been brought so far (a commission's lot can come in parts).</summary>
+    public int Delivered { get; set; }
+
     /// <summary>Who knows of it, in the order they learned.</summary>
     public List<Entity> KnownBy { get; } = [];
 
@@ -112,9 +125,15 @@ public readonly record struct KnownErrand(int Order, ServiceKind Kind, Entity Wh
 /// it's for, the piece named where there is one ("their spiked club mended", "a charm of burns");
 /// <see cref="Icon"/> that piece's sprite, or "" for the service's own icon. A piece asked for by name
 /// (<see cref="Order.Wants"/>) is what was said aloud: <see cref="Wants"/>, its mending if a charm, and
-/// <see cref="Where"/>, the shop it was asked of.
+/// <see cref="Where"/>, the shop it was asked of. A commission (<see cref="Commission"/>) was read off
+/// the notice board, for <see cref="Count"/> of them, <see cref="Delivered"/> brought so far.
 /// </summary>
 public readonly record struct KnownOrder(
     int Id, ServiceKind Kind, string KindLabel, string PosterName, string Text, int Price,
     long PostedTick, long Deadline, string AssigneeName, OrderStatus Status, bool Mine, bool MineToDo, Entity Poster, string Icon = "",
-    Defs.ThingDef? Wants = null, Defs.MendingDef? WantsMending = null, Entity Where = default);
+    Defs.ThingDef? Wants = null, Defs.MendingDef? WantsMending = null, Entity Where = default,
+    bool Commission = false, int Count = 1, int Delivered = 0)
+{
+    /// <summary>How many of <see cref="Wants"/> are still to be brought.</summary>
+    public int Left => Math.Max(0, Count - Delivered);
+}

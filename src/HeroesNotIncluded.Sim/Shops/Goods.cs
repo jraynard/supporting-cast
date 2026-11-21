@@ -232,22 +232,9 @@ public static class Goods
             var b = w.Get<PresetBuilding>(shop);
             if (b.Demolishing || !KeptByAPlayer(sim, b.Def))
                 continue;
-            var stations = new HashSet<ThingDef>();
-            foreach (var part in Buildings.Parts(sim, shop))
-                if (w.TryGet<Thing>(part, out var t) && t.Def.Building?.Workbench != null && !w.Has<Construction>(part))
-                    stations.Add(t.Def);
-            var seen = new HashSet<ThingDef>();
-            foreach (var recipe in sim.Defs.AllRecipes)
-            {
-                if (recipe.StationDef is not { } station || !stations.Contains(station))
-                    continue;
-                foreach (var product in recipe.Products)
-                {
-                    var def = product.ThingDef;
-                    if (IsGear(def) && !def.Charm && !def.Rations && !def.Quiver && seen.Add(def) && WouldUpgrade(sim, who, def, null))
-                        wishes.Add(new Wish(def, null, shop));
-                }
-            }
+            foreach (var def in MadeAt(sim, shop))
+                if (IsGear(def) && !def.Charm && !def.Rations && !def.Quiver && WouldUpgrade(sim, who, def, null))
+                    wishes.Add(new Wish(def, null, shop));
             if (b.Def.Has(TownRole.Shrine) && sim.Defs.TryThing(Healing.Charms.Def, out var charm))
                 foreach (var m in sim.Defs.AllMendings)
                     if (m.Heals.Count > 0 && !m.CallsBack && WouldUpgrade(sim, who, charm, m))
@@ -256,8 +243,28 @@ public static class Goods
         return wishes;
     }
 
+    /// <summary>
+    /// Everything made at a shop's finished stations (a product of a recipe made there), each once, in
+    /// the order of the recipes: what it could be asked to make, by an adventurer or on the notice board.
+    /// </summary>
+    public static List<ThingDef> MadeAt(Simulation sim, Entity shop)
+    {
+        var w = sim.World;
+        var stations = new HashSet<ThingDef>();
+        foreach (var part in Buildings.Parts(sim, shop))
+            if (w.TryGet<Thing>(part, out var t) && t.Def.Building?.Workbench != null && !w.Has<Construction>(part))
+                stations.Add(t.Def);
+        var made = new List<ThingDef>();
+        foreach (var recipe in sim.Defs.AllRecipes)
+            if (recipe.StationDef is { } station && stations.Contains(station))
+                foreach (var product in recipe.Products)
+                    if (!made.Contains(product.ThingDef))
+                        made.Add(product.ThingDef);
+        return made;
+    }
+
     /// <summary>Does a player (connected) keep a shop of this kind?</summary>
-    private static bool KeptByAPlayer(Simulation sim, BuildingDef shop)
+    internal static bool KeptByAPlayer(Simulation sim, BuildingDef shop)
     {
         foreach (var e in sim.World.Query<Avatar>().OrderBy(e => e.Index))
             if (sim.World.TryGet<Trade>(e, out var trade) && trade.Def.HasWorkplace && trade.Def.WorksAt(shop))

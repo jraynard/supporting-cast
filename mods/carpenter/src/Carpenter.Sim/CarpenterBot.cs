@@ -76,9 +76,10 @@ public sealed class CarpenterBot(BotPlayer bot) : IBotTrade
             return true;
         if (Firewood(sim, me, view, now))
             return true;
-        // A piece asked for by name (a bow, a cudgel): made at whichever of its stations makes it, whatever's in stock.
+        // A piece asked for by name (a bow, a cudgel), or a commission off the board (planks, firewood): made at
+        // whichever of its stations makes it, whatever's in stock.
         if (BotPlayer.Asked(sim, me, view) is { } asked)
-            foreach (var station in new[] { bench, horse })
+            foreach (var station in new[] { bench, horse, BotPlayer.Nearest(sim, me, Carpenters.BlockDef) })
                 if (BotPlayer.AskedRecipe(sim, me, station, asked) is { } wanted)
                     return bot.Make(sim, me, view, station, wanted, now);
         if (bot.Stock(sim, me) >= bot.StockWanted || bench.IsNull)

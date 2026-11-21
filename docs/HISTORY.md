@@ -2992,3 +2992,22 @@ let those lapse, and in the demo bots keep most shops.
   before), mean Renown 65.7 (66.5), served 8.3 a season (8.8): within the noise, or the asks' time costing a little
   service. Bench unchanged (no player shops in it).
 
+### Commissions in place of favours (2026-11-20)
+
+The notice board's favours (free-text asks settled by hand, and "bring me so many of a thing" errands) tied the work
+to nobody's trade. A **commission** does: so many of a thing a shop makes, for a price, pinned to the board.
+- **An order like an adventurer's ask** (`Shops/Commissions`): a goods `Order` with `Wants`, now with `Commission`,
+  `Count` and `Delivered`, at the shop that makes it (`Commissions.MakersOf`, from `Goods.MadeAt`, a player's shop
+  first). Not said aloud: whoever holds that trade knows at once, anyone else by reading the board (F at it).
+  Only things a shop's stations make can be commissioned (`Commissions.Commissionable`); not charms yet.
+- **Brought in parts, paid for the lot** (`ShopSystem.Received`): what's handed over counts toward it, any extra goes
+  back, and the asker pays when it's all come. Bringing some first takes it on. Called off or lapsed part way, the
+  maker's paid a share for what came. F holding the goods at the asker hands them over (`Commissions.PosterAt`).
+- **The town's wants** are commissions now (`Commissions.Wants`, hourly): an AI trade short of something a player's shop
+  makes sends one up (the cook's firewood, the tinker's planks); wants nobody makes (berries, cabbage, timber) are
+  gone. The errand incident is `TravellersCommission` (planks, firewood, bandages), only for what a player's shop makes.
+- **Bots answer them** (`BotPlayer.Asked`, `DeliverCommission`): the lot made at its stations (the carpenter's
+  chopping block too), fetched from its chests and brought.
+- UI: the Commissions header in the Shop panel pins one at the board; your own and those you know of are order
+  cards, with the count brought and "Call it off". `Favours/` and its commands are gone. Saves: format 66.
+- `CommissionTests`, `TownWantsTests` (a bot carpenter makes and brings the tinker's planks), `DirectorPacingTests`.

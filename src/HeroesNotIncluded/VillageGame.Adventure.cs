@@ -254,9 +254,9 @@ public sealed partial class VillageGame
                 OpenTinkerWindow(action.Target, toggle);
                 break;
             case AvatarActionKind.ReadBoard:
-                Issue(new Sim.Favours.ReadBoardCommand(_avatar));
+                Issue(new Sim.Shops.ReadBoardCommand(_avatar));
                 _showShop = true;
-                _favoursOpen = true;
+                _commissionsOpen = true;
                 break;
         }
     }

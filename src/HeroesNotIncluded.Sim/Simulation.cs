@@ -89,7 +89,6 @@ public sealed partial class Simulation
     public Shops.ShopSystem Shops { get; }
 
     /// <summary>What players ask of each other, for silver they name.</summary>
-    public Favours.FavourBoard Favours { get; } = new();
 
     /// <summary>Quests, what people believe about them, and the parties out on them.</summary>
     public Expeditions.ExpeditionSystem Expeditions { get; }
@@ -291,7 +290,7 @@ public sealed partial class Simulation
             .AddSystem(sim.Mess)
             .AddSystem(sim.Drinking)
             .AddSystem(sim.Directions)
-            .AddSystem(sim.Favours)
+            .AddSystem(new Shops.CommissionSystem())
             .AddSystem(new Healing.ManaSystem())
             .AddSystem(new Afterlife.AfterlifeSystem())
             .AddSystem(new Healing.FeverSystem(seed))

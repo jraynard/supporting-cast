@@ -1,7 +1,6 @@
 using HeroesNotIncluded.Sim.Bots;
 using HeroesNotIncluded.Sim.Components;
 using HeroesNotIncluded.Sim.Defs;
-using HeroesNotIncluded.Sim.Favours;
 using HeroesNotIncluded.Sim.Hospitality;
 using HeroesNotIncluded.Sim.Round;
 using HeroesNotIncluded.Sim.Scenarios;
@@ -59,7 +58,7 @@ public class BotInnLabourTests
         sim.World.Get<Position>(who).Pos = Position.CenterOf(cell);
     }
 
-    private static Entity Board(Simulation sim) => sim.World.Query<Thing>().Single(e => FavourBoard.IsBoard(sim, e));
+    private static Entity Board(Simulation sim) => sim.World.Query<Thing>().Single(e => Commissions.IsBoard(sim, e));
 
     private static void AtBoard(Simulation sim, Entity who)
     {

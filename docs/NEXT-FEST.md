@@ -163,7 +163,7 @@ doors as every other mod (CLAUDE.md, Moddability):
 
 **The first ten minutes** are where the demo is won or lost (ROADMAP, Now 1):
 - [ ] A newcomer plays each trade's tutorial, a non-gamer among them.
-- [ ] The tutorial's gaps: handing over from an order, and the pointer for errands.
+- [ ] The tutorial's gaps: handing over from an order, and a lesson for commissions.
 - [ ] **The first-round hint has to be decided now.** A demo player who skips the tutorial has
       nothing else to go on. Recommended: one line, "your work: ...", on the trade's card until
       that trade has a finished round (`CharacterProgress`).

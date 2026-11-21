@@ -381,8 +381,11 @@ public enum IncidentKind : byte
     /// <summary>A few rats get into the kitchen's larder (<c>Hospitality.RatSystem</c>).</summary>
     Rats,
 
-    /// <summary>An adventurer in town pins an errand to the notice board (<c>Favours.FavourBoard</c>), paid from their own purse.</summary>
-    Errand,
+    /// <summary>
+    /// An adventurer in town sends a commission up to the notice board (<c>Shops.Commissions</c>), paid
+    /// from their own purse: one of its wants that a shop a player keeps makes.
+    /// </summary>
+    Commission,
 }
 
 /// <summary>
@@ -411,10 +414,10 @@ public sealed class IncidentDef : Def
     /// <summary>How many there are (rats).</summary>
     public int Count { get; set; } = 1;
 
-    /// <summary>An errand's wants, one picked: what to bring, how many, and for how much.</summary>
+    /// <summary>A commission's wants, one picked: what's wanted, how many, and for how much.</summary>
     public List<IncidentWant> Wants { get; set; } = [];
 
-    /// <summary>What the one it starts with says aloud (the fevered, the errand's poster); one picked.</summary>
+    /// <summary>What the one it starts with says aloud (the fevered, the commission's poster); one picked.</summary>
     public List<string> Says { get; set; } = [];
 
     /// <summary>The headline, for those it's for (or everyone if it's nobody's): {name} is who it's about.</summary>
@@ -425,12 +428,12 @@ public sealed class IncidentDef : Def
         ForRole = TownRoles.Parse(For, $"Incident {Name}");
         foreach (var want in Wants)
             want.Resolve(db, Name);
-        if (Kind == IncidentKind.Errand && Wants.Count == 0)
-            throw new Exception($"Incident {Name}: an errand needs wants");
+        if (Kind == IncidentKind.Commission && Wants.Count == 0)
+            throw new Exception($"Incident {Name}: a commission needs wants");
     }
 }
 
-/// <summary>Something an errand incident asks to be brought.</summary>
+/// <summary>Something a commission incident asks to be made.</summary>
 public sealed class IncidentWant
 {
     public string Thing { get; set; } = "";

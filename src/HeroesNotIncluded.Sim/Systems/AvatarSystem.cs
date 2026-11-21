@@ -77,7 +77,7 @@ public enum AvatarActionKind
     /// <summary>A door's lock or a party's wagon (<see cref="Tinkering.Tinkers.ActionAt"/>): the game opens what can be done there.</summary>
     Tinker,
 
-    /// <summary>Read the notice board (<see cref="Favours.FavourBoard"/>): the game reads it and opens the favours.</summary>
+    /// <summary>Read the notice board (<see cref="Shops.Commissions"/>): the game reads it and opens the commissions.</summary>
     ReadBoard,
 
     /// <summary>Brace a span a crisis broke (<see cref="Tinkering.SpanSession"/>), begun at once: the tinker's.</summary>
@@ -416,6 +416,14 @@ public sealed class AvatarSystem : ISimSystem
         if (tool == AvatarTool.Use && held.IsNull && InReach(here, cell) && Rescues.DownedAt(sim, cell, avatar) is { IsNull: false } hurt
             && Rescues.CanCarry(sim, avatar, hurt))
             return new(AvatarActionKind.Carry, $"Pick up {w.Get<Creature>(hurt).Name}", cell, hurt);
+        // Someone who pinned a commission you're holding the makings of: hand them over, toward the lot.
+        if (tool == AvatarTool.Use && !held.IsNull && InReach(here, cell) && Shops.Commissions.PosterAt(sim, cell, avatar, held) is { } commission
+            && Shops.Handing.InReach(sim, avatar, commission.Poster))
+        {
+            var left = commission.Count - commission.Delivered;
+            var owed = commission.Count > 1 ? $"{left} of {commission.Count} to bring, {commission.Price} silver" : $"{commission.Price} silver";
+            return new AvatarAction(AvatarActionKind.HandOver, $"Hand {ItemLabel(sim, avatar, held)} to {commission.PosterName} ({owed})", cell, commission.Poster) { Item = held };
+        }
         // A customer who asked for a piece by name, and you're holding one: hand it to them, for what they said they'd pay.
         if (tool == AvatarTool.Use && !held.IsNull && InReach(here, cell) && CustomerAt(sim, cell, avatar) is { IsNull: false } customer
             && Shops.Handing.InReach(sim, avatar, customer) && Shops.ShopSystem.AskedFor(sim, customer, held) is { } wanted)
@@ -533,7 +541,7 @@ public sealed class AvatarSystem : ISimSystem
             return new(AvatarActionKind.BarWork, upkeep, cell, site);
 
         // The notice board: read what's pinned to it, and pin your own.
-        if (tool == AvatarTool.Use && Favours.FavourBoard.IsBoard(sim, site))
+        if (tool == AvatarTool.Use && Shops.Commissions.IsBoard(sim, site))
             return new(AvatarActionKind.ReadBoard, "Read the notice board", cell, site);
 
         // A door's lock (locked, or one you could fit or turn), or a party's wagon: what can be done there.
