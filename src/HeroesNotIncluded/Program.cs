@@ -235,6 +235,8 @@ HeroesNotIncluded.Audio.GameAudio.Open(host);
 
 if (args.Contains("--render-test"))
     host.Run(new RenderTestGame { StressFromArgs = stress });
+else if (args.Contains("--forge-3d"))
+    host.Run(new HeroesNotIncluded.Debug.Forge3DGame { Defs = GameContent.Current.LoadDefs(), StartAt = ParseString(args, "--forge-step") }); // the 3D forge prototype (docs/VISION.md)
 else if (args.Contains("--art-preview"))
     host.Run(new ArtPreviewGame { DressedOnly = args.Contains("--dressed") }); // --dressed: just the people in their clothes
 else if (args.Contains("--host"))
