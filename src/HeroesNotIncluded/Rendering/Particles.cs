@@ -269,6 +269,24 @@ public sealed class Particles
             });
     }
 
+    /// <summary>A drop running off someone soaked, from round <paramref name="at"/>, falling to <paramref name="floor"/>.</summary>
+    public void Drip(float3 at, float floor, float spread)
+    {
+        Emit(new Particle
+        {
+            Sprite = "fx/droplet",
+            Pos = at + new float3(Range(-spread, spread), Range(-spread, spread), Range(-0.25f, 0.25f)),
+            Vel = new float3(Range(-0.1f, 0.1f), Range(-0.1f, 0.1f), Range(-0.4f, 0f)),
+            Gravity = 7f,
+            Life = Range(0.5f, 0.9f),
+            Size = Range(0.04f, 0.08f),
+            Color = Water,
+            Unlit = true,
+            HasFloor = true,
+            Floor = floor,
+        });
+    }
+
     /// <summary>
     /// Water landing at <paramref name="at"/>: a crown of drops thrown up and out, falling back,
     /// and a low mist rolling off. <paramref name="size"/> 1 for a bucketful.

@@ -63,6 +63,36 @@ public class BucketTests
     }
 
     [Fact]
+    public void ASplashSoaksWhoeverItLandsOnAndAVillagerSaysSo()
+    {
+        var sim = Warm();
+        var me = Avatar(sim, C(4, 10));
+        var villager = sim.SpawnCreature(sim.Defs.Creature("Human"), "Ama", C(10, 10), ageDays: 25 * 365);
+        var friend = Avatar(sim, C(11, 11));
+        var clear = sim.SpawnCreature(sim.Defs.Creature("Human"), "Bo", C(13, 10), ageDays: 25 * 365);
+
+        Buckets.Splash(sim, C(10, 10), me);
+        var w = sim.World;
+        Assert.True(w.Has<Drenched>(villager));
+        Assert.True(w.Has<Drenched>(friend), "a player's character is soaked too");
+        Assert.False(w.Has<Drenched>(clear), "two cells off: dry");
+        Assert.False(w.Has<Drenched>(me));
+
+        // The water's in the air a moment: nobody's said anything till it lands.
+        var lands = w.Get<Drenched>(villager).Since;
+        Assert.True(lands > sim.Clock.Tick);
+        Assert.False(w.Has<Speech.Emoting>(villager));
+        sim.TickMany((int)(lands - sim.Clock.Tick) + 1);
+        Assert.True(w.Has<Speech.Emoting>(villager), "the villager laughs it off or is cross");
+        Assert.False(w.Has<Speech.Emoting>(friend), "a player's character is left to its player");
+
+        // Saved and loaded mid-drip, still wet; then dry.
+        Assert.True(SaveGame.Read(SaveGame.Write(sim), sim.Defs).Item1.World.Has<Drenched>(villager));
+        sim.TickMany(Drenching.DripTicks + 1);
+        Assert.False(w.Has<Drenched>(villager));
+    }
+
+    [Fact]
     public void ASplashIsRecordedForTheRendererWithTheFlamesItPutOut()
     {
         var sim = Warm();

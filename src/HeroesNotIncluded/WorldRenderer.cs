@@ -821,6 +821,8 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
         var mind = w.Get<Mind>(e);
         var pose = _anim.Pose(sim, e, sheet, _cam, Sees(sim).EmoteOf(e));
         var color = c.Dead ? Rgba.Pack(0.5f, 0.5f, 0.5f, 0.9f) : c.Downed ? Rgba.Pack(0.85f, 0.7f, 0.7f) : tint;
+        if (!c.Dead && w.TryGet<Sim.Environment.Drenched>(e, out var soaked) && sim.Clock.Tick >= soaked.Since)
+            color = Soaked(sim, e, map, p, soaked, color);
         // Humans are drawn lying flat (top-down art); dragons and animals lie down in their side view.
         var flat = c.Def.Race == Race.Human;
         var lying = pose.Tag is "sleep" or "downed";
@@ -1310,6 +1312,33 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
                 _particles.WoodSmoke(from, frac);
             _particles.OverRoof = -1;
         }
+    }
+
+    /// <summary>The soaking each person's had its splash drawn for (<see cref="Sim.Environment.Drenched.Since"/>), by entity index.</summary>
+    private readonly Dictionary<int, long> _soakSeen = [];
+
+    /// <summary>
+    /// Someone soaked by a bucket (<see cref="Sim.Environment.Drenched"/>): as it lands, a splash off
+    /// them and "Soaked!"; then drips running off them, fewer as they dry, and the darker, cooler look
+    /// of wet clothes and hair, fading. Returns their colour, wet.
+    /// </summary>
+    private uint Soaked(Simulation sim, Entity e, Sim.Maps.Map map, in Position p, in Sim.Environment.Drenched soaked, uint color)
+    {
+        var now = sim.Clock.Tick;
+        var body = p.Pos + WorldScale.Rise(0.55f);
+        if (!_soakSeen.TryGetValue(e.Index, out var seen) || seen != soaked.Since)
+        {
+            _soakSeen[e.Index] = soaked.Since;
+            if (now - soaked.Since < SimClock.TicksPerSecond / 2) // just landed (not one from before a load)
+            {
+                _particles.SplashBurst(body, 0.45f);
+                Float(p.Pos + WorldScale.Rise(1.45f), "Soaked!", new float4(0.6f, 0.82f, 1f, 1f));
+            }
+        }
+        var wet = Math.Clamp((soaked.Until - now) / (float)Sim.Environment.Drenching.DripTicks, 0f, 1f);
+        for (var n = _particles.PerFrame(2f + 14f * wet * wet, _animDt); n > 0; n--)
+            _particles.Drip(body, GroundBelow(map, p.Cell) + 0.02f, 0.16f);
+        return PropModel.Multiply(color, Rgba.Pack(1f - 0.24f * wet, 1f - 0.18f * wet, 1f - 0.06f * wet));
     }
 
     /// <summary>How many times each dragon had been soaked when last drawn, to see a new soaking.</summary>

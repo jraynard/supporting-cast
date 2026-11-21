@@ -171,6 +171,7 @@ public static class Buckets
                 DragonBrain.Douse(sim, e);
         }
         Hospitality.BrawlCrisis.Doused(sim, at); // well water over a drunk sobers them (and a brawler, out of it)
+        Drenching.Splashed(sim, at, from);      // and whoever's under it is soaked
         sim.RecentSplashes.RemoveAll(s => sim.Clock.Tick - s.Tick > SplashShowTicks);
         sim.RecentSplashes.Add(ev);
         return put;

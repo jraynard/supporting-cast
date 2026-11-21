@@ -279,6 +279,7 @@ public sealed partial class Simulation
             .AddSystem(new PlantSystem())
             .AddSystem(new RotSystem())
             .AddSystem(new Work.SmokeSystem())
+            .AddSystem(new Environment.DrenchSystem())
             .AddSystem(new FoodPoisoningSystem())
             .AddSystem(new Hospitality.RatSystem())
             .AddSystem(sim.Feasts)

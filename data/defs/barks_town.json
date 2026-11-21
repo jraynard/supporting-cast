@@ -152,6 +152,19 @@
       { "text": "Hold that thought, I've got to dance." },
       { "text": "Is that a reel? Out of my way!" }
     ] },
+    { "name": "soaked_laugh", "lines": [
+      { "text": "Ha! Brr!" },
+      { "text": "Gah! You'll pay for that!" },
+      { "text": "Cold! Cold, cold, cold!" },
+      { "text": "Well, I needed a wash." },
+      { "text": "Right. Where's a bucket?" }
+    ] },
+    { "name": "soaked_cross", "lines": [
+      { "text": "Oi! That's cold!" },
+      { "text": "Do you mind?" },
+      { "text": "These were my good clothes!" },
+      { "text": "Save it for the fires!" }
+    ] },
     { "name": "brawl_doused", "lines": [
       { "text": "Pfah! All right! All right!" },
       { "text": "That's cold! That's... all right, I'm done." },

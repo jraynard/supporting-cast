@@ -309,6 +309,12 @@ internal static class ComponentCodecs
         }, r => new Combat.Inhaling { Target = r.Int3(), Start = r.Long(), At = r.Long() }),
         Codec("Aiming", (w, a) => w.Long(a.Start), r => new Combat.Aiming { Start = r.Long() }),
         Codec("BucketSwing", (w, a) => w.Long(a.Start), r => new Environment.BucketSwing { Start = r.Long() }),
+        Codec("Drenched", (w, d) =>
+        {
+            w.Long(d.Since);
+            w.Long(d.Until);
+            w.Bool(d.Reacted);
+        }, r => new Environment.Drenched { Since = r.Long(), Until = r.Long(), Reacted = r.Bool() }),
         Codec("Doused", (w, d) =>
         {
             w.Long(d.Until);
