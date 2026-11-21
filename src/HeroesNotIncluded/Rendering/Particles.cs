@@ -40,6 +40,12 @@ public sealed class Particles
         /// <summary>Dies on falling below <see cref="Floor"/> (world z): droplets stop at the ground.</summary>
         public bool HasFloor;
         public float Floor;
+
+        /// <summary>
+        /// Part of a roof standing on this level (-1: not): drawn while the roofs are, never cut away
+        /// above it (as a chimney's smoke is). What rises off a burning building's roof.
+        /// </summary>
+        public int RoofOf;
     }
 
     private const int Max = 4096;
@@ -58,10 +64,13 @@ public sealed class Particles
         return whole + (Range(0f, 1f) < n - whole ? 1 : 0);
     }
 
+    /// <summary>While not -1, what's emitted belongs to a roof on this level (<see cref="Particle.RoofOf"/>). Set it round the calls, then back.</summary>
+    public int OverRoof { get; set; } = -1;
+
     public void Emit(in Particle p)
     {
         if (_live.Count < Max)
-            _live.Add(p);
+            _live.Add(p with { RoofOf = OverRoof });
     }
 
     /// <summary>Soft puffs kicked up around <paramref name="at"/> (feet landing, hammer blows).</summary>
@@ -340,6 +349,129 @@ public sealed class Particles
             });
     }
 
+    /// <summary>
+    /// A tongue of flame licking up off something burning at <paramref name="at"/> (<paramref name="heat"/>
+    /// 0..1): born pale yellow, reddening and shrinking as it rises, gone in half a second.
+    /// </summary>
+    public void FlameLick(float3 at, float heat)
+    {
+        Emit(new Particle
+        {
+            Sprite = "fx/fire",
+            Pos = at + new float3(Range(-0.35f, 0.35f), Range(-0.35f, 0.35f), Range(0f, 0.15f)),
+            Vel = new float3(Range(-0.2f, 0.2f), Range(-0.2f, 0.2f), Range(1.2f, 2.2f) * (0.7f + 0.5f * heat)),
+            Drag = 0.8f,
+            Life = Range(0.3f, 0.55f),
+            Size = Range(0.25f, 0.42f) * (0.6f + 0.6f * heat),
+            Grow = -0.9f,
+            Color = new float4(1f, 0.92f, 0.68f, 0.9f),
+            MidColor = new float4(1f, 0.55f, 0.2f, 0.75f),
+            MidAt = 0.4f,
+            EndColor = new float4(0.55f, 0.1f, 0.04f, 0.1f),
+            Ramp = true,
+            Unlit = true,
+            Glow = true,
+        });
+    }
+
+    /// <summary>
+    /// Embers lifted off a fire on its heat: slower and longer-lived than a spark, drifting up and
+    /// away from <paramref name="at"/>, winking out as they cool.
+    /// </summary>
+    public void DriftingEmbers(float3 at, int count, float spread = 0.3f)
+    {
+        for (var i = 0; i < count; i++)
+            Emit(new Particle
+            {
+                Sprite = "fx/ember",
+                Pos = at + new float3(Range(-spread, spread), Range(-spread, spread), Range(0f, 0.2f)),
+                Vel = new float3(Range(-0.45f, 0.45f), Range(-0.45f, 0.45f), Range(1.0f, 2.4f)),
+                Gravity = 0.25f,
+                Drag = 0.5f,
+                Life = Range(1.1f, 2.2f),
+                Size = Range(0.05f, 0.1f),
+                Grow = -0.3f,
+                Color = new float4(1f, 0.82f, 0.45f, 1f),
+                EndColor = new float4(0.9f, 0.25f, 0.08f, 0f),
+                Ramp = true,
+                Unlit = true,
+                Glow = true,
+            });
+    }
+
+    /// <summary>
+    /// Smoke pouring off a burning roof at <paramref name="at"/> (<paramref name="heat"/> 0..1): great dark
+    /// billows that climb into a column, greying and spreading as they go, leaning a little downwind.
+    /// </summary>
+    public void RoofSmoke(float3 at, float heat)
+    {
+        Emit(new Particle
+        {
+            Sprite = "fx/smoke",
+            Pos = at + new float3(Range(-0.4f, 0.4f), Range(-0.4f, 0.4f), Range(0f, 0.3f)),
+            Vel = new float3(Range(0.1f, 0.5f), Range(-0.4f, 0f), Range(1.4f, 2.4f)),
+            Drag = 0.35f,
+            Life = Range(2.6f, 4f),
+            Size = Range(0.9f, 1.4f) * (0.8f + 0.4f * heat),
+            Grow = 0.7f,
+            Color = new float4(0.13f, 0.11f, 0.1f, 0.7f),
+            EndColor = new float4(0.42f, 0.41f, 0.42f, 0.25f),
+            Ramp = true,
+            FadeIn = true,
+        });
+    }
+
+    /// <summary>
+    /// Woodsmoke off a hearth's chimney or an open fire at <paramref name="at"/>: soft grey puffs
+    /// rising, spreading and thinning as they lean downwind (the same way as a burning roof's).
+    /// <paramref name="strength"/> 0..1 thickens it.
+    /// </summary>
+    public void WoodSmoke(float3 at, float strength, float size = 1f, float grey = 0.66f)
+    {
+        Emit(new Particle
+        {
+            Sprite = "fx/smoke",
+            Pos = at + new float3(Range(-0.08f, 0.08f), Range(-0.08f, 0.08f), 0f),
+            Vel = new float3(Range(0.15f, 0.45f), Range(-0.3f, 0f), Range(0.7f, 1.2f)),
+            Drag = 0.4f,
+            Life = Range(2.4f, 3.6f),
+            Size = Range(0.36f, 0.52f) * size,
+            Grow = 0.9f,
+            Color = new float4(grey, grey, grey + 0.02f, 0.28f + 0.25f * strength),
+            EndColor = new float4(grey + 0.14f, grey + 0.14f, grey + 0.16f, 0f),
+            Ramp = true,
+            FadeIn = true,
+        });
+    }
+
+    /// <summary>
+    /// A dragon soaked: a great white plume of steam bursting off its body at <paramref name="at"/>
+    /// (<paramref name="size"/>: how big it is), rolling up and out.
+    /// </summary>
+    public void SteamPlume(float3 at, float size)
+    {
+        var count = 14 + (int)(size * 8);
+        for (var i = 0; i < count; i++)
+        {
+            var a = Range(0, MathF.Tau);
+            Emit(new Particle
+            {
+                Sprite = "fx/smoke",
+                Pos = at + new float3(MathF.Cos(a), MathF.Sin(a), 0) * Range(0f, 0.6f * size) + new float3(0, 0, Range(-0.2f, 0.4f) * size),
+                Vel = new float3(MathF.Cos(a) * Range(0.6f, 1.8f), MathF.Sin(a) * Range(0.6f, 1.8f), Range(1.2f, 3.2f)) * (0.7f + 0.3f * size),
+                Drag = 1.3f,
+                Life = Range(1.2f, 2.2f),
+                Size = Range(0.5f, 0.9f) * size,
+                Grow = 1.1f,
+                Color = new float4(0.97f, 0.98f, 1f, 0.75f),
+                EndColor = new float4(0.85f, 0.88f, 0.92f, 0f),
+                Ramp = true,
+                Unlit = true,
+                FadeIn = true,
+            });
+        }
+    }
+
     /// <summary>A last wisp of steam off a doused cell, as it settles.</summary>
     public void SteamWisp(float3 at)
     {
@@ -535,14 +667,15 @@ public sealed class Particles
     {
         foreach (var p in _live)
         {
-            if (p.Pos.Z > cut + 1)
+            if (p.RoofOf < 0 ? p.Pos.Z > cut + 1 : p.RoofOf > cut)
                 continue;
             var t = p.Age / p.Life;
             var fade = 1f - t * t;
             if (p.FadeIn)
                 fade *= Math.Min(1f, t * 6f);
             var c = p.Ramp ? Ramped(p, t) : p.Color;
-            var flags = Quad.Level(Math.Max(0, (int)p.Pos.Z)) | (p.Unlit ? Quad.Unlit : 0u) | (p.Glow ? Quad.Glow : 0u);
+            var flags = (p.RoofOf < 0 ? Quad.Level(Math.Max(0, (int)p.Pos.Z)) : Quad.Level(p.RoofOf) | Quad.Roof)
+                | (p.Unlit ? Quad.Unlit : 0u) | (p.Glow ? Quad.Glow : 0u);
             r.Billboard(r.Sprite(p.Sprite), p.Pos - WorldScale.Rise(p.Size * 0.5f), p.Size, p.Size, Rgba.Pack(c.X, c.Y, c.Z, c.W * fade), flags, translucent: true);
         }
     }

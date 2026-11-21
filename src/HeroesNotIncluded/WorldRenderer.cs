@@ -663,13 +663,23 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
                 DrawBubble("ui/icon_hunt", p.Pos + WorldScale.Rise(VisualHeight(sim, e) + 0.2f), level, time + e.Index);
         }
 
-        // Fire: two flickering flames per burning cell, offset a little so a burning area looks full.
+        // Fire: two flickering flames per burning cell, offset a little so a burning area looks full,
+        // and the life of it (FireLife): tongues licking up, embers, shimmer and black smoke.
         foreach (var i in sim.Fire.BurningTiles)
         {
             var t = map.CellOf(i);
             if (InViewNow(t))
+            {
                 DrawFlames(i, t, map.Fire[i], time);
+                FireLife(t, map.Fire[i]);
+            }
+            // Seen from the street, a fire within shows over its roof (whatever floor's drawn over it).
+            if (map.RoomId[i] > 0 && _burningRooms.TryGetValue(map.RoomId[i], out var roof) && roof > t.Z
+                && t.X >= _view.X0 && t.X <= _view.X1 && t.Y >= _view.Y0 && t.Y <= _view.Y1)
+                FireOverRoof(t, map.Fire[i], roof);
         }
+        DrawDousedDragons(sim);
+        DrawChimneySmoke(sim);
 
         DrawSmoke(sim, inView, time);
         DrawSplashes(sim, inView, time);
@@ -1223,6 +1233,112 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
     /// reads as moving. Each cell's puffs loop within the cell, so nothing pops when cells change.
     /// </summary>
     /// <summary>A burning cell's flames (map index <paramref name="i"/>, burning <paramref name="f"/> hard): two flickering, offset a little so a burning area looks full.</summary>
+    /// <summary>Embers a second off a modelled fire of size 1 (<see cref="ThingDef.FireSize"/>, squared), and pops of sparks.</summary>
+    private const float EmbersPerSecond = 2.2f, PopsPerSecond = 0.35f, LicksPerSecond = 3f, ChimneyPuffsPerSecond = 2.5f;
+
+    /// <summary>A modelled fire this big (<see cref="ThingDef.FireSize"/>) or more is out in the open: its flames lick up past it.</summary>
+    private const float OpenFireSize = 1f;
+
+    /// <summary>
+    /// A burning cell's life (<paramref name="f"/>, its fire 0..1), as the dragon's fire has: tongues
+    /// of flame licking up, embers lifted on the heat, the air shimmering over a fierce one, and black
+    /// smoke rolling off it. Metered by the heat, so a street alight stays affordable.
+    /// </summary>
+    /// <summary>
+    /// A fire under a roof (<paramref name="ridge"/>: how high its ridge is), seen from outside: black
+    /// smoke pouring up off it and embers whirling out over it, drawn as the roof is (gone with it).
+    /// </summary>
+    private void FireOverRoof(int3 t, float f, float ridge)
+    {
+        var over = new float3(t.X + 0.5f, t.Y + 0.5f, ridge + 0.2f);
+        _particles.OverRoof = Math.Min(t.Z, _view.Cut);
+        for (var n = _particles.PerFrame(0.7f + 1.1f * f, _animDt); n > 0; n--)
+            _particles.RoofSmoke(over, f);
+        for (var n = _particles.PerFrame(0.5f + 1.5f * f, _animDt); n > 0; n--)
+            _particles.DriftingEmbers(over, 1, 0.45f);
+        _particles.OverRoof = -1;
+    }
+
+    private void FireLife(int3 t, float f)
+    {
+        var at = new float3(t.X + 0.5f, t.Y + 0.5f, t.Z);
+        for (var n = _particles.PerFrame(2f + 5f * f, _animDt); n > 0; n--)
+            _particles.FlameLick(at, f);
+        for (var n = _particles.PerFrame(0.4f + 1.8f * f, _animDt); n > 0; n--)
+            _particles.DriftingEmbers(at + new float3(0, 0, 0.3f), 1);
+        if (f > 0.5f)
+            for (var n = _particles.PerFrame(3f * (f - 0.5f), _animDt); n > 0; n--)
+                _particles.HeatHaze(at + new float3(0, 0, 0.6f));
+        if (f > 0.3f)
+            for (var n = _particles.PerFrame(0.9f * f, _animDt); n > 0; n--)
+                _particles.BreathSmoke(at + new float3(0, 0, 0.7f), 0.8f + 0.5f * f);
+    }
+
+    /// <summary>
+    /// Smoke from every lit hearth's chimney (<see cref="ThingDef.SmokeAt"/>) on screen, thicker the
+    /// better it's fed. Drawn as the roof is: seen with the roofs on, when the hearth itself is hidden
+    /// under them, and gone with them. Where there's a storey over it, it rises from the building's
+    /// chimney stack there instead (BuildingKit.Chimney).
+    /// </summary>
+    private void DrawChimneySmoke(Simulation sim)
+    {
+        var w = sim.World;
+        var map = sim.Map;
+        foreach (var e in w.Each<Fueled>())
+        {
+            if (!w.TryGet<Thing>(e, out var thing) || thing.Def is not { Model: not null, SmokeAt: [var sx, var sy, var sz], Building.Fuel: { } props } def
+                || !sim.Burning(e))
+                continue;
+            var cell = thing.Cell;
+            if (cell.X < _view.X0 - 2 || cell.X > _view.X1 + 2 || cell.Y < _view.Y0 - 2 || cell.Y > _view.Y1 + 2)
+                continue;
+            float3? stack = null;
+            var above = cell + new int3(0, 0, 1);
+            if (map.InBounds(above) && map.Structure[map.Idx(above)].IsNull)
+            {
+                var o = Footprint.Rotate(sx - 0.5f, sy - 0.5f, thing.Facing);
+                stack = Position.CenterOf(cell) + new float3(o.X, o.Y, sz);
+            }
+            else if (BuildingKit.Of(sim, e) is { } kitted
+                && BuildingKit.Chimney(kitted.Kit, kitted.Building, new int3(cell.X, cell.Y, kitted.Building.Anchor.Z + kitted.Building.Def.Storeys)) is { } chimney)
+                stack = chimney.Top;
+            if (stack is not { } from)
+                continue;
+            var frac = Math.Clamp(w.Get<Fueled>(e).Fuel / props.Capacity, 0, 1);
+            _particles.OverRoof = Math.Min(cell.Z, _view.Cut);
+            for (var n = _particles.PerFrame(ChimneyPuffsPerSecond * (0.5f + 0.5f * frac), _animDt); n > 0; n--)
+                _particles.WoodSmoke(from, frac);
+            _particles.OverRoof = -1;
+        }
+    }
+
+    /// <summary>How many times each dragon had been soaked when last drawn, to see a new soaking.</summary>
+    private readonly Dictionary<int, int> _soakings = [];
+
+    /// <summary>
+    /// A dragon soaked by a bucket (<see cref="Sim.Ai.Doused"/>): a great plume of steam bursts off it
+    /// as the message says; then, while its fire's out, steam curls from its jaws instead of smoke.
+    /// </summary>
+    private void DrawDousedDragons(Simulation sim)
+    {
+        var w = sim.World;
+        foreach (var e in w.Each<Sim.Ai.Doused>())
+        {
+            var d = w.Get<Sim.Ai.Doused>(e);
+            var seen = Seen(e) && w.Has<Position>(e);
+            if (_soakings.TryGetValue(e.Index, out var before) && d.Times > before && seen
+                && sim.Clock.Tick - (d.Until - (long)(Sim.Ai.DragonBrain.DousedSeconds * SimClock.TicksPerSecond)) < SimClock.TicksPerSecond)
+            {
+                var body = DrawPos(sim, e, w.Get<Position>(e).Pos) + WorldScale.Rise(0.6f);
+                _particles.SteamPlume(body, 1.6f);
+            }
+            _soakings[e.Index] = d.Times;
+            if (seen && d.Until > sim.Clock.Tick && _anim.TryGetMouth(e, out var mouth))
+                for (var n = _particles.PerFrame(3f, _animDt); n > 0; n--)
+                    _particles.SteamWisp(mouth - new float3(0, 0, 0.05f));
+        }
+    }
+
     private void DrawFlames(int i, int3 t, float f, float time)
     {
         var fireSprite = S("fx/fire");
@@ -1886,8 +2002,9 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
     /// </summary>
     private void DrawWindowGlow(Simulation sim)
     {
+        FindBurningRooms(sim);
         var dark = 1f - sim.Clock.Daylight;
-        if (dark < 0.05f)
+        if (dark < 0.05f && _burningRooms.Count == 0)
             return;
         var map = sim.Map;
         var sky = sim.Lighting.SkyLight(sim);
@@ -1905,6 +2022,14 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
                 continue;
             if (LitWindows && kitted.Building.Def.Has(Sim.Defs.TownRole.Tavern))
                 glow = dark; // key art: every room of the inn lamplit
+            // A room on fire glows through its windows day or night, flickering orange.
+            var color = Rgba.Pack(glow, glow * 0.92f, glow * 0.8f);
+            if (_burningRooms.ContainsKey(room))
+            {
+                var flicker = 0.78f + 0.14f * MathF.Sin(_now * 3.1f + cell.X * 1.7f) + 0.08f * MathF.Sin(_now * 7.3f + cell.Y * 2.3f);
+                glow = Math.Max(glow, (0.55f + 0.45f * dark) * flicker);
+                color = Rgba.Pack(glow, glow * 0.5f, glow * 0.18f);
+            }
             if (glow < 0.04f)
                 continue;
             foreach (var (model, facing) in BuildingKit.WallPieces(kitted.Kit, kitted.Building, cell))
@@ -1920,7 +2045,7 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
                 };
                 _modelQuads.Clear();
                 PropModel.Build(_modelQuads, _glowPane, cell, facing, name => (S(name), Rgba.White),
-                    Rgba.Pack(glow, glow * 0.92f, glow * 0.8f), Quad.Level(cell.Z) | Quad.Glow | Quad.Unlit);
+                    color, Quad.Level(cell.Z) | Quad.Glow | Quad.Unlit);
                 var jut = WorldMesher.JettyOut(kitted.Kit, kitted.Building, cell.X, cell.Y, cell.Z) ?? default;
                 foreach (var q in _modelQuads)
                 {
@@ -1933,6 +2058,34 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
     }
 
     private static readonly int3[] GlowSides = [new(1, 0, 0), new(-1, 0, 0), new(0, 1, 0), new(0, -1, 0)];
+
+    /// <summary>Rooms with fire in them this frame, and the height of their building's roof ridge (-1: no roof found).</summary>
+    private readonly Dictionary<int, float> _burningRooms = [];
+
+    /// <summary>
+    /// Which rooms are burning, and over each its roof (through a window of it: the building its wall
+    /// belongs to). From outside, with the roofs on, that's all a fire within shows of itself.
+    /// </summary>
+    private void FindBurningRooms(Simulation sim)
+    {
+        _burningRooms.Clear();
+        var map = sim.Map;
+        foreach (var i in sim.Fire.BurningTiles)
+            if (map.RoomId[i] > 0)
+                _burningRooms.TryAdd(map.RoomId[i], -1);
+        if (_burningRooms.Count == 0)
+            return;
+        foreach (var (cell, room) in sim.Lighting.Windows(sim))
+            if (_burningRooms.TryGetValue(room, out var roof) && roof < 0
+                && map.Structure[map.Idx(cell)] is { IsNull: false } part && BuildingKit.Of(sim, part) is { } kitted)
+            {
+                // The ridge: the tops of the walls, and the pitch up to the middle of the span (BuildingKit.Roof).
+                var def = kitted.Building.Def;
+                var span = Math.Min(def.Width, def.Depth);
+                var pitch = kitted.Kit.Roof?.Pitch ?? 0f;
+                _burningRooms[room] = kitted.Building.Anchor.Z + def.Storeys + pitch * (span / 2f - 0.5f);
+            }
+    }
 
     /// <summary>
     /// A preset building's phase going up (one site over its plot, off the map's layers): a ghost
@@ -2141,26 +2294,23 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
                 var size = (0.45f + 0.25f * frac + 0.05f * MathF.Sin(t) + 0.03f * MathF.Sin(t * 2.3f)) * def.FireSize;
                 Billboard(S("fx/fire"), floor + FireOffset(def, thing.Facing), size * 0.85f, size, Rgba.Pack(1f, 0.92f, 0.8f, 0.95f), level | Quad.Unlit | Quad.Glow, translucent: true);
                 DrawCoalBed(sim, e, def, floor, thing.Facing, level);
-                // A thin wisp from the chimney, gone with the roofs (it rises from the stack, which is drawn as roof).
-                // Under another storey, from the top of the building's chimney stack there instead (BuildingKit.Chimney).
-                float3? stack = null;
-                if (def.SmokeAt is [var sx, var sy, var sz] && sim.Map.InBounds(cell + new int3(0, 0, 1)) && sim.Map.Structure[sim.Map.Idx(cell + new int3(0, 0, 1))].IsNull)
-                {
-                    var o = Footprint.Rotate(sx - 0.5f, sy - 0.5f, thing.Facing);
-                    stack = floor + new float3(o.X, o.Y, sz);
-                }
-                else if (def.SmokeAt != null && BuildingKit.Of(sim, e) is { } kitted
-                    && BuildingKit.Chimney(kitted.Kit, kitted.Building, new int3(cell.X, cell.Y, kitted.Building.Anchor.Z + kitted.Building.Def.Storeys)) is { } chimney)
-                    stack = chimney.Top;
-                if (stack is { } from)
-                    for (var k = 0; k < 3; k++)
-                    {
-                        var rise = (_anim.Clock * 0.22f + k / 3f + e.Index * 0.137f) % 1f;
-                        var drift = MathF.Sin(_anim.Clock * 0.7f + k * 2.1f) * 0.12f + rise * 0.3f;
-                        var puff = 0.35f + 0.5f * rise;
-                        Billboard(S("fx/smoke"), from + new float3(drift, 0, rise * 1.2f), puff, puff,
-                            Rgba.Pack(0.6f, 0.6f, 0.62f, 0.4f * (1 - rise) * Math.Min(1, rise * 6)), level | Quad.Roof, translucent: true);
-                    }
+                // Embers lifting off it, and now and then a log's pop throwing sparks: by the fire's
+                // size, so a hearth gives the odd one and the festival's bonfire a steady stream.
+                var heart = floor + FireOffset(def, thing.Facing) + new float3(0, 0, size * 0.3f);
+                var big = def.FireSize * def.FireSize * (0.6f + 0.4f * frac);
+                for (var n = _particles.PerFrame(EmbersPerSecond * big, _animDt); n > 0; n--)
+                    _particles.DriftingEmbers(heart, 1, 0.12f + 0.12f * def.FireSize);
+                if (_particles.PerFrame(PopsPerSecond * big, _animDt) > 0)
+                    _particles.Embers(heart, 3 + (int)(2 * def.FireSize));
+                // A big open fire (the festival's bonfire) licks up as a burning cell does; a hearth's stays in its grate.
+                if (def.FireSize >= OpenFireSize)
+                    for (var n = _particles.PerFrame(LicksPerSecond * big, _animDt); n > 0; n--)
+                        _particles.FlameLick(heart + new float3(0, 0, size * 0.2f), Math.Min(1f, 0.5f + 0.3f * def.FireSize));
+                // A chimney's smoke is drawn apart (DrawChimneySmoke: the hearth's often hidden under its roof).
+                // An open fire (the festival's bonfire): a lighter smoke straight off its flames.
+                if (def.SmokeAt == null && def.FireSize >= OpenFireSize)
+                    for (var n = _particles.PerFrame(ChimneyPuffsPerSecond * 0.8f * def.FireSize, _animDt); n > 0; n--)
+                        _particles.WoodSmoke(heart + new float3(0, 0, size * 0.6f), 0.6f * frac, 0.9f + 0.3f * def.FireSize, grey: 0.45f);
             }
             Bar(floor + new float3(0, 0, 0.9f), frac, frac > props.RefuelAt ? Rgba.Pack(1f, 0.6f, 0.2f) : Rgba.Pack(1f, 0.2f, 0.2f), level);
         }
