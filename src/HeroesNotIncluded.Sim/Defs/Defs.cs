@@ -889,6 +889,12 @@ public sealed class ThingDef : Def
     /// </summary>
     public string? Held { get; set; }
 
+    /// <summary>
+    /// Presentation only: how a person strikes with it, the tag of the frames they play
+    /// (<c>swing</c>, the default; <c>thrust</c> for a spear). A sheet without them swings.
+    /// </summary>
+    public string? Blow { get; set; }
+
     public RenderShape Shape { get; set; }
 
     /// <summary>Drawn size in cells (billboard height, or decal width).</summary>

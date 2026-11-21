@@ -900,6 +900,21 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
         }
         // A dodge's tumble turns about their middle, as a flyer's bank does.
         var tumbling = w.TryGet<Sim.Combat.FreeMover>(e, out var free) && sim.Clock.Tick < free.DashUntil;
+        // A kick of dust where it leaves the ground, a smaller puff where it comes down.
+        if (tumbling || _dashDust.ContainsKey(e.Index))
+        {
+            var ground = new float3(feet.X, feet.Y, GroundBelow(map, p.Cell) + 0.05f);
+            if (tumbling && (!_dashDust.TryGetValue(e.Index, out var dust) || dust != free.DashUntil))
+            {
+                _dashDust[e.Index] = free.DashUntil;
+                _particles.Dust(ground, 6, 0.35f, Dirt, 0.3f);
+            }
+            else if (!tumbling)
+            {
+                _dashDust.Remove(e.Index);
+                _particles.Dust(ground, 3, 0.25f, Dirt, 0.22f);
+            }
+        }
         // Weapon sheathed (free movement), it's slung across their back: behind them as they face
         // us, over their back (and hair, and cloak) as they walk away.
         var slungDef = w.Has<Sim.Combat.FreeMover>(e) && !free.Drawn && !tumbling && !c.Dead && !c.Downed
@@ -1498,10 +1513,14 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
         public Sim.Combat.Windup Blow;
         public long Landed = -1;
         public string Kind = "";
+        public bool Thrust;
         public Sprite Sprite;
     }
 
     private readonly Dictionary<int, Swing> _swings = [];
+
+    /// <summary>Whose dodge has kicked up its dust: the dash it was for (<see cref="Sim.Combat.FreeMover.DashUntil"/>).</summary>
+    private readonly Dictionary<int, long> _dashDust = [];
     private readonly List<int> _swingsDone = [];
 
     /// <summary>How long a landed blow's strike is drawn (ticks): the sweep, or the thrust out and back.</summary>
@@ -1521,7 +1540,7 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
                 || Sim.Combat.HouseRules.Sheathed(sim, e)) // fists in the inn: no blade to swing
                 continue;
             if (!_swings.TryGetValue(e.Index, out var sw) || sw.Landed >= 0 || sw.Blow.Start != w.Get<Sim.Combat.Windup>(e).Start)
-                _swings[e.Index] = sw = new Swing { Who = e, Kind = held, Sprite = S(def.Sprite) };
+                _swings[e.Index] = sw = new Swing { Who = e, Kind = held, Thrust = def.Blow == "thrust", Sprite = S(def.Sprite) };
             sw.Blow = w.Get<Sim.Combat.Windup>(e);
         }
         _swingsDone.Clear();
@@ -1560,7 +1579,7 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
             var blow = sw.Blow;
             var feet = DrawPos(sim, e, w.Get<Position>(e).Pos);
             var aim = LocalAim is { } mine && mine.E == e ? mine.Aim : blow.Aim;
-            var thrust = sw.Kind == "spear";
+            var thrust = sw.Thrust;
             var heavy = blow.Heavy;
             // Laid flat, the camera's tilt foreshortens it: drawn a size up from the item art.
             var size = sw.Kind is "longsword" or "spear" ? 1.3f : sw.Kind == "knife" ? 0.7f : 1.0f;

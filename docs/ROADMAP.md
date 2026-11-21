@@ -509,10 +509,10 @@ items into "Now" when a playtest says they matter.
   turn at once).
 
 **Art and look**
-- **Dodge, dance and cheer frames** from the people pipeline (`tools/chibi_people.py`: new tags after
-  the rest, every layer regenerated, then `chibi_builds.py`). The swing has its own (`swing_<view>`,
-  docs/ART.md); a spear still cuts rather than thrusts, and fists swing like a blade. A dodge is a
-  tumble, a dancer hops and sways (`WorldRenderer`), and a cheer is a hop.
+- **Dance and cheer frames** from the people pipeline (`tools/chibi_people.py`: new tags after the
+  rest, every layer regenerated, then `chibi_builds.py`). Blows have their own (swing, thrust, punch:
+  docs/ART.md). A dancer hops and sways (`WorldRenderer`), and a cheer is a hop. The dodge stays a
+  tumble (testers like it), with a kick of dust each end.
 - A proper ghost (a pale, see-through take on the character), and the Calling's glow. A ridden
   beast's look (a pale glint in its eyes), frost drawn on the ground rather than a tag, and a
   startle sound for the beasts (spook and frost borrow the chill's for now; docs/AUDIO.md).

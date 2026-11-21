@@ -29,14 +29,15 @@ public class AnimationTests
     }
 
     [Fact]
-    public void PeopleSheetsHaveTheRidePoseInEveryView()
+    public void PeopleSheetsHaveTheRideAndBlowPosesInEveryView()
     {
-        foreach (var body in new[] { "male", "female" })
+        foreach (var sheet in new[] { "male", "female", "male_dwarf", "female_halfling" })
         {
-            var json = System.Text.Json.JsonDocument.Parse(File.ReadAllText(Path.Combine(DevPaths.Defs!, "..", "textures", "creatures", $"person_{body}.anim.json")));
+            var json = System.Text.Json.JsonDocument.Parse(File.ReadAllText(Path.Combine(DevPaths.Defs!, "..", "textures", "creatures", $"person_{sheet}.anim.json")));
             var tags = json.RootElement.GetProperty("tags"u8).ToString();
-            foreach (var view in new[] { "ride", "ride_down", "ride_downside", "ride_upside", "ride_up" })
-                Assert.Contains($"\"{view}\"", tags);
+            foreach (var pose in new[] { "ride", "swing", "thrust", "punch" })
+                foreach (var view in new[] { "", "_down", "_downside", "_upside", "_up" })
+                    Assert.Contains($"\"{pose}{view}\"", tags);
         }
     }
 
@@ -62,6 +63,8 @@ public class AnimationTests
         Assert.Equal("idle", Resolved(sheet, "breathe"));  // breathe → windup → idle
         Assert.Equal("idle", Resolved(sheet, "downed"));   // downed → sleep → idle
         Assert.Equal("idle", Resolved(sheet, "work"));
+        Assert.Equal("idle", Resolved(sheet, "thrust"));   // thrust → swing → work → idle
+        Assert.Equal("idle", Resolved(sheet, "punch"));    // punch → work → idle
 
         static string Resolved(SpriteSheet s, string tag)
         {

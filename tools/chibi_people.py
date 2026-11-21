@@ -108,7 +108,21 @@ def sequence():
                            Pose(v, "swing", 2, body_dy=0.9, head_dy=0.3, legs=((-0.8, 0), (0.8, 0))),
                            Pose(v, "swing", 3, body_dy=0.6, head_dy=0.2, legs=((-0.8, 0), (0.8, 0)))],
             [90, 220, 70, 180], loop=False, event=2)
-    for alias in ("idle", "walk", "work", "ride", "sit", "swing"):
+    # A spear's blow, two-handed: levelled, drawn back, driven across in a lunge, recovered. And a
+    # punch: fists up, the right drawn back, thrown across at shoulder height, brought back.
+    for v in VIEWS:
+        add(f"thrust_{v}", [Pose(v, "thrust", 0, body_dy=0.2, legs=((0, 0), (0, 0.4))),
+                            Pose(v, "thrust", 1, body_dy=0.0, head_dy=-0.2, legs=((-0.4, 0), (0.4, 0.6))),
+                            Pose(v, "thrust", 2, body_dy=1.0, head_dy=0.3, legs=((-1.0, 0), (1.0, 0))),
+                            Pose(v, "thrust", 3, body_dy=0.6, head_dy=0.2, legs=((-0.8, 0), (0.8, 0)))],
+            [90, 220, 70, 180], loop=False, event=2)
+    for v in VIEWS:
+        add(f"punch_{v}", [Pose(v, "punch", 0, body_dy=0.3, legs=((0, 0), (0, 0.4))),
+                           Pose(v, "punch", 1, body_dy=0.1, head_dy=-0.2, legs=((-0.3, 0), (0.3, 0.6))),
+                           Pose(v, "punch", 2, body_dy=0.8, head_dy=0.3, legs=((-0.8, 0), (0.8, 0))),
+                           Pose(v, "punch", 3, body_dy=0.5, head_dy=0.2, legs=((-0.6, 0), (0.6, 0)))],
+            [90, 200, 70, 160], loop=False, event=2)
+    for alias in ("idle", "walk", "work", "ride", "sit", "swing", "thrust", "punch"):
         tags[alias] = tags[f"{alias}_down"]
     return frames, tags
 
@@ -187,6 +201,31 @@ class Fig:
                 elbow, hand, front = (sx + out * 1.6, 36.5 + by), (sx - out * 1.0, 39.5 + by), True
             else:
                 elbow, hand, front = (sx + out * 2.4, 36.0 + by), (sx + out * 2.8, 40.5 + by), False
+        elif p.anim == "thrust":
+            # two-handed, the shaft level across the body (the held layer runs elbow to hand, so the
+            # back elbow sits outside the hand): the back hand drives, the front one slides along it
+            ms, mout = (sx, out) if role == 0 else (self.g["shoulders"][1 - side], -out)
+            elbow0, hand0 = [((ms + mout * 2.6, 37.5 + by), (ms + mout * 0.6, 37.0 + by)),
+                             ((ms + mout * 3.6, 37.0 + by), (ms + mout * 2.0, 36.6 + by)),
+                             ((ms - mout * 2.5, 37.6 + by), (ms - mout * 6.0, 37.4 + by)),
+                             ((ms - mout * 1.5, 38.0 + by), (ms - mout * 4.0, 38.2 + by))][p.k]
+            if role == 0:
+                elbow, hand, front = elbow0, hand0, p.k >= 2
+            else:
+                hand = (hand0[0] - mout * 5.0, hand0[1] - 0.2)
+                elbow, front = (sx + out * 1.2, 37.0 + by), True
+        elif p.anim == "punch" and role == 0:
+            # the right: up by the chin, drawn back, thrown across at shoulder height, brought back
+            elbow, hand, front = [((sx + out * 2.4, 37.0 + by), (sx + out * 0.4, 34.5 + by), True),
+                                  ((sx + out * 3.4, 36.5 + by), (sx + out * 2.2, 35.0 + by), False),
+                                  ((sx - out * 9.0, 36.4 + by), (sx - out * 19.0, 36.0 + by), True),
+                                  ((sx - out * 5.5, 37.0 + by), (sx - out * 13.0, 37.0 + by), True)][p.k]
+        elif p.anim == "punch" and role == 1:
+            # the left keeps its guard up before the face, and tucks to the chest as the right goes out past it
+            if p.k < 2:
+                elbow, hand, front = (sx + out * 1.4, 37.0 + by), (sx - out * 1.6, 33.6 + by), True
+            else:
+                elbow, hand, front = (sx + out * 1.8, 37.4 + by), (sx + out * 0.4, 35.8 + by), False
         elif p.anim == "coin" and role == 1:
             lift = 0.6 if p.coin and p.coin > 0 else 0
             elbow, hand, front = (sx + out * 1.6, 38.2 + by), (sx - out * 1.4, 35 + by - lift), True
@@ -3214,9 +3253,12 @@ SWING_LOOKS = (
 if __name__ == "__main__":
     only = sys.argv[sys.argv.index("--only") + 1] if "--only" in sys.argv else None
     if "--swing-preview" in sys.argv:
-        out = os.path.join(os.path.dirname(__file__), "..", ".cache", "people", "swing.png")
-        os.makedirs(os.path.dirname(out), exist_ok=True)
-        motion_preview(out, "swing", SWING_LOOKS)
+        # every blow: the swing (a sword, an axe), the spear's thrust, the punch
+        out = os.path.join(os.path.dirname(__file__), "..", ".cache", "people")
+        os.makedirs(out, exist_ok=True)
+        motion_preview(os.path.join(out, "swing.png"), "swing", SWING_LOOKS)
+        motion_preview(os.path.join(out, "thrust.png"), "thrust", [dict(SWING_LOOKS[0], held="spear"), dict(SWING_LOOKS[1], held="spear")], before=("swing",))
+        motion_preview(os.path.join(out, "punch.png"), "punch", [dict(SWING_LOOKS[0], held=None), dict(SWING_LOOKS[1], held=None)], before=("swing",))
         print(out)
         sys.exit(0)
     if "--turn-test" in sys.argv:

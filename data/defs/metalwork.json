@@ -10,7 +10,7 @@
       "description": "A flaked edge bound to a handle. Better than fists."
     },
     {
-      "name": "StoneSpear", "held": "spear", "label": "stone spear", "category": "Item", "mass": 2, "sprite": "items/stone_spear", "flammability": 0.5, "maxHp": 50, "tier": "Stone",
+      "name": "StoneSpear", "held": "spear", "blow": "thrust", "label": "stone spear", "category": "Item", "mass": 2, "sprite": "items/stone_spear", "flammability": 0.5, "maxHp": 50, "tier": "Stone",
       "weapon": { "verb": "thrusts at", "accuracy": 0.78, "damageMin": 8, "damageMax": 13, "damageType": "Pierce", "penetration": 0.15, "glance": 0.1 },
       "description": "A long pole with a stone point: keeps a club at bay."
     },
@@ -35,7 +35,7 @@
       "weapon": { "verb": "stabs at", "accuracy": 0.82, "damageMin": 7, "damageMax": 12, "damageType": "Cut", "penetration": 0.15, "glance": 0.1 }
     },
     {
-      "name": "CopperSpear", "held": "spear", "label": "copper spear", "category": "Item", "mass": 2, "sprite": "items/copper_spear", "maxHp": 70, "tier": "Copper",
+      "name": "CopperSpear", "held": "spear", "blow": "thrust", "label": "copper spear", "category": "Item", "mass": 2, "sprite": "items/copper_spear", "maxHp": 70, "tier": "Copper",
       "weapon": { "verb": "thrusts at", "accuracy": 0.78, "damageMin": 9, "damageMax": 15, "damageType": "Pierce", "penetration": 0.18, "glance": 0.09 }
     },
     {
@@ -59,7 +59,7 @@
       "tool": { "kind": "Hammer", "speed": 1.15, "tier": "Bronze" }, "description": "Rings true: bronze armor needs one."
     },
     {
-      "name": "BronzeSpear", "held": "spear", "label": "bronze spear", "category": "Item", "mass": 2, "sprite": "items/bronze_spear", "maxHp": 100, "tier": "Bronze",
+      "name": "BronzeSpear", "held": "spear", "blow": "thrust", "label": "bronze spear", "category": "Item", "mass": 2, "sprite": "items/bronze_spear", "maxHp": 100, "tier": "Bronze",
       "weapon": { "verb": "thrusts at", "accuracy": 0.79, "damageMin": 11, "damageMax": 17, "damageType": "Pierce", "penetration": 0.22, "glance": 0.08 }
     },
     {
@@ -214,7 +214,7 @@
 
     // ---- Iron: the forge's other weapons ----
     {
-      "name": "IronSpear", "held": "spear", "label": "iron spear", "category": "Item", "mass": 2, "sprite": "items/iron_spear", "maxHp": 120, "tier": "Iron",
+      "name": "IronSpear", "held": "spear", "blow": "thrust", "label": "iron spear", "category": "Item", "mass": 2, "sprite": "items/iron_spear", "maxHp": 120, "tier": "Iron",
       "weapon": { "verb": "thrusts at", "accuracy": 0.8, "damageMin": 12, "damageMax": 19, "damageType": "Pierce", "penetration": 0.28, "glance": 0.07 }
     },
     {
