@@ -29,6 +29,38 @@ public class InventoryTests
         Assert.NotEqual(villager, sim.Reservations.ReservedBy(stack));
     }
 
+    [Fact]
+    public void AVillagerStillOnItsWayToABucketLetsAPlayerTakeIt()
+    {
+        var (sim, me) = Setup();
+        var bucket = Spawn(sim, Environment.Buckets.Empty, C(11, 10));
+        var villager = sim.SpawnCreature(sim.Defs.Creature("Human"), "Firefighter", C(26, 10), ageDays: 25 * 365);
+        Array.Fill(sim.World.Get<Needs>(villager).Values, 1f);
+        AiSystem.Order(sim, villager, new Environment.BucketJob(C(20, 5), bucket, Entity.Null));
+        sim.Tick();
+        Assert.Equal(villager, sim.Reservations.ReservedBy(bucket)); // it's set out for it
+
+        Assert.Equal(AvatarActionKind.PickUp, AvatarSystem.ActionAt(sim, me, C(11, 10)).Kind);
+        Press(sim, me, C(11, 10));
+        Assert.True(Packed(sim, me, Environment.Buckets.Empty) > 0 || sim.World.Get<Carrying>(me).HasItem, "the player has the bucket");
+        Assert.IsNotType<Environment.BucketJob>(sim.World.Get<Mind>(villager).Job);
+        Assert.False(sim.Reservations.IsReserved(bucket) && sim.Reservations.ReservedBy(bucket) == villager);
+    }
+
+    [Fact]
+    public void AVillagerAlreadyAtABucketKeepsIt()
+    {
+        var (sim, me) = Setup();
+        var bucket = Spawn(sim, Environment.Buckets.Empty, C(11, 10));
+        var villager = sim.SpawnCreature(sim.Defs.Creature("Human"), "Firefighter", C(12, 10), ageDays: 25 * 365);
+        Array.Fill(sim.World.Get<Needs>(villager).Values, 1f);
+        AiSystem.Order(sim, villager, new Environment.BucketJob(C(20, 5), bucket, Entity.Null));
+        sim.Tick();
+        Assert.Equal(villager, sim.Reservations.ReservedBy(bucket));
+        Assert.False(Ai.Claims.Free(sim, bucket, me)); // it's beside it: that one's spoken for
+        Assert.NotEqual(AvatarActionKind.PickUp, AvatarSystem.ActionAt(sim, me, C(11, 10)).Kind);
+    }
+
     private static (Simulation Sim, Entity Me) Setup(bool pack = true)
     {
         var sim = TestWorld.Create(30, 20, 1, 4);

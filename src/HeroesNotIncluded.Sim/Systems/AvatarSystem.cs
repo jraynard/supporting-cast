@@ -956,6 +956,7 @@ public sealed class AvatarSystem : ISimSystem
         switch (action.Kind)
         {
             case AvatarActionKind.PickUp when w.Get<Thing>(action.Target).Def.Tool != null && Toolbelt.HasRoom(sim, avatar):
+                Ai.Claims.TakeOver(sim, action.Target, avatar);
                 Toolbelt.PutOn(sim, avatar, action.Target);
                 break;
             case AvatarActionKind.PickUp:
@@ -963,6 +964,7 @@ public sealed class AvatarSystem : ISimSystem
                 carrying.Item = Inventory.PickUp(sim, avatar, action.Target, carrying.Item);
                 break;
             case AvatarActionKind.Equip:
+                Ai.Claims.TakeOver(sim, action.Target, avatar); // a villager still on its way to it lets it go
                 Inventory.PutOn(sim, avatar, sim.TakeFromStack(action.Target, 1));
                 break;
             case AvatarActionKind.PutDown:

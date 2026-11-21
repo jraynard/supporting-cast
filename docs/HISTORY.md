@@ -3021,3 +3021,11 @@ to nobody's trade. A **commission** does: so many of a thing a shop makes, for a
   checks they're there before each wound and before binding.
 - `BlacksmithTests.AnAiSmithsKitGoesInTheChestNotTheFuelBin`; `MaterialSupplyTests` counts the kit's planks in the chest;
   `BotBenchTests`' empath shelving waits out a party met later at the inn (`FreshInTown`), 16 hours, not 10.
+
+### A villager's claim gives way till it gets there (2026-11-20)
+
+- A villager claims what it's going for when it sets out, and only a haul or a refuel gave way to a player: a bucket
+  someone was walking to for a fire couldn't be picked up, without a word. Now any villager's claim gives way until
+  it's beside the thing (`Ai/Claims`); the villager gives that errand up and finds another. A player's or bot's holds.
+- Taking it on the belt or putting on gear lying in reach lets a villager's claim go too, as picking up did.
+- `InventoryTests`: a villager on its way to a bucket lets a player take it; one already beside it keeps it.
