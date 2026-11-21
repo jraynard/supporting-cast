@@ -62,6 +62,8 @@ public sealed class SharpenSession : WorkSession
     public override float Xp => 30f;
     public override string Title => OnWheel ? $"Grinding an edge on the {ItemLabel}" : $"Sharpening the {ItemLabel}";
 
+    public override bool HeardByOthers => true;
+
     /// <summary>Can this worker put an edge on this item now? Null if so, else why not.</summary>
     public static string? Problem(Simulation sim, Entity worker, Entity item)
     {

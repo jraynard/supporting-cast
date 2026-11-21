@@ -257,6 +257,8 @@ public sealed class HammerSession : WorkSession
     public override float Xp => Shaped ? 60f : 15f;
     public override string Title => Repairing ? $"Hammering out the {ItemLabel}" : $"Hammering the {ItemLabel}";
 
+    public override bool HeardByOthers => true;
+
     /// <summary>A heat on the anvil for the piece in the smith's tongs.</summary>
     internal static HammerSession For(Simulation sim, Entity smith, Entity anvil, WorkPiece p)
     {

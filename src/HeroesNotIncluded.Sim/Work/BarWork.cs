@@ -175,6 +175,8 @@ public sealed class WashSession : WorkSession
     public override float Xp => 3f;
     public override string Title => "Washing up";
 
+    public override bool HeardByOthers => true;
+
     public override int3? Focus(Simulation sim) => sim.World.IsAlive(Tub) && sim.World.TryGet<Thing>(Tub, out var t) ? t.Cell : null;
 
     internal static WashSession For(Simulation sim, Entity tub, Entity dirty) =>
@@ -339,6 +341,8 @@ public sealed class TapSession : WorkSession
     public override Skill Skill => Skill.Cooking;
     public override float Xp => 15f;
     public override string Title => "Tapping a keg";
+
+    public override bool HeardByOthers => true;
 
     public override bool StillValid(Simulation sim) =>
         sim.World.IsAlive(Cask) && AvatarSystem.InReach(sim, sim.World.Get<Position>(Worker).Cell, Cask) && !BarWork.KegFor(sim, Worker, Cask).IsNull;

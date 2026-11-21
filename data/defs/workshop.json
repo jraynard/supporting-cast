@@ -519,7 +519,7 @@
         "isWall": true, "insulation": 0.98, "work": 400, "workbench": { "bills": 8, "handWork": true },
         "cost": [ { "def": "Bricks", "count": 12 }, { "def": "Stone", "count": 6 } ],
         "heatOutput": 5200, "maxHeatTemp": 1150, "lightRadius": 4, "stokeHeat": 9000, "stokedMaxTemp": 1450,
-        "fuel": { "def": "Charcoal", "capacity": 20, "burnPerDay": 40, "refuelAt": 0.4, "onDemand": true, "reach": 775,
+        "fuel": { "def": "Charcoal", "capacity": 20, "burnPerDay": 40, "refuelAt": 0.4, "onDemand": true, "goesCold": true, "reach": 775,
           "also": [ { "def": "Coal", "heatFactor": 1.3, "maxTempBonus": 120, "burnFactor": 0.7, "reach": 1000 } ] }
       }
     },

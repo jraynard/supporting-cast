@@ -261,6 +261,7 @@ public sealed partial class VillageGame
         [typeof(Sim.Environment.ThrowSession)] = (g, s) => g.DrawThrow((Sim.Environment.ThrowSession)s),
         [typeof(HammerSession)] = (g, s) => g.DrawHammer((HammerSession)s),
         [typeof(HeatSession)] = (g, s) => g.DrawHeat((HeatSession)s),
+        [typeof(KindleSession)] = (g, s) => g.DrawKindle((KindleSession)s),
         [typeof(BloomSession)] = (g, s) => g.DrawBloom((BloomSession)s),
         [typeof(QuenchSession)] = (g, s) => g.DrawQuench((QuenchSession)s),
         [typeof(StewSession)] = (g, s) => g.DrawStew((StewSession)s),
@@ -686,12 +687,14 @@ public sealed partial class VillageGame
         var (lo, hi) = _hud.Area;
         var centre = (lo + hi) * 0.5f;
         float2? pivot = new float2(0.5f, 0.5f);
-        if (_workAside || WorkPanelAside)
+        if (_workAside)
         {
             // Work out in the world (a tree to fell): against the right edge, the middle of the screen left clear.
             (centre, pivot) = (new float2(hi.X, centre.Y), new float2(1f, 0.5f));
             _workAside = false;
         }
+        else if (WorkPanelAt(lo, hi) is { } at)
+            (centre, pivot) = (at, new float2(0.5f, 1f)); // leaned in: low and a little right, you framed above and left of it
         ImGui.SetNextWindowPos(in centre, ImGuiCond.Always, in pivot);
         var most = hi - lo;
         var none = float2.Zero;

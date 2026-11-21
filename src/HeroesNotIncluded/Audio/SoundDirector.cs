@@ -82,6 +82,7 @@ public sealed class SoundDirector(AudioEngine audio)
         BlowsMet(sim, view, me);
         Breaths(sim, view, me);
         Splashes(sim, view, me);
+        OthersWork(sim, view, avatar, me);
         Dragons();
         Messages(sim);
         Speech(sim, view);
@@ -141,6 +142,7 @@ public sealed class SoundDirector(AudioEngine audio)
 
     private void Reset(Simulation sim)
     {
+        _othersWork.Clear();
         _sim = sim;
         // What happened before we were listening is history.
         _shotsSeen = _blowsSeen = _breathsSeen = _splashesSeen = _signsSeen = sim.Clock.Tick;
@@ -265,6 +267,43 @@ public sealed class SoundDirector(AudioEngine audio)
             }
         }
         _blowsSeen = newest;
+    }
+
+    // Each neighbour at work, by who: their own copy of the work's sounds, placed where they stand.
+    private readonly Dictionary<Entity, WorkSounds> _othersWork = [];
+    private readonly HashSet<Entity> _heardWorking = [];
+
+    /// <summary>How loud someone else's work is beside your own: there, not in your ears.</summary>
+    private const float OthersWorkGain = 0.55f;
+
+    /// <summary>
+    /// The work of everyone else in earshot, from where they stand: the anvil's ring across the square,
+    /// a keg knocked open in the inn. Only work whose sounds are a bystander's to hear
+    /// (<see cref="Sim.Work.WorkSession.HeardByOthers"/>), and muffled by walls as any sound is.
+    /// </summary>
+    private void OthersWork(Simulation sim, PerceptionView view, Entity avatar, int3? me)
+    {
+        var w = sim.World;
+        _heardWorking.Clear();
+        foreach (var e in w.Query<Sim.Work.WorkSession>())
+        {
+            if (e == avatar || !w.TryGet<Position>(e, out var pos))
+                continue;
+            var session = w.Get<Sim.Work.WorkSession>(e);
+            if (!session.HeardByOthers || Reach(sim, view, me, pos.Cell) is not { } muffle)
+                continue;
+            if (!_othersWork.TryGetValue(e, out var sounds))
+                _othersWork[e] = sounds = new WorkSounds(audio) { Keys = $"work:{e.Index}.{e.Generation}:" };
+            sounds.At = ToAudio(pos.Pos);
+            sounds.Muffle = muffle;
+            sounds.Gain = OthersWorkGain;
+            sounds.Update(session);
+            _heardWorking.Add(e);
+        }
+        if (_othersWork.Count == _heardWorking.Count)
+            return;
+        foreach (var e in _othersWork.Keys.Where(e => !_heardWorking.Contains(e)).ToList())
+            _othersWork.Remove(e); // its loops die away on their own once no longer held
     }
 
     private void Breaths(Simulation sim, PerceptionView view, int3? me)

@@ -64,6 +64,8 @@ public sealed class BloomSession : WorkSession
     public override float Xp => 10f;
     public override string Title => $"Running the {ItemLabel}";
 
+    public override bool HeardByOthers => true;
+
     internal static BloomSession For(Simulation sim, Entity forge, WorkPiece p)
     {
         var w = sim.World;

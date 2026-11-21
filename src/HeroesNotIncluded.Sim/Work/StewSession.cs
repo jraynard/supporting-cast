@@ -91,6 +91,8 @@ public sealed class StewSession : WorkSession
     public override float Xp => 25f;
     public override string Title => "Tending the stew";
 
+    public override bool HeardByOthers => true;
+
     internal static StewSession For(Simulation sim, Entity pot)
     {
         var p = Cooking.PotOf(sim, pot);

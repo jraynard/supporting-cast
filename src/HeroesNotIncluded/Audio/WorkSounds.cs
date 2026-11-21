@@ -23,6 +23,27 @@ public sealed class WorkSounds(AudioEngine audio)
     private bool _flag;
     private Mods.WorkSoundContext? _mod;
 
+    /// <summary>
+    /// Where it's heard from, for someone else's work (<see cref="WorkSession.HeardByOthers"/>): null for your own,
+    /// which sounds in your ears. Set each frame before <see cref="Update"/>, with how muffled and how loud.
+    /// </summary>
+    public float3? At { get; set; }
+
+    public float Muffle { get; set; }
+
+    public float Gain { get; set; } = 1f;
+
+    /// <summary>What keeps this worker's loops apart from another's ("work:" for your own).</summary>
+    public string Keys { get; init; } = "work:";
+
+    private void Play(string id, float gain = 1f, float pitch = 1f, float delay = 0f) =>
+        audio.Play(id, At, gain * Gain, pitch, Muffle, delay);
+
+    private void Hold(string key, string id, float gain = 1f, float pitch = 1f, float fade = HoldFade) =>
+        audio.Hold(Keys + key, id, gain * Gain, At, Muffle, pitch, fade);
+
+    private const float HoldFade = AudioEngine.HoldFadeSeconds;
+
     /// <summary>Once a frame with the session being worked, or null.</summary>
     public void Update(WorkSession? session)
     {
@@ -36,7 +57,8 @@ public sealed class WorkSounds(AudioEngine audio)
         {
             _session = session.StartTick;
             (_a, _b, _c, _q, _warm, _flag) = (0, 0, -1, 0f, 0f, false);
-            audio.Play(Sounds.UiOpen, gain: 0.5f);
+            if (At == null)
+                Play(Sounds.UiOpen, gain: 0.5f); // the panel opening: yours alone
         }
 
         // A mod's session (or a mod's sound for one of the game's) first.
@@ -44,7 +66,7 @@ public sealed class WorkSounds(AudioEngine audio)
         if (fresh)
             _mod.Reset();
         _mod.Fresh = fresh;
-        if (Mods.GameMods.TrySound(_mod, session))
+        if (At == null && Mods.GameMods.TrySound(_mod, session))
             return;
 
         switch (session)
@@ -56,31 +78,39 @@ public sealed class WorkSounds(AudioEngine audio)
                     var grade = Math.Clamp(s.Quality * s.Blows - _q * _a, 0f, 1f);
                     var id = s.LastCold ? Sounds.AnvilCold : grade >= 0.75f ? Sounds.AnvilGood : grade >= 0.4f ? Sounds.AnvilFair : Sounds.AnvilPoor;
                     // The ring climbs a little as the piece takes shape.
-                    audio.Play(id, pitch: 1f + 0.06f * Math.Clamp(s.Blows / (float)Math.Max(1, s.BlowsNeeded), 0f, 1f));
+                    Play(id, pitch: 1f + 0.06f * Math.Clamp(s.Blows / (float)Math.Max(1, s.BlowsNeeded), 0f, 1f));
                 }
                 (_a, _q) = (s.Blows, s.Quality);
-                audio.Hold("work:fire", Sounds.ForgeFire, 0.35f);
+                Hold("fire", Sounds.ForgeFire, 0.35f);
                 break;
             case HeatSession s:
-                audio.Hold("work:fire", Sounds.ForgeFire, 0.4f + 0.6f * Math.Clamp(s.Fire / Math.Max(1f, s.FireMax), 0f, 1f));
+                Hold("fire", Sounds.ForgeFire, 0.4f + 0.6f * Math.Clamp(s.Fire / Math.Max(1f, s.FireMax), 0f, 1f));
                 Pump(s.Pumping);
                 break;
             case BloomSession s:
-                audio.Hold("work:fire", Sounds.ForgeFire, 0.4f + 0.6f * Math.Clamp(s.Fire / Math.Max(1f, s.FireMax), 0f, 1f));
+                Hold("fire", Sounds.ForgeFire, 0.4f + 0.6f * Math.Clamp(s.Fire / Math.Max(1f, s.FireMax), 0f, 1f));
                 Pump(s.Held);
+                break;
+            case KindleSession s:
+                // Each strike of the steel a clink; a breath on the ember the bellows' sigh, softly.
+                if (s.Strikes > _a)
+                    Play(Sounds.Clink, pitch: 1.4f);
+                _a = s.Strikes;
+                Pump(s.Held && s.Ember);
+                Hold("fire", Sounds.ForgeFire, s.Ember ? 0.25f * s.Glow : 0f);
                 break;
             case QuenchSession s:
                 if (s.Dunked && !_flag)
-                    audio.Play(Sounds.ForgeQuench);
+                    Play(Sounds.ForgeQuench);
                 _flag = s.Dunked;
-                audio.Hold("work:steam", Sounds.ForgeSteam, s.Steam);
+                Hold("steam", Sounds.ForgeSteam, s.Steam);
                 break;
             case SharpenSession s:
-                audio.Hold("work:grind", Sounds.Grind, s.OnWheel ? 0.8f : 0f, pitch: 0.9f + 0.2f * Math.Clamp(s.Heat, 0f, 1f), fade: Quick);
+                Hold("grind", Sounds.Grind, s.OnWheel ? 0.8f : 0f, pitch: 0.9f + 0.2f * Math.Clamp(s.Heat, 0f, 1f), fade: Quick);
                 break;
             case StewSession s:
-                audio.Hold("work:pot", Sounds.PotBubble, s.Lit ? Math.Clamp(s.Flame, 0.2f, 1f) : 0f);
-                audio.Hold("work:stir", Sounds.PotStir, s.Stirring ? 0.7f : 0f, fade: Quick);
+                Hold("pot", Sounds.PotBubble, s.Lit ? Math.Clamp(s.Flame, 0.2f, 1f) : 0f);
+                Hold("stir", Sounds.PotStir, s.Stirring ? 0.7f : 0f, fade: Quick);
                 break;
             case SeasonSession s:
                 Count(s.Pinches, Sounds.Pinch);
@@ -89,19 +119,19 @@ public sealed class WorkSounds(AudioEngine audio)
                 // F held is pouring (the level only moves on sim steps, not every frame). The note
                 // climbs as the tankard fills, as a real pour's does; the head fizzes as it settles.
                 var pouring = s.Held && !s.Spilled;
-                audio.Hold("work:pour", Sounds.Pour, pouring ? 0.9f : 0f, pitch: 0.85f + 0.4f * Math.Clamp(s.Top, 0f, 1f), fade: Quick);
-                audio.Hold("work:fizz", Sounds.Fizz, Math.Clamp(s.Foam * 4f, 0f, 0.8f), fade: 0.3f);
+                Hold("pour", Sounds.Pour, pouring ? 0.9f : 0f, pitch: 0.85f + 0.4f * Math.Clamp(s.Top, 0f, 1f), fade: Quick);
+                Hold("fizz", Sounds.Fizz, Math.Clamp(s.Foam * 4f, 0f, 0.8f), fade: 0.3f);
                 break;
             case WashSession s:
                 Count(s.Washed, Sounds.Clink);
-                audio.Hold("work:scrub", Sounds.Scrub, s.Scrubbing ? 0.5f : 0f, fade: Quick);
+                Hold("scrub", Sounds.Scrub, s.Scrubbing ? 0.5f : 0f, fade: Quick);
                 break;
             case TapSession s:
                 Count(s.Blows + s.Misses, Sounds.Knock);
                 break;
             case StrikerSession s:
                 if (s.Swings > _a && s.Last >= StrikerSession.Bell)
-                    audio.Play(Sounds.UiBell, delay: 0.25f);
+                    Play(Sounds.UiBell, delay: 0.25f);
                 Count(s.Swings, Sounds.Knock);
                 break;
             case MixSession s:
@@ -125,9 +155,9 @@ public sealed class WorkSounds(AudioEngine audio)
             case CastSession s:
                 Count(s.Beats, Sounds.Rune);
                 if (s.LastWovenAt != _b && !fresh)
-                    audio.Play(Sounds.Weave);
+                    Play(Sounds.Weave);
                 _b = s.LastWovenAt;
-                audio.Hold("work:hum", Sounds.Hum, 0.5f);
+                Hold("hum", Sounds.Hum, 0.5f);
                 break;
             case HandsOnSession s:
             {
@@ -135,30 +165,30 @@ public sealed class WorkSounds(AudioEngine audio)
                 // it swells and brightens as the hands near a hurt (the warmth the scene shows, smoothed
                 // so a trembling hand doesn't make it warble).
                 _warm += (Math.Clamp(s.Feel, 0f, 1f) - _warm) * 0.15f;
-                audio.Hold("work:hum", Sounds.Hum, s.Linked ? 0.75f : 0.3f + 0.4f * _warm,
+                Hold("hum", Sounds.Hum, s.Linked ? 0.75f : 0.3f + 0.4f * _warm,
                     pitch: s.Linked ? 1f + 0.25f * Math.Clamp(s.Link.Strain, 0f, 1f) : 1f + 0.15f * _warm, fade: 0.2f);
                 // A soft beat each time a new warmth is sensed (ones read before are known already).
                 var sensed = s.Spots.Count(p => p.Sensed > 0f);
                 if (_c >= 0 && sensed > _c)
-                    audio.Play(Sounds.Pulse, gain: 0.6f, pitch: 1.35f);
+                    Play(Sounds.Pulse, gain: 0.6f, pitch: 1.35f);
                 _c = sensed;
                 // A wound's beat under a pressing hand, each time it swells (its kind's way, as the scene shows it).
                 if (s.Pulse > 0.6f && !_flag)
-                    audio.Play(Sounds.Pulse, gain: 0.4f + 0.6f * s.Pulse, pitch: s.Linked ? 1.1f : 1f);
+                    Play(Sounds.Pulse, gain: 0.4f + 0.6f * s.Pulse, pitch: s.Linked ? 1.1f : 1f);
                 _flag = s.Pulse > 0.6f || (_flag && s.Pulse > 0.35f);
                 if (s.LastDrawnAt > _a && !fresh)
-                    audio.Play(Sounds.Drawn);
+                    Play(Sounds.Drawn);
                 _a = Math.Max(_a, s.LastDrawnAt);
                 if (s.Flinches > _b && !fresh)
-                    audio.Play(Sounds.Pulse, gain: 0.9f, pitch: 0.7f);
+                    Play(Sounds.Pulse, gain: 0.9f, pitch: 0.7f);
                 _b = s.Flinches;
                 if (s.Link.Snapped && _q == 0f)
-                    audio.Play(Sounds.Snap);
+                    Play(Sounds.Snap);
                 _q = s.Link.Snapped ? 1f : 0f;
                 break;
             }
             case MeditateSession:
-                audio.Hold("work:hum", Sounds.Hum, 0.6f);
+                Hold("hum", Sounds.Hum, 0.6f);
                 break;
             case PinSession s:
                 Count(s.Pin, Sounds.Click);
@@ -178,12 +208,12 @@ public sealed class WorkSounds(AudioEngine audio)
             case ProbeSession s:
                 // A tick in the fingers when the probe catches (the feel it shows), not again till it's let go.
                 if (!_flag && s.Feel > 0.7f)
-                    audio.Play(Sounds.Click, gain: 0.6f, pitch: 0.8f);
+                    Play(Sounds.Click, gain: 0.6f, pitch: 0.8f);
                 _flag = s.Feel > 0.7f || (_flag && s.Feel > 0.45f);
                 // The spring out: a snap, once (the session ends on it).
                 if (s.Disarmed && _a == 0)
                 {
-                    audio.Play(Sounds.Snap, gain: 0.8f, pitch: 1.3f);
+                    Play(Sounds.Snap, gain: 0.8f, pitch: 1.3f);
                     _a = 1;
                 }
                 break;
@@ -194,7 +224,7 @@ public sealed class WorkSounds(AudioEngine audio)
     private void Count(int now, string id)
     {
         if (now > _a)
-            audio.Play(id);
+            Play(id);
         _a = now;
     }
 
@@ -202,7 +232,7 @@ public sealed class WorkSounds(AudioEngine audio)
     private void Pump(bool pumping)
     {
         if (pumping && !_flag)
-            audio.Play(Sounds.ForgeBellows);
+            Play(Sounds.ForgeBellows);
         _flag = pumping;
     }
 }

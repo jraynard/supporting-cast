@@ -61,6 +61,8 @@ public sealed class QuenchSession : WorkSession
     public override float Xp => 20f;
     public override string Title => $"Quenching the {ItemLabel}";
 
+    public override bool HeardByOthers => true;
+
     internal static QuenchSession For(Simulation sim, Entity smith, Entity tub, WorkPiece p)
     {
         var mass = p.Recipe.Products.Count > 0 ? p.Recipe.Products[0].ThingDef.Mass : 1f;

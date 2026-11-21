@@ -886,20 +886,17 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
         }
         if (pose.Tag == "glide")
             feet.Z += MathF.Sin(_anim.Clock * 2f + e.Index) * 0.05f;
-        // Dancing (round the festival's bonfire, to a musician): a hop to every beat, and a sway (no frames of its own yet).
-        var danceTempo = mind.Job is { Dancing: true } dance ? dance.DanceTempo
-            : w.TryGet<Sim.Work.WorkSession>(e, out var dancing) && dancing.Dancing ? dancing.DanceTempo : -1f;
-        if (danceTempo >= 0f)
+        // Dancing (round the festival's bonfire, to a musician): a hop to every beat and a sway, the
+        // dance frames (CreatureAnimator) keeping the same beat.
+        if (CreatureAnimator.DanceTempoOf(sim, e) is var danceTempo and >= 0f)
         {
-            // A hop a beat: |sin| comes round twice a turn. The music's tempo when it has one, its own otherwise.
-            var rate = danceTempo > 0f ? MathF.PI * danceTempo / 60f : 7f;
-            var beat = _anim.Clock * rate + e.Index * 0.7f;
+            var beat = _anim.DanceBeat(e, danceTempo);
             feet.Z += MathF.Abs(MathF.Sin(beat)) * 0.12f;
             feet += _cam.Right * (MathF.Sin(beat * 0.5f) * 0.05f);
         }
-        // Cheering a toast: a couple of quick hops (no cheer frames yet).
+        // Cheering a toast: quick hops, the arms pumped at the top of each (the cheer frames).
         if (sim.Festival.CheeredAt(e) is var cheered and >= 0 && sim.Clock.Tick - cheered is var since and >= 0 and < Sim.Round.FestivalSystem.CheerTicks)
-            feet.Z += MathF.Abs(MathF.Sin(since / (float)SimClock.TicksPerSecond * 9f)) * 0.16f;
+            feet.Z += MathF.Abs(MathF.Sin(since / (float)SimClock.TicksPerSecond * CreatureAnimator.CheerRate)) * 0.16f;
         if (!airborne && !c.Dead)
         {
             // A soft contact shadow grounds standing figures (part of the diorama look).

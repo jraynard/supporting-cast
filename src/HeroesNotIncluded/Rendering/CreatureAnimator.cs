@@ -124,6 +124,32 @@ public sealed class CreatureAnimator
     /// </summary>
     public bool Holding { get; set; }
 
+    /// <summary>
+    /// How fast someone's dancing (beats a minute: the music's, or 0 for their own), or -1 if they
+    /// aren't: round the festival's bonfire (a job), or a player's dance (a session).
+    /// </summary>
+    public static float DanceTempoOf(Simulation sim, Entity e) =>
+        sim.World.Get<Mind>(e).Job is { Dancing: true } dance ? dance.DanceTempo
+        : sim.World.TryGet<Sim.Work.WorkSession>(e, out var dancing) && dancing.Dancing ? dancing.DanceTempo : -1f;
+
+    /// <summary>
+    /// Where a dancer is in the dance (radians): a hop every π, at the music's tempo when it has one,
+    /// their own otherwise; offset per dancer. The hop (WorldRenderer) and the frames both follow it.
+    /// </summary>
+    public float DanceBeat(Entity e, float tempo) => Clock * (tempo > 0f ? MathF.PI * tempo / 60f : 7f) + e.Index * 0.7f;
+
+    /// <summary>A cheer's hops (radians a second, a hop every π): the hop and the frames both follow it.</summary>
+    public const float CheerRate = 9f;
+
+    /// <summary>Which of a hopping pair of frames: the second, near the top of the hop (<paramref name="phase"/>, a hop every π).</summary>
+    private static int HopFrame(float phase, int pairs)
+    {
+        var hop = (int)MathF.Floor(phase / MathF.PI);
+        var within = phase - hop * MathF.PI;
+        var top = within > MathF.PI * 0.25f && within < MathF.PI * 0.75f ? 1 : 0;
+        return ((hop % pairs + pairs) % pairs) * 2 + top;
+    }
+
     /// <summary>The local player's aim (radians on the map), which their character faces before the sim hears of it.</summary>
     public (Entity E, float Aim)? LocalAim { get; set; }
 
@@ -178,6 +204,7 @@ public sealed class CreatureAnimator
         "fly" or "breathe_windup" or "work" or "walk" or "sleep" => "idle",
         "breathe" => "breathe_windup",
         "swing" or "punch" => "work",
+        "dance" or "cheer" => "idle",
         "thrust" => "swing",
         "downed" => "sleep",
         "ride" or "sit" => "idle",
@@ -330,6 +357,12 @@ public sealed class CreatureAnimator
         var want = ChooseTag(inputs);
         if (want == "work" && swinging && st.SwingTag != null)
             want = st.SwingTag;
+        // At the festival: a cheer for a toast, or dancing (on the move too: the ring goes round).
+        var cheered = c.Def.Race == Race.Human ? sim.Festival.CheeredAt(e) : -1;
+        var cheerFor = cheered >= 0 && now - cheered is var since and >= 0 and < Sim.Round.FestivalSystem.CheerTicks ? since : -1;
+        var danceTempo = c.Def.Race == Race.Human && cheerFor < 0 ? DanceTempoOf(sim, e) : -1f;
+        if (want is "idle" or "walk" or "work" && (cheerFor >= 0 || danceTempo >= 0f))
+            want = cheerFor >= 0 ? "cheer" : "dance";
         if (emote is { } shown && want == "idle")
             want = EmoteTag(shown.Kind);
         if (want != st.Want || newBreath)
@@ -439,7 +472,11 @@ public sealed class CreatureAnimator
 
         var frameIndex = anim?.FrameAt(st.TagTime) ?? 0;
         // A swing keeps time with the blow, not the clock: cocked however long it's wound up.
-        if (tag is "swing" or "thrust" or "punch" && anim is { Frames.Length: 4 })
+        if (tag == "dance" && anim is { Frames.Length: 4 } && danceTempo >= 0f)
+            frameIndex = HopFrame(DanceBeat(e, danceTempo), 2);
+        else if (tag == "cheer" && anim is { Frames.Length: 2 } && cheerFor >= 0)
+            frameIndex = HopFrame(cheerFor / (float)SimClock.TicksPerSecond * CheerRate, 1);
+        else if (tag is "swing" or "thrust" or "punch" && anim is { Frames.Length: 4 })
             frameIndex = st.SwingLanded >= 0 ? (now - st.SwingLanded < StrikeTicks ? 2 : 3)
                 : (now - st.SwingStart) < DrawnBackShare * Math.Max(1, st.SwingImpact - st.SwingStart) ? 0 : 1;
         var frame = anim != null ? anim.Frames[frameIndex] : sheet.Frames[0];

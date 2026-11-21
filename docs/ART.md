@@ -139,7 +139,11 @@ level in both hands, driven across in a lunge; with no weapon drawn (or fists in
 The weapon is the held layer, in hand throughout. The animator picks the frame from the blow's `Windup` ticks, not the clock (cocked however long
 it's wound up; `CreatureAnimator.StrikeTicks`/`RecoverTicks` after it lands), and a sheet without the tag
 falls back to `work`. `python3 tools/chibi_people.py --swing-preview` draws each blow's frames in every
-view (`.cache/people/swing.png`, `thrust.png`, `punch.png`). New frames go after the rest; regenerating means `chibi_people.py`, then `chibi_builds.py`, then a build
+view (`.cache/people/swing.png`, `thrust.png`, `punch.png`, and `dance.png` with the cheer).
+At the festival, `dance_<view>`: an arm flung up and out, the other on the hip, the far foot kicked, then
+the other way, a hop a beat; and `cheer_<view>`, both arms up in a V, pumped at the top of each hop. Their
+frames follow the same beat as the hop the game adds (`CreatureAnimator.DanceBeat`, `CheerRate`). Arms
+raised go out to the side, never overhead: the head would hide them. New frames go after the rest; regenerating means `chibi_people.py`, then `chibi_builds.py`, then a build
 (the build copies whatever's there, half-written sheets included).
 `sleep` and `downed` stay top-down, centred in the frame, and are drawn flat at native scale. Faces have
 big eyes (a lash line, a two-tone iris, a catch-light) and no mouth. Dragons and animals keep side-on

@@ -122,7 +122,19 @@ def sequence():
                            Pose(v, "punch", 2, body_dy=0.8, head_dy=0.3, legs=((-0.8, 0), (0.8, 0))),
                            Pose(v, "punch", 3, body_dy=0.5, head_dy=0.2, legs=((-0.6, 0), (0.6, 0)))],
             [90, 200, 70, 160], loop=False, event=2)
-    for alias in ("idle", "walk", "work", "ride", "sit", "swing", "thrust", "punch"):
+    # Dancing (after the rest): a hop a beat, the game picking the frame from the music's beat
+    # (CreatureAnimator.DanceFrame): an arm flung up and out, the other on the hip, the far foot
+    # kicked; then the other way. The second of each pair is the top of the hop.
+    for v in VIEWS:
+        add(f"dance_{v}", [Pose(v, "dance", 0, body_dy=0.3, legs=((-0.3, 0), (2.0, 3.0))),
+                           Pose(v, "dance", 1, body_dy=-0.2, head_dy=-0.2, legs=((-0.3, 0.6), (2.6, 4.2))),
+                           Pose(v, "dance", 2, body_dy=0.3, legs=((-2.0, 3.0), (0.3, 0))),
+                           Pose(v, "dance", 3, body_dy=-0.2, head_dy=-0.2, legs=((-2.6, 4.2), (0.3, 0.6)))], 220)
+    # A cheer: both arms up in a V, pumped higher at the top of each hop (CreatureAnimator.CheerFrame).
+    for v in VIEWS:
+        add(f"cheer_{v}", [Pose(v, "cheer", 0, body_dy=0.2),
+                           Pose(v, "cheer", 1, body_dy=-0.3, head_dy=-0.3, legs=((-0.4, 0.8), (0.4, 0.8)))], 170)
+    for alias in ("idle", "walk", "work", "ride", "sit", "swing", "thrust", "punch", "dance", "cheer"):
         tags[alias] = tags[f"{alias}_down"]
     return frames, tags
 
@@ -226,6 +238,18 @@ class Fig:
                 elbow, hand, front = (sx + out * 1.4, 37.0 + by), (sx - out * 1.6, 33.6 + by), True
             else:
                 elbow, hand, front = (sx + out * 1.8, 37.4 + by), (sx + out * 0.4, 35.8 + by), False
+        elif p.anim == "dance":
+            # the arm up (role 0 on the first hop, role 1 on the second) flung out beside the head; the other on the hip
+            up = role == 0 if p.k < 2 else role == 1
+            if up:
+                elbow, hand, front = ((sx + out * 4.6, 30.0 + by), (sx + out * 8.6, 26.0 + by), False) if p.k % 2 == 0 \
+                    else ((sx + out * 4.4, 29.2 + by), (sx + out * 8.8, 24.0 + by), False)
+            else:
+                elbow, hand, front = (sx + out * 3.8, 36.2 + by), (sx + out * 0.6, 40.4 + by), True
+        elif p.anim == "cheer":
+            # both arms up in a V, clear of the head; pumped higher at the top of the hop
+            elbow, hand, front = ((sx + out * 4.6, 30.2 + by), (sx + out * 9.0, 26.2 + by), False) if p.k == 0 \
+                else ((sx + out * 4.4, 29.0 + by), (sx + out * 8.6, 23.6 + by), False)
         elif p.anim == "coin" and role == 1:
             lift = 0.6 if p.coin and p.coin > 0 else 0
             elbow, hand, front = (sx + out * 1.6, 38.2 + by), (sx - out * 1.4, 35 + by - lift), True
@@ -3259,6 +3283,7 @@ if __name__ == "__main__":
         motion_preview(os.path.join(out, "swing.png"), "swing", SWING_LOOKS)
         motion_preview(os.path.join(out, "thrust.png"), "thrust", [dict(SWING_LOOKS[0], held="spear"), dict(SWING_LOOKS[1], held="spear")], before=("swing",))
         motion_preview(os.path.join(out, "punch.png"), "punch", [dict(SWING_LOOKS[0], held=None), dict(SWING_LOOKS[1], held=None)], before=("swing",))
+        motion_preview(os.path.join(out, "dance.png"), "dance", [dict(SWING_LOOKS[0], held=None), dict(SWING_LOOKS[1], held=None)], before=("cheer",))
         print(out)
         sys.exit(0)
     if "--turn-test" in sys.argv:

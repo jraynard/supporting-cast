@@ -103,8 +103,17 @@ public sealed partial class BotPlayer
     /// True while at it.
     /// </summary>
     private bool Stoke(Simulation sim, Entity me, PerceptionView view, long now) =>
-        Nearest(sim, me, "Forge") is { IsNull: false } forge && view.Piece(me) == null && view.FuelIn(forge) is { } fuel && fuel < StokeBelow
-        && FeedForge(sim, me, view, forge, now);
+        Nearest(sim, me, "Forge") is { IsNull: false } forge
+        && (LightForge(sim, me, forge, now)
+            || (view.Piece(me) == null && view.FuelIn(forge) is { } fuel && fuel < StokeBelow && FeedForge(sim, me, view, forge, now)));
+
+    /// <summary>A forge gone cold (plain to see: it's dark) with fuel in is lit first, F at it (<see cref="Sim.Work.KindleSession"/>). True while at it.</summary>
+    private bool LightForge(Simulation sim, Entity me, Entity forge, long now) =>
+        Sim.Work.Kindling.CanLight(sim, forge) && AtStation(sim, me, forge, now, f =>
+        {
+            Send(new AvatarWorkCommand(me, true, sim.World.Get<Thing>(f).Cell));
+            Send(new AvatarWorkCommand(me, false));
+        });
 
     /// <summary>About how far the smithy warms, in degrees, for each unit of a recipe's work done at the forge: a long piece heats it more.</summary>
     public const float WarmsPerWork = 0.028f;

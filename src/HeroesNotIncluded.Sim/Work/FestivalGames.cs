@@ -291,6 +291,8 @@ public sealed class StrikerSession : WorkSession
     public override float Xp => 2f;
     public override string Title => "The test of strength";
 
+    public override bool HeardByOthers => true;
+
     public override int3? Focus(Simulation sim) => sim.World.IsAlive(Thing) && sim.World.TryGet<Thing>(Thing, out var t) ? t.Cell : null;
 
     public override bool StillValid(Simulation sim) => FestivalGames.Valid(sim, Worker, Thing);

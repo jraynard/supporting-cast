@@ -270,6 +270,8 @@ public sealed class ScrubSession : WorkSession
     public override float Xp => 2f;
     public override string Title => MessSystem.Verb(Kind);
 
+    public override bool HeardByOthers => true;
+
     internal static ScrubSession? For(Simulation sim, Entity who, int3 cell)
     {
         if (sim.Mess.At(sim, cell) is not { } s)

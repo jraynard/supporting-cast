@@ -497,6 +497,7 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
         _seats.Clear();
         Homes.DealAll(sim);
         Homes.StockCrocks(sim);
+        Work.Kindling.PutOutAll(sim); // the first morning opens with the fires that go cold to light
         Phase = RoundPhase.Playing;
         StartTick = sim.Clock.Tick;
         sim.Messages.Add(MessageKind.Good, "Doors open. Smile.", null); // the brand's round start

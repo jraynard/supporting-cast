@@ -684,6 +684,12 @@ public sealed class FuelProps
     public bool OnDemand { get; set; }
 
     /// <summary>
+    /// It goes out when it's left (a forge): unworked for some hours and not banked, it's cold, and lit again
+    /// only by hand (<see cref="Work.Kindling"/>). Rounds open with it cold.
+    /// </summary>
+    public bool GoesCold { get; set; }
+
+    /// <summary>
     /// Other things it burns besides <see cref="Def"/> (coal in a forge), each with how much hotter
     /// and longer it burns. The last fuel put in decides (<c>Fueled.Loaded</c>).
     /// </summary>

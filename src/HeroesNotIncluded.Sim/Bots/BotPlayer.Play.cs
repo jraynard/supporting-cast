@@ -70,6 +70,9 @@ public sealed partial class BotPlayer
     /// <summary>Done with the pot's seasoning: step away, which keeps it.</summary>
     private bool _seasoned;
 
+    /// <summary>Mid-puff on an ember (<see cref="Work.KindleSession"/>): breathing out, not in.</summary>
+    private bool _puffing;
+
     // ---------------- Playing the mini-games ----------------
 
     /// <summary>What a careful player would press now in the session in hand.</summary>
@@ -112,6 +115,18 @@ public sealed partial class BotPlayer
                 // Keep it orange: pump below the middle of the band, ease off above. Out once it's grown.
                 _act = bloom.Grown;
                 return (false, bloom.Temp < (bloom.Lo + bloom.SlagAt) * 0.5f, 0);
+            case KindleSession kindle:
+            {
+                // Strike as the steel comes through the flint; then puffs on the ember, let go before the
+                // breath grows to a gust, and breathe in when it's short.
+                if (!kindle.Ember)
+                    return (MathF.Abs(kindle.Steel - KindleSession.StrikeAt) < 0.04f, false, 0);
+                if (_puffing && (kindle.Draft >= KindleSession.GentleHi - 0.08f || kindle.Breath < 0.08f))
+                    _puffing = false;
+                else if (!_puffing && kindle.Draft <= 0.02f && kindle.Breath > 0.3f)
+                    _puffing = true;
+                return (false, _puffing, 0);
+            }
             case HeatSession heat:
                 // Pump, and draw it out once it glows the colour at the top of its working heat.
                 // A slip: impatient, it's drawn out before it's there.

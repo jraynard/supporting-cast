@@ -372,6 +372,30 @@ public sealed partial class VillageGame
     /// Deck the one long column ran past the screen, Begin and the mending with it. Begin puts the
     /// billet in your tongs and closes the window (the fire and the piece are the tongs panel's).
     /// </summary>
+    /// <summary>
+    /// A fire that goes cold (<see cref="Sim.Work.Kindling"/>): out, banked for the night, or alight with a
+    /// button to bank it before you go.
+    /// </summary>
+    private void DrawFireKeeping(Entity fire)
+    {
+        if (!Sim.Work.Kindling.GoesCold(_sim, fire))
+            return;
+        if (Sim.Work.Kindling.IsCold(_sim, fire))
+            TextC(Bad, Controls.Keys(_sim.World.Get<Fueled>(fire).Fuel > 0
+                ? "The fire's out. Hold ~F~ at it to light it."
+                : "The fire's out, and there's no charcoal in it: feed it, then light it."));
+        else if (Sim.Work.Kindling.IsBanked(_sim, fire))
+            TextC(Dim, "Banked: it'll keep till morning.");
+        else
+        {
+            if (ImGui.SmallButton("Bank the fire"u8))
+                Issue(new Sim.Work.BankFireCommand(_avatar, fire));
+            if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
+                Tip($"Rake ash over the coals before you go: it keeps till morning, and the bellows bring it straight back. Left to itself it's out in {Sim.Work.Kindling.ColdAfterHours:F0} hours, and has to be lit again.");
+        }
+        ImGui.Separator();
+    }
+
     private void DrawForgeWindow()
     {
         var w = _sim.World;
@@ -396,6 +420,7 @@ public sealed partial class VillageGame
         var open = true;
         Sheet.Begin($"{Cap(thing.Label)}###station", ref open, 400);
         PadWindow("###station", () => _openStation = Entity.Null);
+        DrawFireKeeping(_openStation);
         var tab = StationTabs(!barsToHand && oreToHand ? SmeltTab : null,
             (gear.Count > 0, MakeTab, false), (blooms.Count + other.Count > 0, SmeltTab, false), (repairs.Count > 0, MendTab, CustomerPiece(repairs)));
         if (bench.Active != null && bench.By != _avatar)

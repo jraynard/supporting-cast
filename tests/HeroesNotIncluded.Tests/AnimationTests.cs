@@ -29,13 +29,13 @@ public class AnimationTests
     }
 
     [Fact]
-    public void PeopleSheetsHaveTheRideAndBlowPosesInEveryView()
+    public void PeopleSheetsHaveTheirPosesInEveryView()
     {
         foreach (var sheet in new[] { "male", "female", "male_dwarf", "female_halfling" })
         {
             var json = System.Text.Json.JsonDocument.Parse(File.ReadAllText(Path.Combine(DevPaths.Defs!, "..", "textures", "creatures", $"person_{sheet}.anim.json")));
             var tags = json.RootElement.GetProperty("tags"u8).ToString();
-            foreach (var pose in new[] { "ride", "swing", "thrust", "punch" })
+            foreach (var pose in new[] { "ride", "swing", "thrust", "punch", "dance", "cheer" })
                 foreach (var view in new[] { "", "_down", "_downside", "_upside", "_up" })
                     Assert.Contains($"\"{pose}{view}\"", tags);
         }

@@ -445,6 +445,8 @@ public sealed partial class Simulation
     {
         if (!World.TryGet<Fueled>(e, out var fueled) || fueled.Fuel <= 0)
             return false;
+        if (World.TryGet<Work.Hearth>(e, out var hearth) && hearth.Cold)
+            return false; // gone out: lit again by hand (Work.Kindling)
         return World.Get<Thing>(e).Def.Building?.Fuel is not { OnDemand: true } || Crafting.WantsFiring(this, e);
     }
 

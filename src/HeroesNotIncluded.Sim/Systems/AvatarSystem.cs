@@ -155,6 +155,9 @@ public enum AvatarActionKind
 
     /// <summary>A mod's own action (play the pipe), done by the module that offered it (<see cref="AvatarAction.By"/>). At once.</summary>
     Custom,
+
+    /// <summary>Light a fire that's gone cold (<see cref="Work.KindleSession"/>), begun at once.</summary>
+    Kindle,
 }
 
 /// <summary>Which of the avatar's keys: use (F: everything but digging and dropping), dig (Z) or drop (X: put down what you hold).</summary>
@@ -516,6 +519,10 @@ public sealed class AvatarSystem : ISimSystem
         // Someone at work for two here, with nobody helping: lend them a hand.
         if (tool == AvatarTool.Use && Work.Pairs.WantsHandAt(sim, avatar, site) is { IsNull: false } lead)
             return new(AvatarActionKind.LendAHand, $"Lend {w.Get<Creature>(lead).Name} a hand", cell, lead);
+
+        // A fire gone cold is lit before anything's worked at it.
+        if (tool == AvatarTool.Use && Work.Kindling.StepAt(sim, avatar, site) is { } light && !sim.Reservations.IsReservedByOther(site, avatar))
+            return new(AvatarActionKind.Kindle, light, cell, site);
 
         // A piece in the tongs goes to the fire, the anvil or the tub; a blade to the grindstone.
         if (Work.Smithing.StepAt(sim, avatar, site) is { } step && !sim.Reservations.IsReservedByOther(site, avatar))
@@ -1016,6 +1023,9 @@ public sealed class AvatarSystem : ISimSystem
                 break;
             case AvatarActionKind.Smith:
                 Work.Smithing.Start(sim, avatar, action.Target);
+                break;
+            case AvatarActionKind.Kindle:
+                Work.Kindling.Start(sim, avatar, action.Target);
                 break;
             case AvatarActionKind.LendAHand:
                 Work.Pairs.Join(sim, avatar, action.Target);

@@ -338,6 +338,11 @@ public static class Smithing
                 sim.Messages.Add(MessageKind.Info, $"The {w.Get<Thing>(station).Label} has no fuel.", cell);
                 return;
             }
+            if (Kindling.IsCold(sim, station))
+            {
+                sim.Messages.Tell(smith, MessageKind.Info, $"The {w.Get<Thing>(station).Label} is cold: light it first.", cell);
+                return;
+            }
             if (piece.IsMend)
                 FireForMending(sim, piece.Forge);
             if (piece.IsBloom)

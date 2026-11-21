@@ -216,6 +216,14 @@ public abstract class WorkSession
     public virtual bool HandsMoving => true;
 
     /// <summary>
+    /// Its sounds carry to whoever's in earshot, not just the worker: an anvil's ring, a pot on the boil, a
+    /// keg knocked open. Only for work whose every sound a bystander could hear; never one that sounds out
+    /// what only the worker feels (a probe catching on a trap, a wound under the empath's hands, ore behind a
+    /// sounded wall). Off unless a session says so. Read for sound only, never for the sim.
+    /// </summary>
+    public virtual bool HeardByOthers => false;
+
+    /// <summary>
     /// Goes on while the worker lies downed: the few things a body on the ground can still do (an
     /// empath mending themselves). Everything else stops when they collapse.
     /// </summary>

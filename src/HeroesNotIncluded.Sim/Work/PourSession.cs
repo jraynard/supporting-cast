@@ -75,6 +75,8 @@ public sealed class PourSession : WorkSession
     public override float Xp => 20f;
     public override string Title => $"Pouring {DrinkLabel}";
 
+    public override bool HeardByOthers => true;
+
     /// <summary>Servings left in a cask (Entity.Null or not a cask: 0).</summary>
     public static int ServingsLeft(Simulation sim, Entity cask)
     {

@@ -72,6 +72,8 @@ public sealed class HeatSession : WorkSession
     public override float Xp => 5f;
     public override string Title => $"Heating the {ItemLabel}";
 
+    public override bool HeardByOthers => true;
+
     internal static HeatSession For(Simulation sim, Entity forge, WorkPiece p)
     {
         var w = sim.World;
